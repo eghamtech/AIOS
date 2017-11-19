@@ -1,38 +1,38 @@
 #start_of_genes_definitions
-#key={max_depth};			type=random_int;	from=2;		to=12;		step=2
-#key={eta};					type=random_float;	from=0.003;	to=0.03;	step=0.0015
-#key={fields_to_use};		type=random_int;	from=20;	to=300;		step=1
-#key={data};				type=random_array_of_fields;	length=300
-#key={colsample_bytree};	type=random_float;	from=0.4;	to=1;		step=0.05
-#key={subsample};			type=random_float;	from=0.4;	to=1;		step=0.05
-#key={u_limit};				type=random_float;	from=0.01;	to=0.4;		step=0.001
-#key={u_limit_apply};		type=random_float;	from=0.01;	to=0.4;		step=0.001
-#key={l_limit};				type=random_float;	from=-0.4;	to=-0.01;	step=0.001
-#key={l_limit_apply};		type=random_float;	from=-0.4;	to=-0.01;	step=0.001
-#key={u_limit_gbm};			type=random_float;	from=0.01;	to=0.4;		step=0.001
-#key={u_limit_apply_gbm};	type=random_float;	from=0.01;	to=0.4;		step=0.001
-#key={l_limit_gbm};			type=random_float;	from=-0.4;	to=-0.01;	step=0.001
-#key={l_limit_apply_gbm};	type=random_float;	from=-0.4;	to=-0.01;	step=0.001
-#key={max_depth2};			type=random_int;	from=2;		to=12;		step=2
-#key={eta2};				type=random_float;	from=0.003;	to=0.03;	step=0.0015
-#key={colsample_bytree2};	type=random_float;	from=0.4;	to=1;		step=0.05
-#key={subsample2};			type=random_float;	from=0.4;	to=1;		step=0.05
-#key={u_limit2};			type=random_float;	from=0.01;	to=0.4;		step=0.001
-#key={u_limit2_apply};		type=random_float;	from=0.01;	to=0.4;		step=0.001
-#key={l_limit2};			type=random_float;	from=-0.4;	to=-0.01;	step=0.001
-#key={l_limit2_apply};		type=random_float;	from=-0.4;	to=-0.01;	step=0.001
-#key={learning_rate};		type=random_float;	from=0.001;	to=0.06;	step=0.001
-#key={sub_feature};			type=random_float;	from=0.2;	to=1;		step=0.01
-#key={bagging_fraction};	type=random_float;	from=0.2;	to=1;		step=0.01
-#key={bagging_freq};		type=random_int;	from=10;	to=100;		step=1
-#key={num_leaves};			type=random_int;	from=512;	to=4096;	step=5
-#key={min_data};			type=random_int;	from=10;	to=2000;	step=5
-#key={feature_fraction_seed};type=random_int;	from=1;		to=10;		step=1
-#key={bagging_seed};		type=random_int;	from=1;		to=10;		step=1
-#key={boost_from_average};	type=random_from_set;			set=True,False
-#key={k_xgb1};				type=random_float;	from=0;		to=1;		step=0.01
-#key={k_xgb2};				type=random_float;	from=0;		to=1;		step=0.01
-#key={k_gbm};				type=random_float;	from=0;		to=1;		step=0.01
+#key=max_depth;				type=random_int;	from=2;		to=12;		step=2
+#key=eta;					type=random_float;	from=0.003;	to=0.03;	step=0.0015
+#key=fields_to_use;			type=random_int;	from=20;	to=300;		step=1
+#key=data;					type=random_array_of_fields;	length=300
+#key=colsample_bytree;		type=random_float;	from=0.4;	to=1;		step=0.05
+#key=subsample;				type=random_float;	from=0.4;	to=1;		step=0.05
+#key=u_limit;				type=random_float;	from=0.01;	to=0.4;		step=0.001
+#key=u_limit_apply;			type=random_float;	from=0.01;	to=0.4;		step=0.001
+#key=l_limit;				type=random_float;	from=-0.4;	to=-0.01;	step=0.001
+#key=l_limit_apply;			type=random_float;	from=-0.4;	to=-0.01;	step=0.001
+#key=u_limit_gbm;			type=random_float;	from=0.01;	to=0.4;		step=0.001
+#key=u_limit_apply_gbm;		type=random_float;	from=0.01;	to=0.4;		step=0.001
+#key=l_limit_gbm;			type=random_float;	from=-0.4;	to=-0.01;	step=0.001
+#key=l_limit_apply_gbm;		type=random_float;	from=-0.4;	to=-0.01;	step=0.001
+#key=max_depth2;			type=random_int;	from=2;		to=12;		step=2
+#key=eta2;					type=random_float;	from=0.003;	to=0.03;	step=0.0015
+#key=colsample_bytree2;		type=random_float;	from=0.4;	to=1;		step=0.05
+#key=subsample2;			type=random_float;	from=0.4;	to=1;		step=0.05
+#key=u_limit2;				type=random_float;	from=0.01;	to=0.4;		step=0.001
+#key=u_limit2_apply;		type=random_float;	from=0.01;	to=0.4;		step=0.001
+#key=l_limit2;				type=random_float;	from=-0.4;	to=-0.01;	step=0.001
+#key=l_limit2_apply;		type=random_float;	from=-0.4;	to=-0.01;	step=0.001
+#key=learning_rate;			type=random_float;	from=0.001;	to=0.06;	step=0.001
+#key=sub_feature;			type=random_float;	from=0.2;	to=1;		step=0.01
+#key=bagging_fraction;		type=random_float;	from=0.2;	to=1;		step=0.01
+#key=bagging_freq;			type=random_int;	from=10;	to=100;		step=1
+#key=num_leaves;			type=random_int;	from=512;	to=4096;	step=5
+#key=min_data;				type=random_int;	from=10;	to=2000;	step=5
+#key=feature_fraction_seed;	type=random_int;	from=1;		to=10;		step=1
+#key=bagging_seed;			type=random_int;	from=1;		to=10;		step=1
+#key=boost_from_average;	type=random_from_set;			set=True,False
+#key=k_xgb1;				type=random_float;	from=0;		to=1;		step=0.01
+#key=k_xgb2;				type=random_float;	from=0;		to=1;		step=0.01
+#key=k_gbm;					type=random_float;	from=0;		to=1;		step=0.01
 #end_of_genes_definitions
 
 import pandas as pd
