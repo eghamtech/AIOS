@@ -8,12 +8,16 @@
 #key=nfolds; 			type=random_int;	from=2;		to=10;	step=1
 #end_of_genes_definitions
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import pandas as pd
 import xgboost as xgb
 import numpy as np
 import math
 
 result_id = {id}
+field_ev_prefix = "ev_field_"
 output_column = field_ev_prefix + str(result_id)
 output_filename = output_column + ".csv"
 

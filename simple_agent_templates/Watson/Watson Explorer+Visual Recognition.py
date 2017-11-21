@@ -1,3 +1,8 @@
+#start_of_parameters
+#key=vr_api_date;	type=constant; value=2016-05-20
+#key=vr_key;		type=constant; value=key_from_vr_credentials
+#end_of_parameters
+
 import pandas as pd
 import numpy as np
 import urllib.parse
@@ -11,11 +16,11 @@ col1 = col_definition1.split("|")[0]
 file1 = col_definition1.split("|")[1]
 
 result_id = {id}
-output_filename = vr_file_prefix + str(result_id) + ".csv"
+output_filename = "vr_" + str(result_id) + ".csv"
 
 from watson_developer_cloud import VisualRecognitionV3 as VisualRecognitionV3
 
-visual_recognition = VisualRecognitionV3(vr_api_date, api_key=vr_key )
+visual_recognition = VisualRecognitionV3("{vr_api_date}", api_key="{vr_key}" )
 
 df = pd.read_csv(workdir+file1)[[col1]]
 

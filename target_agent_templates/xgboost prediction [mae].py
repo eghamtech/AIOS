@@ -11,6 +11,9 @@
 #key=l_limit_apply;		type=random_float;	from=-0.4;	to=-0.01;	step=0.001
 #end_of_genes_definitions
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import pandas as pd
 import xgboost as xgb
 

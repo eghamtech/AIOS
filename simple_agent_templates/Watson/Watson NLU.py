@@ -1,3 +1,9 @@
+#start_of_parameters
+#key=nlu_version;	type=constant; value=2017-02-27
+#key=nlu_username;	type=constant; value=username_from_nlu_credentials
+#key=nlu_password;	type=constant; value=password
+#end_of_parameters
+
 import pandas as pd
 import numpy as np
 
@@ -6,7 +12,7 @@ col1 = col_definition1.split("|")[0]
 file1 = col_definition1.split("|")[1]
 
 result_id = {id}
-output_filename = nlu_file_prefix + str(result_id) + ".csv"
+output_filename = "nlu_" + str(result_id) + ".csv"
 
 df = pd.read_csv(workdir+file1)[[col1]]
 
@@ -19,7 +25,7 @@ from watson_developer_cloud import NaturalLanguageUnderstandingV1
 import watson_developer_cloud.natural_language_understanding.features.v1 as Features
 
 
-natural_language_understanding = NaturalLanguageUnderstandingV1(version = '2017-02-27', username = nlu_username, password = nlu_password)
+natural_language_understanding = NaturalLanguageUnderstandingV1(version = "{nlu_version}", username = "{nlu_username}", password = "{nlu_password}")
 
 
 dict_result = {}

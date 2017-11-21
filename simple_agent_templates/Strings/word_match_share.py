@@ -15,6 +15,7 @@ file2 = col_definition2.split("|")[1]
 
 result_id = {id}
 
+field_prefix = "field_"
 output_filename = field_prefix + str(result_id) + ".csv"
 
 df = pd.read_csv(workdir+file1)[[col1]]

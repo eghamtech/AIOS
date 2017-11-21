@@ -1,3 +1,8 @@
+#start_of_parameters
+#key=pers_insights_username;	type=constant; value=username_from_PI_creds
+#key=pers_insights_password;	type=constant; value=password_from_PI_creds
+#end_of_parameters
+
 import pandas as pd
 import numpy as np
 
@@ -6,6 +11,7 @@ col1 = col_definition1.split("|")[0]
 file1 = col_definition1.split("|")[1]
 
 result_id = {id}
+pers_insights_file_prefix = "pi_"
 output_filename = pers_insights_file_prefix + str(result_id) + ".csv"
 
 df = pd.read_csv(workdir+file1)[[col1]]
@@ -17,7 +23,7 @@ df[col_name] = df[col1].map(dict1).fillna('')
 
 ########################################################
 from watson_developer_cloud import PersonalityInsightsV3 as PersonalityInsightsV3
-personality_insights = PersonalityInsightsV3(username= pers_insights_username, password= pers_insights_password)
+personality_insights = PersonalityInsightsV3(username= "{pers_insights_username}", password= "{pers_insights_password}")
 
 
 dict_result = {}

@@ -11,6 +11,7 @@ col1 = col_definition1.split("|")[0]
 file1 = col_definition1.split("|")[1]
 
 result_id = {id}
+field_prefix = "field_"
 output_column = field_prefix + str(result_id)
 output_filename = output_column + ".csv"
 

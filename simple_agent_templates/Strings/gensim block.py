@@ -1,3 +1,7 @@
+#start_of_parameters
+#key=google_news_file_path;	type=constant; value=../GoogleNews-vectors-negative300.bin.gz
+#end_of_parameters
+
 import pandas as pd
 import gensim
 from scipy.stats import skew, kurtosis
@@ -69,9 +73,9 @@ func = lambda s: s[:1].lower() + s[1:] if s else ''
 
 
 print ("loading models...")
-model = gensim.models.KeyedVectors.load_word2vec_format(google_news_file_path, binary=True)
+model = gensim.models.KeyedVectors.load_word2vec_format(workdir + "{google_news_file_path}", binary=True)
 print ("model1 loaded. next...")
-norm_model = gensim.models.KeyedVectors.load_word2vec_format(google_news_file_path, binary=True)
+norm_model = gensim.models.KeyedVectors.load_word2vec_format(workdir + "{google_news_file_path}", binary=True)
 print ("norm_model loaded")
 norm_model.init_sims(replace=True)
 print ("ok")

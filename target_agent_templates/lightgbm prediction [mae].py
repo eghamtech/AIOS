@@ -16,6 +16,9 @@
 #key=boost_from_average;	type=random_from_set;		set=True,False
 #end_of_genes_definitions
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import pandas as pd
 import lightgbm as lgb
 

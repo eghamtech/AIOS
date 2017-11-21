@@ -35,6 +35,9 @@
 #key=k_gbm;					type=random_float;	from=0;		to=1;		step=0.01
 #end_of_genes_definitions
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import pandas as pd
 import xgboost as xgb
 import lightgbm as lgb

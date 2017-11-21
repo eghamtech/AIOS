@@ -8,6 +8,7 @@ col2 = col_definition2.split("|")[0]
 file2 = col_definition2.split("|")[1]
 
 result_id = {id}
+field_prefix = "field_"
 output_column = field_prefix + str(result_id)
 output_filename = output_column + ".csv"
 
