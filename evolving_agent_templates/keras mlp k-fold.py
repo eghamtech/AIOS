@@ -1,7 +1,7 @@
 #start_of_genes_definitions
-#key=fields_to_use; 	type=random_int;	from=40;	to=58;	step=1
-#key=data; 				    type=random_array_of_fields;	length=58
-#key=nfolds; 			    type=random_int;	from=2;		to=10;	step=1
+#key=fields_to_use;   type=random_int;	from=40;	to=58;	step=1
+#key=data;            type=random_array_of_fields;	length=58
+#key=nfolds;          type=random_int;	from=2;		to=10;	step=1
 #end_of_genes_definitions
 
 import warnings
