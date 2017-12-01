@@ -147,7 +147,7 @@ mlp_model = Sequential()
 # add hidden layers 
 for i in range(n_layers):
     if i == 0:
-        mlp_model.add(Dense(n_neurons, activation=s_activation, input_dim=n_cols))
+        mlp_model.add(Dense(n_neurons, activation=s_activation, input_shape=(n_cols,1)))
     else:
         mlp_model.add(Dense(n_neurons, activation=s_activation))
 
