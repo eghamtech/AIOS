@@ -2,8 +2,8 @@
 #key=fields_to_use;  type=random_int;  from=40;	to=58;	step=1
 #key=data;            type=random_array_of_fields;	length=58
 #key=folds;           type=random_int;	from=10;	to=10;	step=1
-#key=optimizer;	      type=random_from_set;         set='TFOptimizer','sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
-#key=activation;      type=random_from_set;         set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','linear'
+#key=optimizer;	      type=random_from_set;         set=TFOptimizer,sgd,rmsprop,adagrad,adadelta,adam,adamax,nadam
+#key=activation;      type=random_from_set;         set=relu,elu,selu,tanh,sigmoid,hard_sigmoid,softplus,softsign,softmax,linear
 #key=layers;          type=random_int;	from=2;		to=10;	step=1
 #key=neurons;         type=random_int;	from=4;	    to=256;	step=1   
 #key=batch_size;      type=random_int;	from=5;	    to=256;	step=1
