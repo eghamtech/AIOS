@@ -13,6 +13,7 @@
 #key=neurons;         type=random_int;	from=4;	    to=256;	step=1   
 #key=batch_size;      type=random_int;	from=5;	    to=256;	step=1
 #key=epochs;          type=random_int;	from=5;	    to=100; step=1
+#key=dropout;         type=random_float;	from=0.02;	to=0.5;	step=0.02
 #end_of_genes_definitions
 
 import warnings
@@ -95,10 +96,11 @@ df = pd.read_csv(workdir+target_file)[[target_col]]
 
 # read each required field's data from a corresponding CSV file
 # number of fields actually read specified in {fields_to_use} gene
+n_fields_to_use = {fields_to_use}
 cols_count = 0
 for i in range(0,len(data_defs)):
     cols_count+=1
-    if cols_count>{fields_to_use}:
+    if cols_count>n_fields_to_use:
         break
     col_name = data_defs[i].split("|")[0]
     file_name = data_defs[i].split("|")[1]
@@ -114,12 +116,11 @@ print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
 # analyse target column whether it is binary which may result in different loss function used
 is_binary = df.sort_values(target_col)[target_col].unique().tolist()==[0, 1]
 if is_binary:
-    print ("detected binary target. use LOGLOSS")
-    # param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'binary:logistic', 'eval_metric':'logloss', 'nthread':4}
+    print ("detected binary target; use Binary Cross Entropy loss evaluation")
+    s_loss_function = 'binary_crossentropy'
 else:
-    print ("use MAE")
-    # param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:linear', 'eval_metric':'mae', 'nthread':4}
-
+    print ("detected non-binary target; use MSE loss evaluation")
+    s_loss_function = 'mean_squared_error'
 
 #############################################################
 #                   MAIN LOOP
@@ -129,8 +130,29 @@ from keras.layers         import Dense, Dropout, Flatten
 from keras.callbacks      import EarlyStopping, Callback
 from sklearn.model_selection import StratifiedKFold, KFold
 
+kfolds = {folds}
+s_optimizer = {optimizer}
+s_activation = {activation}
+n_layers = {layers}
+n_neurons = {neurons}
+n_batch_size = {batch_size}
+n_epochs = {epochs}
+n_dropout = {dropout}
+n_cols = len(df.columns)
+
 early_stopper = EarlyStopping( monitor='val_loss', min_delta=0.1, patience=2, verbose=0, mode='auto' )
-kfolds = {nfolds}
+mlp_model = Sequential()
 
+# add hidden layers 
+for i in range(n_layers):
+    if i == 0:
+        mlp_model.add(Dense(n_neurons, activation=s_activation, input_dim=n_cols))
+    else:
+        mpl_model.add(Dense(n_neurons, activation=s_activation))
 
+    mlp_model.add(Dropout(0.2))
 
+# add output layer
+mlp_model.add(Dense(nb_classes, activation='softmax'))
+
+mlp_model.compile(loss=s_loss_function, optimizer=s_optimizer, metrics=['accuracy'])
