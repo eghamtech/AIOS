@@ -199,24 +199,24 @@ for fold in range(0,n_folds):
     y_test = x_test[target_col]
     x_test = x_test.drop(target_col, 1)
 
-    dtrain = xgb.DMatrix( x_train, label=y_train)
-    dtest = xgb.DMatrix( x_test)
+    mlp_history = mlp_model.fit( x_train, y_train,
+                   batch_size=n_batch_size,
+                   epochs=n_epochs,  
+                   verbose=1,
+                   validation_data=(x_test, y_test),
+                   callbacks=[early_stopper] )
     
-    num_round=100000
-    watchlist  = [(dtrain,'train'), (xgb.DMatrix( x_test, label=y_test), 'test')]
-    predictor = xgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
-
-    pred = predictor.predict(dtest)
-    if is_binary:
-        result = my_log_loss(y_test, pred)
-    else:
-        result = sum(abs(y_test-pred))/len(y_test)
-
-    print ("result:", result)
-    weighted_result += result * len(pred)
-    count_records_notnull += len(pred)
+    print(mlp_history.history.keys())
     
-    pred_all_test = predictor.predict(xgb.DMatrix(x_test_orig.drop(target_col, axis=1)))
+    score = mlp_model.evaluate(x_test, y_test, verbose=0)
+    print('Test fold loss:', score[0])
+    print('Test fold accuracy:', score[1])
+    
+    result = score[0]
+    weighted_result += result * len(x_test)
+    count_records_notnull += len(x_test)
+    
+    pred_all_test = mlp_model.predict(x_test_orig.drop(target_col, axis=1), verbose=1)
     
     prediction = np.concatenate([prediction,pred_all_test])
 
@@ -224,9 +224,7 @@ weighted_result = weighted_result/count_records_notnull
 print ("weighted_result:", weighted_result)
 
 #############################################################
-#
 #                   OUTPUT
-#
 #############################################################
 
 if output_mode==1:
