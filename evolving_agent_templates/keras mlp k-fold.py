@@ -149,7 +149,7 @@ for i in range(n_layers):
     if i == 0:
         mlp_model.add(Dense(n_neurons, activation=s_activation, input_dim=n_cols))
     else:
-        mpl_model.add(Dense(n_neurons, activation=s_activation))
+        mlp_model.add(Dense(n_neurons, activation=s_activation))
 
     mlp_model.add(Dropout(n_dropout))
 
