@@ -1,11 +1,11 @@
 #start_of_genes_definitions
-#key=colsample_bytree;	type=random_float;	from=0.4;	to=1;	step=0.05
-#key=subsample; 		type=random_float;	from=0.4;	to=1;	step=0.05
-#key=fields_to_use; 	type=random_int;	from=40;	to=58;	step=1
-#key=data; 				type=random_array_of_fields;	length=58
-#key=eta; 				type=random_float;	from=0.03;	to=0.06;step=0.01
-#key=max_depth; 		type=random_int;	from=6;		to=14;	step=2
-#key=nfolds; 			type=random_int;	from=2;		to=10;	step=1
+#key=colsample_bytree;  type=random_float;  from=0.4;  to=1;  step=0.05
+#key=subsample;  type=random_float;  from=0.4;  to=1;  step=0.05
+#key=fields_to_use;  type=random_int;  from=40;  to=58;  step=1
+#key=data;  type=random_array_of_fields;  length=58
+#key=eta;  type=random_float;  from=0.03;  to=0.06;  step=0.01
+#key=max_depth;  type=random_int;  from=6;  to=14;  step=2
+#key=nfolds;  type=random_int;  from=2;  to=10;  step=1
 #end_of_genes_definitions
 
 import warnings

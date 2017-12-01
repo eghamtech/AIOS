@@ -1,5 +1,5 @@
 #start_of_parameters
-#key=google_news_file_path;	type=constant; value=../GoogleNews-vectors-negative300.bin.gz
+#key=google_news_file_path;  type=constant;  value=../GoogleNews-vectors-negative300.bin.gz
 #end_of_parameters
 
 import pandas as pd

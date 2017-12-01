@@ -1,19 +1,19 @@
 #start_of_genes_definitions
-#key=fields_to_use;			type=random_int;			from=20;	to=300;		step=1
-#key=data;					type=random_array_of_fields;length=300
-#key=u_limit;				type=random_float;			from=0.01;	to=0.4;		step=0.001
-#key=u_limit_apply;			type=random_float;			from=0.01;	to=0.4;		step=0.001
-#key=l_limit;				type=random_float;			from=-0.4;	to=-0.01;	step=0.001
-#key=l_limit_apply;			type=random_float;			from=-0.4;	to=-0.01;	step=0.001
-#key=learning_rate;			type=random_float;			from=0.001;	to=0.06;	step=0.001
-#key=sub_feature;			type=random_float;			from=0.2;	to=1;		step=0.01
-#key=bagging_fraction;		type=random_float;			from=0.2;	to=1;		step=0.01
-#key=bagging_freq;			type=random_int;			from=10;	to=100;		step=1
-#key=num_leaves;			type=random_int;			from=512;	to=4096;	step=5
-#key=min_data;				type=random_int;			from=100;	to=2000;	step=5
-#key=feature_fraction_seed;	type=random_int;			from=1;		to=10;		step=1
-#key=bagging_seed;			type=random_int;			from=1;		to=10;		step=1
-#key=boost_from_average;	type=random_from_set;		set=True,False
+#key=fields_to_use;  type=random_int;  from=20;  to=300;  step=1
+#key=data;  type=random_array_of_fields;  length=300
+#key=u_limit;  type=random_float;  from=0.01;  to=0.4;  step=0.001
+#key=u_limit_apply;  type=random_float;  from=0.01;  to=0.4;  step=0.001
+#key=l_limit;  type=random_float;  from=-0.4;  to=-0.01;  step=0.001
+#key=l_limit_apply;  type=random_float;  from=-0.4;  to=-0.01;  step=0.001
+#key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
+#key=sub_feature;  type=random_float;  from=0.2;  to=1;  step=0.01
+#key=bagging_fraction;  type=random_float;  from=0.2;  to=1;  step=0.01
+#key=bagging_freq;  type=random_int;  from=10;  to=100;  step=1
+#key=num_leaves;  type=random_int;  from=512;  to=4096;  step=5
+#key=min_data;  type=random_int;  from=100;  to=2000;  step=5
+#key=feature_fraction_seed;  type=random_int;  from=1;  to=10;  step=1
+#key=bagging_seed;  type=random_int;  from=1;  to=10;  step=1
+#key=boost_from_average;  type=random_from_set;  set=True,False
 #end_of_genes_definitions
 
 import warnings

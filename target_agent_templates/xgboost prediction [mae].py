@@ -1,14 +1,14 @@
 #start_of_genes_definitions
-#key=max_depth;			type=random_int;	from=2;		to=12;		step=2
-#key=eta;				type=random_float;	from=0.003;	to=0.03;	step=0.0015
-#key=fields_to_use;		type=random_int;	from=20;	to=300;		step=1
-#key=data;				type=random_array_of_fields;	length=300
-#key=colsample_bytree;	type=random_float;	from=0.4;	to=1;		step=0.05
-#key=subsample;			type=random_float;	from=0.4;	to=1;		step=0.05
-#key=u_limit;			type=random_float;	from=0.01;	to=0.4;		step=0.001
-#key=u_limit_apply;		type=random_float;	from=0.01;	to=0.4;		step=0.001
-#key=l_limit;			type=random_float;	from=-0.4;	to=-0.01;	step=0.001
-#key=l_limit_apply;		type=random_float;	from=-0.4;	to=-0.01;	step=0.001
+#key=max_depth;  type=random_int;  from=2;  to=12;  step=2
+#key=eta;  type=random_float;  from=0.003;  to=0.03;  step=0.0015
+#key=fields_to_use;  type=random_int;  from=20;  to=300;  step=1
+#key=data;  type=random_array_of_fields;  length=300
+#key=colsample_bytree;  type=random_float;  from=0.4;  to=1;  step=0.05
+#key=subsample;  type=random_float;  from=0.4;  to=1;  step=0.05
+#key=u_limit;  type=random_float;  from=0.01;  to=0.4;  step=0.001
+#key=u_limit_apply;  type=random_float;  from=0.01;  to=0.4;  step=0.001
+#key=l_limit;  type=random_float;  from=-0.4;  to=-0.01;  step=0.001
+#key=l_limit_apply;  type=random_float;  from=-0.4;  to=-0.01;  step=0.001
 #end_of_genes_definitions
 
 import warnings
