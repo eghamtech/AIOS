@@ -6,11 +6,13 @@
 #start_of_genes_definitions
 #key=fields_to_use;   type=random_int;	from=40;	to=58;	step=1
 #key=data;            type=random_array_of_fields;	length=58
-#key=nfolds;          type=random_int;	from=2;		to=10;	step=1
+#key=folds;           type=random_int;	from=10;	to=10;	step=1
 #key=optimizer;	      type=random_from_set;         set='TFOptimizer','sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
 #key=activation;      type=random_from_set;         set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','linear'
 #key=layers;          type=random_int;	from=2;		to=10;	step=1
-#key=neurons;         type=random_int;	from=4;	    to=256;	step=1        
+#key=neurons;         type=random_int;	from=4;	    to=256;	step=1   
+#key=batch_size;      type=random_int;	from=5;	    to=256;	step=1
+#key=epochs;          type=random_int;	from=5;	    to=100; step=1
 #end_of_genes_definitions
 
 import warnings
@@ -125,7 +127,7 @@ else:
 from keras.models         import Sequential
 from keras.layers         import Dense, Dropout, Flatten
 from keras.callbacks      import EarlyStopping, Callback
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, KFold
 
 early_stopper = EarlyStopping( monitor='val_loss', min_delta=0.1, patience=2, verbose=0, mode='auto' )
 kfolds = {nfolds}
