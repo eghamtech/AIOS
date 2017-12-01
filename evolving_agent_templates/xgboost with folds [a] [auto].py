@@ -21,7 +21,7 @@ field_ev_prefix = "ev_field_"
 output_column = field_ev_prefix + str(result_id)
 output_filename = output_column + ".csv"
 
-target_definition = "{source_field}"
+target_definition = "{field_to_predict}"
 target_col = target_definition.split("|")[0]
 target_file = target_definition.split("|")[1]
 
