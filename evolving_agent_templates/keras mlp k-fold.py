@@ -82,9 +82,7 @@ if target_definition in data_defs:
     data_defs.remove(target_definition)
 
 #############################################################
-#
 #                   DATA PREPARATION
-#
 #############################################################
 
 # read data from the original data file loaded into Memory (specified in Constants as "trainfile")
@@ -226,7 +224,6 @@ print ("weighted_result:", weighted_result)
 #############################################################
 #                   OUTPUT
 #############################################################
-
 if output_mode==1:
     df[output_column] = prediction
     df[[output_column]].to_csv(workdir+output_filename)
