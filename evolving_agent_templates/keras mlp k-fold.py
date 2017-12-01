@@ -8,7 +8,7 @@
 #key=neurons;         type=random_int;	from=4;	    to=256;	step=1   
 #key=batch_size;      type=random_int;	from=5;	    to=256;	step=1
 #key=epochs;          type=random_int;	from=5;	    to=100; step=1
-#key=dropout;         type=random_float;	from=0.02;	to=0.5;	step=0.02
+#key=dropout;         type=random_float;	from=0.02;	to=0.7;	step=0.02
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
