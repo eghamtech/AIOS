@@ -117,19 +117,23 @@ is_binary = df.sort_values(target_col)[target_col].unique().tolist()==[0, 1]
 if is_binary:
     print ("detected binary target; use Binary Cross Entropy loss evaluation")
     s_loss_function = 'binary_crossentropy'
+    n_classes = 1
+    s_output_activation = 'softmax'
 else:
     print ("detected non-binary target; use MSE loss evaluation")
     s_loss_function = 'mean_squared_error'
+    n_classes = 1
+    s_output_activation = 'linear'
 
 #############################################################
-#                   MAIN LOOP
+#                   MLP Model Compiling
 #############################################################
 from keras.models         import Sequential
 from keras.layers         import Dense, Dropout, Flatten
 from keras.callbacks      import EarlyStopping, Callback
-from sklearn.model_selection import StratifiedKFold, KFold
+#from sklearn.model_selection import StratifiedKFold, KFold
 
-kfolds = {folds}
+n_folds = {folds}
 s_optimizer = {optimizer}
 s_activation = {activation}
 n_layers = {layers}
@@ -152,6 +156,84 @@ for i in range(n_layers):
     mlp_model.add(Dropout(n_dropout))
 
 # add output layer
-mlp_model.add(Dense(nb_classes, activation='softmax'))
+mlp_model.add(Dense(n_classes, activation=s_output_activation))
 
 mlp_model.compile(loss=s_loss_function, optimizer=s_optimizer, metrics=['accuracy'])
+
+#############################################################
+#                   MAIN LOOP
+#############################################################
+block = int(len(df)/n_folds)
+
+prediction = []
+
+weighted_result = 0
+count_records_notnull = 0
+
+for fold in range(0,n_folds):
+    print ("\nFOLD", fold, "\n")
+    range_start = fold*block
+    range_end = (fold+1)*block
+    if fold==n_folds-1:
+        range_end = len(df)
+    range_predict = range(range_start, range_end)
+    print ("Fold to predict start", range_start, "; end ", range_end)
+    
+    x_test = df[df.index.isin(range_predict)]
+    x_test.reset_index(drop=True, inplace=True)
+    x_test_orig = x_test.copy()
+    x_test = x_test[x_test[target_col].notnull()]
+    x_test.reset_index(drop=True, inplace=True)
+
+    x_train = df[df.index.isin(range_predict)==False]
+    x_train.reset_index(drop=True, inplace=True)
+    x_train= x_train[x_train[target_col].notnull()]
+    x_train.reset_index(drop=True, inplace=True)
+
+    print ("x_test rows count: " + str(len(x_test)))
+    print ("x_train rows count: " + str(len(x_train)))
+
+    y_train = x_train[target_col]
+    x_train = x_train.drop(target_col, 1)
+
+    y_test = x_test[target_col]
+    x_test = x_test.drop(target_col, 1)
+
+    dtrain = xgb.DMatrix( x_train, label=y_train)
+    dtest = xgb.DMatrix( x_test)
+    
+    num_round=100000
+    watchlist  = [(dtrain,'train'), (xgb.DMatrix( x_test, label=y_test), 'test')]
+    predictor = xgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
+
+    pred = predictor.predict(dtest)
+    if is_binary:
+        result = my_log_loss(y_test, pred)
+    else:
+        result = sum(abs(y_test-pred))/len(y_test)
+
+    print ("result:", result)
+    weighted_result += result * len(pred)
+    count_records_notnull += len(pred)
+    
+    pred_all_test = predictor.predict(xgb.DMatrix(x_test_orig.drop(target_col, axis=1)))
+    
+    prediction = np.concatenate([prediction,pred_all_test])
+
+weighted_result = weighted_result/count_records_notnull
+print ("weighted_result:", weighted_result)
+
+#############################################################
+#
+#                   OUTPUT
+#
+#############################################################
+
+if output_mode==1:
+    df[output_column] = prediction
+    df[[output_column]].to_csv(workdir+output_filename)
+
+    print ("#add_field:"+output_column+",N,"+output_filename)
+else:
+    print ("fitness="+str(weighted_result))
+
