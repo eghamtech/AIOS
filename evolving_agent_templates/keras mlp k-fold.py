@@ -1,10 +1,5 @@
-# AICHOO OS Evolving Agent 
-# Documentation about AIOS and how to create Evolving Agents can be found on our WiKi
-# https://github.com/eghamtech/AIOS/wiki/Evolving-Agents
-# https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
-
 #start_of_genes_definitions
-#key=fields_to_use;   type=random_int;	from=40;	to=58;	step=1
+#key=fields_to_use;  type=random_int;  from=40;	to=58;	step=1
 #key=data;            type=random_array_of_fields;	length=58
 #key=folds;           type=random_int;	from=10;	to=10;	step=1
 #key=optimizer;	      type=random_from_set;         set='TFOptimizer','sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
@@ -16,6 +11,10 @@
 #key=dropout;         type=random_float;	from=0.02;	to=0.5;	step=0.02
 #end_of_genes_definitions
 
+# AICHOO OS Evolving Agent 
+# Documentation about AIOS and how to create Evolving Agents can be found on our WiKi
+# https://github.com/eghamtech/AIOS/wiki/Evolving-Agents
+# https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -68,8 +67,8 @@ field_ev_prefix = "ev_field_"
 output_column = field_ev_prefix + str(result_id)
 output_filename = output_column + ".csv"
 
-# obtain random field which will be the prediction target of this instance
-target_definition = "{source_field}"
+# obtain random field (same for all instances within the evolution) which will be the prediction target for this instance/evolution
+target_definition = "{field_to_predict}"
 # field definition received from the kernel contains two parts: name of the field and CSV filename that holds the actual data
 # load these two parts into variables
 target_col = target_definition.split("|")[0]
@@ -150,7 +149,7 @@ for i in range(n_layers):
     else:
         mpl_model.add(Dense(n_neurons, activation=s_activation))
 
-    mlp_model.add(Dropout(0.2))
+    mlp_model.add(Dropout(n_dropout))
 
 # add output layer
 mlp_model.add(Dense(nb_classes, activation='softmax'))
