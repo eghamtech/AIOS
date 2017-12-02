@@ -216,8 +216,9 @@ for fold in range(0,n_folds):
     count_records_notnull += len(x_test)
     
     if np.isnan(score[0]) or score[1] == 0:
-        print ("fitness=99999")
-        quit()
+               print ('Test Loss is NaN or Accuracy = 0, no point to carry on with more folds')
+               weighted_result = 99999*count_records_notnull      
+               break
     
     pred_all_test = mlp_model.predict(np.array(x_test_orig.drop(target_col, axis=1)), verbose=0)
     pred_all_test = [item for sublist in pred_all_test for item in sublist]
