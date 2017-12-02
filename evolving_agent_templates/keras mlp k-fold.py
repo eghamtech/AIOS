@@ -212,6 +212,10 @@ for fold in range(0,n_folds):
     weighted_result += result * len(x_test)
     count_records_notnull += len(x_test)
     
+    if result == 'nan':
+        print ("fitness=99999")
+        quit()
+    
     pred_all_test = mlp_model.predict(np.array(x_test_orig.drop(target_col, axis=1)), verbose=0)
     pred_all_test = [item for sublist in pred_all_test for item in sublist]
     
