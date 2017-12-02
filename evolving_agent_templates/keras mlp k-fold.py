@@ -215,7 +215,7 @@ for fold in range(0,n_folds):
     weighted_result += result * len(x_test)
     count_records_notnull += len(x_test)
     
-    if np.isnan(score[0]):
+    if np.isnan(score[0]) or score[1] == 0:
         print ("fitness=99999")
         quit()
     
