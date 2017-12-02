@@ -204,6 +204,8 @@ for fold in range(0,n_folds):
                    validation_data=(x_test, y_test),
                    callbacks=[early_stopper] )
     
+    print(pd.DataFrame(mlp_history.history))
+    
     score = mlp_model.evaluate(x_test, y_test, verbose=0)
     print('Test fold loss:', score[0])
     print('Test fold accuracy:', score[1])
