@@ -199,7 +199,7 @@ for fold in range(0,n_folds):
     mlp_history = mlp_model.fit( x_train, y_train,
                    batch_size=n_batch_size,
                    epochs=n_epochs,  
-                   verbose=1,
+                   verbose=0,
                    validation_data=(x_test, y_test),
                    callbacks=[early_stopper] )
     
@@ -211,7 +211,7 @@ for fold in range(0,n_folds):
     weighted_result += result * len(x_test)
     count_records_notnull += len(x_test)
     
-    pred_all_test = mlp_model.predict(np.array(x_test_orig.drop(target_col, axis=1)), verbose=1)
+    pred_all_test = mlp_model.predict(np.array(x_test_orig.drop(target_col, axis=1)), verbose=0)
     pred_all_test = [item for sublist in pred_all_test for item in sublist]
     
     prediction = np.concatenate([prediction,pred_all_test])
