@@ -1,5 +1,6 @@
 #start_of_parameters
 #key=source_filename;  type=constant;  value=train_quora.csv
+#key=target;  type=constant;  value=is_duplicate
 #end_of_parameters
 
 # This script will scan your file for string columns and convert them to dictionaries.
@@ -9,6 +10,7 @@
 # target filename must be same as 
 
 source_filename = "{source_filename}"
+target = "{target}"
 
 ####################################################
 
@@ -38,4 +40,8 @@ for cname in df.columns:
 		is_dict="Y"
 	else:
 		is_dict="N"
-	print ("#add_field:"+cname+","+is_dict+","+newfilename)
+	if cname==target:
+		is_target="Y"
+	else:
+		is_target="N"
+	print ("#add_field:"+cname+","+is_dict+","+newfilename+","+is_target)
