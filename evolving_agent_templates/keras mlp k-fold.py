@@ -2,8 +2,9 @@
 #key=fields_to_use;  type=random_int;  from=5;	to=60;	step=1
 #key=data;            type=random_array_of_fields;	length=60
 #key=folds;           type=random_int;	from=10;	to=10;	step=1
-#key=optimizer;	      type=random_from_set;         set='TFOptimizer','sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
+#key=optimizer;	      type=random_from_set;         set='sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
 #key=activation;      type=random_from_set;         set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
+#key=activation_output;      type=random_from_set;         set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
 #key=layers;          type=random_int;	from=2;		to=10;	step=1
 #key=neurons;         type=random_int;	from=4;	    to=256;	step=1   
 #key=batch_size;      type=random_int;	from=5;	    to=256;	step=1
@@ -116,12 +117,10 @@ if is_binary:
     print ("detected binary target; use Binary Cross Entropy loss evaluation")
     s_loss_function = 'binary_crossentropy'
     n_classes = 1
-    s_output_activation = 'softmax'
 else:
     print ("detected non-binary target; use MSE loss evaluation")
     s_loss_function = 'mean_squared_error'
     n_classes = 1
-    s_output_activation = 'linear'
 
 #############################################################
 #                   MLP Model Compiling
@@ -139,7 +138,7 @@ n_neurons = {neurons}
 n_batch_size = {batch_size}
 n_epochs = {epochs}
 n_dropout = {dropout}
-n_cols = len(df.columns)
+s_output_activation = {activation_output}
 
 early_stopper = EarlyStopping( monitor='val_loss', min_delta=0.1, patience=2, verbose=0, mode='auto' )
 mlp_model = Sequential()
@@ -147,7 +146,7 @@ mlp_model = Sequential()
 # add hidden layers 
 for i in range(n_layers):
     if i == 0:
-        mlp_model.add(Dense(n_neurons, activation=s_activation, input_shape=(n_cols,1)))
+        mlp_model.add(Dense(n_neurons, activation=s_activation, input_dim=n_fields_to_use))
     else:
         mlp_model.add(Dense(n_neurons, activation=s_activation))
 
@@ -191,11 +190,11 @@ for fold in range(0,n_folds):
     print ("x_test rows count: " + str(len(x_test)))
     print ("x_train rows count: " + str(len(x_train)))
 
-    y_train = x_train[target_col]
-    x_train = x_train.drop(target_col, 1)
+    y_train = np.array( x_train[target_col] )
+    x_train = np.array( x_train.drop(target_col, 1) )
 
-    y_test = x_test[target_col]
-    x_test = x_test.drop(target_col, 1)
+    y_test = np.array( x_test[target_col] )
+    x_test = np.array( x_test.drop(target_col, 1) )
 
     mlp_history = mlp_model.fit( x_train, y_train,
                    batch_size=n_batch_size,
@@ -203,8 +202,6 @@ for fold in range(0,n_folds):
                    verbose=1,
                    validation_data=(x_test, y_test),
                    callbacks=[early_stopper] )
-    
-    print(mlp_history.history.keys())
     
     score = mlp_model.evaluate(x_test, y_test, verbose=0)
     print('Test fold loss:', score[0])
@@ -214,7 +211,8 @@ for fold in range(0,n_folds):
     weighted_result += result * len(x_test)
     count_records_notnull += len(x_test)
     
-    pred_all_test = mlp_model.predict(x_test_orig.drop(target_col, axis=1), verbose=1)
+    pred_all_test = mlp_model.predict(np.array(x_test_orig.drop(target_col, axis=1)), verbose=1)
+    pred_all_test = [item for sublist in pred_all_test for item in sublist]
     
     prediction = np.concatenate([prediction,pred_all_test])
 
