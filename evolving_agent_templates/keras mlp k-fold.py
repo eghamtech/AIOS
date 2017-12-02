@@ -45,6 +45,7 @@ rn.seed(12345)
 # non-reproducible results.
 # For further details, see: https://stackoverflow.com/questions/42022950/which-seeds-have-to-be-set-where-to-realize-100-reproducibility-of-training-res
 session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1, log_device_placement=True, allow_soft_placement=True)
+# allocate only as much GPU memory as needed by runtime - otherwise all GPU memory is reserved and mutiple processes cannot use GPU 
 session_conf.gpu_options.allow_growth = True
 
 from keras import backend as K
