@@ -118,10 +118,12 @@ is_binary = df.sort_values(target_col)[target_col].unique().tolist()==[0, 1]
 if is_binary:
     print ("detected binary target; use Binary Cross Entropy loss evaluation")
     s_loss_function = 'binary_crossentropy'
+    s_metrics = 'accuracy'
     n_classes = 1
 else:
     print ("detected non-binary target; use MSE loss evaluation")
     s_loss_function = 'mean_squared_error'
+    s_metrics = 'mean_squared_error'
     n_classes = 1
 
 #############################################################
@@ -157,7 +159,7 @@ for i in range(n_layers):
 # add output layer
 mlp_model.add(Dense(n_classes, activation=s_output_activation))
 
-mlp_model.compile(loss=s_loss_function, optimizer=s_optimizer, metrics=['accuracy'])
+mlp_model.compile(loss=s_loss_function, optimizer=s_optimizer, metrics=[s_metrics])
 
 #############################################################
 #                   MAIN LOOP
