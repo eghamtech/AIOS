@@ -4,10 +4,8 @@
 #end_of_parameters
 
 # This script will scan your file for string columns and convert them to dictionaries.
-# Note, that this operation can be done only once.
 # Provide correct source filename in agent parameters
-# workdir must be setup in 'Constants' area of AIOS
-# target filename must be same as 
+# workdir and trainfile (target filename) must be setup in 'Constants' area of AIOS
 
 source_filename = "{source_filename}"
 target = "{target}"
