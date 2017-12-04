@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import QuantileTransformer
+from sklearn.preprocessing import Imputer
 
 # obtain random field of numerical type
 # restrict selection to those that not already used and not created by the agent
@@ -23,6 +24,14 @@ file1 = col_definition1.split("|")[1]
 # read the data for selected column
 df = pd.read_csv(workdir+file1)[[col1]]
 
+#print( np.argwhere(np.isnan(np.array(df))) )
+#print( np.argwhere(np.isinf(np.array(df))) )
+
+# convert selected field to Numpy Array first and reshape as required by sklearn
+np_column = np.array(df[col1]).reshape(-1, 1)
+# replace NaN with mean values
+np_column = Imputer().fit_transform(np_column)
+
 # obtain a unique ID for the current instance
 result_id = {id}
 
@@ -30,9 +39,9 @@ result_id = {id}
 # and filename to save new field data
 output_column = "scaled_" + col1 + "_ss_" + str(result_id)
 output_filename = output_column + ".csv"
-# use sklearn library to scale col1 in df, it needs to be reshaped and converted to Numpy Array first
+# use sklearn library to scale col1 in df, pre-processed as np_column
 scaler = StandardScaler()
-df[output_column] = scaler.fit_transform(np.array(df[col1]).reshape(-1, 1))
+df[output_column] = scaler.fit_transform(np_column)
 df[[output_column]].to_csv(workdir+output_filename)
 print ("StandardScaler("+col1+")")
 print ("#add_field:"+output_column+",N,"+output_filename)
@@ -41,9 +50,9 @@ print ("#add_field:"+output_column+",N,"+output_filename)
 # and filename to save new field data
 output_column = "scaled_" + col1 + "_mm_" + str(result_id)
 output_filename = output_column + ".csv"
-# use sklearn library to scale col1 in df, it needs to be reshaped and converted to Numpy Array first
+# use sklearn library to scale col1 in df, pre-processed as np_column
 scaler = MinMaxScaler()
-df[output_column] = scaler.fit_transform(np.array(df[col1]).reshape(-1, 1))
+df[output_column] = scaler.fit_transform(np_column)
 df[[output_column]].to_csv(workdir+output_filename)
 print ("MinMaxScaler("+col1+")")
 print ("#add_field:"+output_column+",N,"+output_filename)
@@ -52,9 +61,9 @@ print ("#add_field:"+output_column+",N,"+output_filename)
 # and filename to save new field data
 output_column = "scaled_" + col1 + "_qt_" + str(result_id)
 output_filename = output_column + ".csv"
-# use sklearn library to scale col1 in df, it needs to be reshaped and converted to Numpy Array first
+# use sklearn library to scale col1 in df, pre-processed as np_column
 scaler = QuantileTransformer(n_quantiles=100)
-df[output_column] = scaler.fit_transform(np.array(df[col1]).reshape(-1, 1))
+df[output_column] = scaler.fit_transform(np_column)
 df[[output_column]].to_csv(workdir+output_filename)
 print ("QuantileTransformer("+col1+")")
 print ("#add_field:"+output_column+",N,"+output_filename)
