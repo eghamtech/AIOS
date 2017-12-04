@@ -12,7 +12,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import QuantileTransformer
 
 # obtain random field of numerical type
-col_definition1 = "{random_field_numeric}"
+# restrict selection to those that not already used and not created by the agent
+col_definition1 = "{random_field_numeric_distinct}"
 # field definition received from the kernel contains two parts: name of the field and CSV filename that holds the actual data
 # load these two parts into variables
 col1 = col_definition1.split("|")[0]
