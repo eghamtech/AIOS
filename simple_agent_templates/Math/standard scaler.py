@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.preprocessing import Imputer
+from numpy import inf
 
 # obtain random field of numerical type
 # restrict selection to those that not already used and not created by the agent
@@ -29,6 +30,13 @@ df = pd.read_csv(workdir+file1)[[col1]]
 
 # convert selected field to Numpy Array first and reshape as required by sklearn
 np_column = np.array(df[col1]).reshape(-1, 1)
+# find max and min values ignoring NaN and INF values
+np_column_max = np.ma.masked_invalid(np_column).max()
+np_column_min = np.ma.masked_invalid(np_column).min() 
+# replace INF and -INF with above
+np_column[np_column == inf] = np_column_max
+np_column[np_column == -inf] = np_column_min
+
 # replace NaN with mean values
 np_column = Imputer().fit_transform(np_column)
 
