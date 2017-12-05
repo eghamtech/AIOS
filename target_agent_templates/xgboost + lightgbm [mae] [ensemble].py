@@ -65,8 +65,10 @@ for i in range(0,len(data_defs)):
 print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
 
 x_test = df.copy(deep=True).iloc[1::2]
+x_test = x_test[x_test[target].notnull()]
 x_test.reset_index(drop=True, inplace=True)
 x_train = df.copy(deep=True).iloc[0::2]
+x_train = x_train[x_train[target].notnull()]
 x_train.reset_index(drop=True, inplace=True)
 
 print ("train " + target + " mean:", x_train[target].mean())
@@ -100,6 +102,7 @@ print ("XGB-1 done with result:", result)
 
 
 x_train = df.copy(deep=True).iloc[0::2]
+x_train = x_train[x_train[target].notnull()]
 x_train.reset_index(drop=True, inplace=True)
 
 print ("train " + target + " mean:", x_train[target].mean())
@@ -144,6 +147,7 @@ params['num_threads'] = 4
 params['boost_from_average'] = {boost_from_average}
 
 x_train = df.copy(deep=True).iloc[0::2]
+x_train = x_train[x_train[target].notnull()]
 x_train.reset_index(drop=True, inplace=True)
 
 print ("train " + target + " mean:", x_train[target].mean())
