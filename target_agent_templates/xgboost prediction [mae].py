@@ -42,8 +42,10 @@ print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
 param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:linear', 'eval_metric':'mae', 'nthread':4}
 
 x_test = df.copy(deep=True).iloc[1::2]
+x_test = x_test[x_test[target].notnull()]
 x_test.reset_index(drop=True, inplace=True)
 x_train = df.copy(deep=True).iloc[0::2]
+x_train = x_train[x_train[target].notnull()]
 x_train.reset_index(drop=True, inplace=True)
 
 print ("train " + target + " mean:", x_train[target].mean())
