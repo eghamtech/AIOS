@@ -60,4 +60,4 @@ else:
     # output field names into log
     print (col1+"+"+col2)
     # register new field/column in AIOS
-    print ("#add_field:"+output_column+",Y,"+output_filename)
+    print ("#add_field:"+output_column+",Y,"+output_filename+","+str(len(df)))
