@@ -16,5 +16,5 @@ df[output_column] = df[col1]**3
 df[[output_column]].to_csv(workdir+output_filename)
 
 print (col1+"**3")
-print ("#add_field:"+output_column+",N,"+output_filename)
+print ("#add_field:"+output_column+",N,"+output_filename+","+str(len(df)))
 
