@@ -134,9 +134,11 @@ x.columns = cnames
 
 total_cols = 27
 
+nrow = len(x)
+
 for i in range(1,total_cols+1):
     fld = fldprefix + '_' + str(i)
     fname = fld + '.csv'
     x[[fld]].to_csv(workdir+fname)
-    print ("#add_field:"+fld+",N,"+fname)
+    print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
