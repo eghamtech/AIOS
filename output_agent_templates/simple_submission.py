@@ -8,6 +8,7 @@
 import pandas as pd
 
 default_num_round = {default_num_round}
+outfile = "{outfile}"
 
 {run_dna {DNA_ID}}
 
