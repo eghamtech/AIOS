@@ -131,5 +131,3 @@ for i in range(1,14):
     fname = fld + '.csv'
     df[[fld]].to_csv(workdir+fname)
     print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
-
-
