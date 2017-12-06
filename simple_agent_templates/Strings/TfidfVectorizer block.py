@@ -80,11 +80,13 @@ for index, row in df.iterrows():
         i=0
         print (index)
 
-        
+
+nrow = len(df)
+
 for i in range(1,7):
     fld = fldprefix + '_' + str(i)
     fname = fld + '.csv'
     df[[fld]].to_csv(workdir+fname)
-    print ("#add_field:"+fld+",N,"+fname)
+    print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
 
