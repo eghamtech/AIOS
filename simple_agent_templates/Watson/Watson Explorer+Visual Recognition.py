@@ -149,7 +149,8 @@ else:
         df.loc[:,'vr'+str(result_id)+'_1':].to_csv(workdir+output_filename)
 
         field_idx = 0
+        nrow = len(df)
         for skey in sorted_keys:
             field_idx += 1
-            print ("#add_field:vr"+str(result_id)+'_'+str(field_idx)+",N,"+output_filename)
+            print ("#add_field:vr"+str(result_id)+'_'+str(field_idx)+",N,"+output_filename+","+str(nrow))
 
