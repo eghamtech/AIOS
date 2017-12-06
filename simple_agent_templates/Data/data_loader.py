@@ -32,7 +32,9 @@ for cname in char_cols:
 	pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv')    #save new column dict
 
 df.to_csv(workdir+newfilename, index=False)
-	
+
+nrow = len(df)
+
 for cname in df.columns:
 	if cname in char_cols:
 		is_dict="Y"
@@ -42,4 +44,4 @@ for cname in df.columns:
 		is_target="Y"
 	else:
 		is_target="N"
-	print ("#add_field:"+cname+","+is_dict+","+newfilename+","+is_target)
+	print ("#add_field:"+cname+","+is_dict+","+newfilename+","+is_target+","+str(nrow))
