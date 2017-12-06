@@ -16,4 +16,4 @@ df[output_column] = np.sqrt(df[col1])
 df[[output_column]].to_csv(workdir+output_filename)
 
 print ("sqrt("+col1+")")
-print ("#add_field:"+output_column+",N,"+output_filename)
+print ("#add_field:"+output_column+",N,"+output_filename+","+str(len(df)))
