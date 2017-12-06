@@ -37,8 +37,11 @@ df[fldprefix + '_9'] = df[col1].apply(lambda x: ('!' in set(x))+0 if type(type)=
 print (9)
 
 total_cols = 9
+
+nrow = len(df)
+
 for i in range(1,total_cols+1):
     fld = fldprefix + '_' + str(i)
     fname = fld + '.csv'
     df[[fld]].to_csv(workdir+fname)
-    print ("#add_field:"+fld+",N,"+fname)
+    print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
