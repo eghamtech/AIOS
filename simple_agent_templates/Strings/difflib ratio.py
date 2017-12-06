@@ -64,6 +64,8 @@ for i in range(1,2):
     
 df[newfields].to_csv(workdir+output_filename)
 
+nrow = len(df)
+
 for fld in newfields:
-    print ("#add_field:"+fld+",N,"+output_filename)
+    print ("#add_field:"+fld+",N,"+output_filename+","+str(nrow))
 
