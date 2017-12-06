@@ -128,5 +128,6 @@ print ("writing file " + output_filename)
 
 df[cols].to_csv(workdir+output_filename)
 
+nrow = len(df)
 for col1 in cols:
-    print ("#add_field:"+col1+",N,"+output_filename)
+    print ("#add_field:"+col1+",N,"+output_filename+","+str(nrow))
