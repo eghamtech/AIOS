@@ -123,12 +123,13 @@ for index, row in df.iterrows():
         print (index)
 
 df[[fldprefix + '_3',fldprefix + '_5',fldprefix + '_9']]=df[[fldprefix + '_3',fldprefix + '_5',fldprefix + '_9']].fillna(value=1.0)
-        
-        
+
+nrow = len(df)
+
 for i in range(1,14):
     fld = fldprefix + '_' + str(i)
     fname = fld + '.csv'
     df[[fld]].to_csv(workdir+fname)
-    print ("#add_field:"+fld+",N,"+fname)
+    print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
 
