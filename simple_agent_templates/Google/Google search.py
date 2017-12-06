@@ -101,5 +101,5 @@ else:
         df[output_column] = df[output_column].map(dict_out)    #convert new column to dict
         pd.DataFrame(list(dict_out.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+output_column+'.csv')    #save new column dict
         df[[output_column]].to_csv(workdir+output_filename)
-        print ("#add_field:"+output_column+",Y,"+output_filename)
+        print ("#add_field:"+output_column+",Y,"+output_filename+","+str(len(df)))
 
