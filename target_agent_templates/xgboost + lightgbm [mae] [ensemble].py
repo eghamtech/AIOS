@@ -35,6 +35,10 @@
 #key=k_gbm;  type=random_float;  from=0;  to=1;  step=0.01
 #end_of_genes_definitions
 
+
+if not ('output_mode' in locals()):
+    output_mode = False
+
 import warnings
 warnings.filterwarnings("ignore")
 
