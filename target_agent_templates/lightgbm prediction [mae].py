@@ -16,6 +16,9 @@
 #key=boost_from_average;  type=random_from_set;  set=True,False
 #end_of_genes_definitions
 
+if not ('output_mode' in locals()):
+    output_mode = False
+
 import warnings
 warnings.filterwarnings("ignore")
 
