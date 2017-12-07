@@ -61,13 +61,25 @@ params['max_depth'] = -1
 params['num_threads'] = 4
 params['boost_from_average'] = {boost_from_average}
 
-x_test = df.copy(deep=True).iloc[1::2]
-x_test = x_test[x_test[target].notnull()]
-x_test.reset_index(drop=True, inplace=True)
-x_train = df.copy(deep=True).iloc[0::2]
-x_train = x_train[x_train[target].notnull()]
-x_train.reset_index(drop=True, inplace=True)
-
+if not output_mode:
+    x_test = df.copy(deep=True).iloc[1::2]
+    x_test = x_test[x_test[target].notnull()]
+    x_test.reset_index(drop=True, inplace=True)
+    x_train = df.copy(deep=True).iloc[0::2]
+    x_train = x_train[x_train[target].notnull()]
+    x_train.reset_index(drop=True, inplace=True)
+    
+    y_test = x_test[target]
+    
+    num_round = 10000
+else:
+    x_test = df[df[target].isnull()]
+    x_test.reset_index(drop=True, inplace=True)
+    x_train = df[df[target].notnull()]
+    x_train.reset_index(drop=True, inplace=True)
+    
+    num_round = default_num_round
+    
 print ("train " + target + " mean:", x_train[target].mean())
 x_train.loc[x_train[target]>{u_limit}, target] = {u_limit_apply}
 x_train.loc[x_train[target]<{l_limit}, target] = {l_limit_apply}
@@ -79,17 +91,21 @@ print ("x_train rows count: " + str(len(x_train)))
 y_train = x_train[target]
 x_train = x_train.drop(target, 1)
 
-y_test = x_test[target]
 x_test = x_test.drop(target, 1)
 
 d_train = lgb.Dataset(x_train, label=y_train)
-d_valid = lgb.Dataset(x_test, label=y_test)
+if not output_mode:
+	d_valid = lgb.Dataset(x_test, label=y_test)
+else:
+    d_valid = lgb.Dataset(x_train, label=y_train)
+
 watchlist = [d_valid]
 print("\nFitting LightGBM model ...")
-predictor = lgb.train(params, d_train, 10000, watchlist, verbose_eval = 100, early_stopping_rounds=100)
+predictor = lgb.train(params, d_train, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100)
 
 prediction = predictor.predict(x_test)
-result = sum(abs(y_test-prediction))/len(y_test)
 
-print ("fitness="+str(result))
+if not output_mode:
+	result = sum(abs(y_test-prediction))/len(y_test)
+	print ("fitness="+str(result))
 
