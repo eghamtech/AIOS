@@ -11,6 +11,9 @@
 #key=l_limit_apply;  type=random_float;  from=-0.4;  to=-0.01;  step=0.001
 #end_of_genes_definitions
 
+if not ('output_mode' in locals()):
+    output_mode = False
+
 import warnings
 warnings.filterwarnings("ignore")
 
