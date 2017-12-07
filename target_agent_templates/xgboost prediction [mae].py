@@ -41,12 +41,24 @@ print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
 
 param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:linear', 'eval_metric':'mae', 'nthread':4}
 
-x_test = df.copy(deep=True).iloc[1::2]
-x_test = x_test[x_test[target].notnull()]
-x_test.reset_index(drop=True, inplace=True)
-x_train = df.copy(deep=True).iloc[0::2]
-x_train = x_train[x_train[target].notnull()]
-x_train.reset_index(drop=True, inplace=True)
+if not output_mode:
+    x_test = df.copy(deep=True).iloc[1::2]
+    x_test = x_test[x_test[target].notnull()]
+    x_test.reset_index(drop=True, inplace=True)
+    x_train = df.copy(deep=True).iloc[0::2]
+    x_train = x_train[x_train[target].notnull()]
+    x_train.reset_index(drop=True, inplace=True)
+    
+    y_test = x_test[target]
+    
+    num_round = 100000
+else:
+    x_test = df[df[target].isnull()]
+    x_test.reset_index(drop=True, inplace=True)
+    x_train = df[df[target].notnull()]
+    x_train.reset_index(drop=True, inplace=True)
+    
+    num_round = default_num_round
 
 print ("train " + target + " mean:", x_train[target].mean())
 x_train.loc[x_train[target]>{u_limit}, target] = {u_limit_apply}
@@ -59,18 +71,20 @@ print ("x_train rows count: " + str(len(x_train)))
 y_train = x_train[target]
 x_train = x_train.drop(target, 1)
 
-y_test = x_test[target]
 x_test = x_test.drop(target, 1)
 
 dtrain = xgb.DMatrix( x_train, label=y_train)
 dtest = xgb.DMatrix( x_test)
 
-num_round=10000
-watchlist  = [(dtrain,'train'), (xgb.DMatrix( x_test, label=y_test), 'test')]
+if not output_mode:
+	watchlist  = [(dtrain,'train'), (xgb.DMatrix( x_test, label=y_test), 'test')]
+else:
+    watchlist  = [(dtrain,'train')]
+
 predictor = xgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
-
 prediction = predictor.predict(dtest)
-result = sum(abs(y_test-prediction))/len(y_test)
 
-print ("fitness="+str(result))
+if not output_mode:
+	result = sum(abs(y_test-prediction))/len(y_test)
+	print ("fitness="+str(result))
 
