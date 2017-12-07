@@ -7,6 +7,9 @@
 #key=subsample;  type=random_float;  from=0.4;  to=1;  step=0.05
 #end_of_genes_definitions
 
+if not ('output_mode' in locals()):
+    output_mode = False
+
 import warnings
 warnings.filterwarnings("ignore")
 
