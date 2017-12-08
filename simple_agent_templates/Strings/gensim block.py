@@ -1,6 +1,8 @@
 #start_of_parameters
-#key=google_news_file_path;  type=constant;  value=../GoogleNews-vectors-negative300.bin.gz
+#key=google_news_file_path;  type=constant;  value=enter_google_news_file_path
 #end_of_parameters
+
+# possible value of google_news_file_path is ../GoogleNews-vectors-negative300.bin.gz
 
 import pandas as pd
 import gensim
