@@ -1,6 +1,6 @@
 #start_of_parameters
-#key=source_filename;  type=constant;  value=train_quora.csv
-#key=target;  type=constant;  value=is_duplicate
+#key=source_filename;  type=constant;  value=enter_source_filename
+#key=target;  type=constant;  value=enter_target
 #end_of_parameters
 
 # This script will scan your file for string columns and convert them to dictionaries.
