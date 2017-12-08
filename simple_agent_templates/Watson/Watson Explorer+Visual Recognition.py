@@ -1,6 +1,6 @@
 #start_of_parameters
-#key=vr_api_date;  type=constant;  value=2016-05-20
-#key=vr_key;  type=constant;  value=key_from_vr_credentials
+#key=vr_api_date;  type=constant;  value=enter_vr_api_date
+#key=vr_key;  type=constant;  value=enter_vr_key
 #end_of_parameters
 
 import pandas as pd
