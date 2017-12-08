@@ -1,7 +1,7 @@
 #start_of_parameters
-#key=nlu_version;  type=constant;  value=2017-02-27
-#key=nlu_username;  type=constant;  value=username_from_nlu_credentials
-#key=nlu_password;  type=constant;  value=password
+#key=nlu_version;  type=constant;  value=enter_nlu_version
+#key=nlu_username;  type=constant;  value=enter_nlu_username
+#key=nlu_password;  type=constant;  value=enter_nlu_password
 #end_of_parameters
 
 import pandas as pd
