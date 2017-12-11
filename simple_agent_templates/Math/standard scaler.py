@@ -24,6 +24,7 @@ file1 = col_definition1.split("|")[1]
 # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
 # read the data for selected column
 df = pd.read_csv(workdir+file1)[[col1]]
+nrow = len(df)
 
 #print( np.argwhere(np.isnan(np.array(df))) )
 #print( np.argwhere(np.isinf(np.array(df))) )
@@ -52,7 +53,7 @@ scaler = StandardScaler()
 df[output_column] = scaler.fit_transform(np_column)
 df[[output_column]].to_csv(workdir+output_filename)
 print ("StandardScaler("+col1+")")
-print ("#add_field:"+output_column+",N,"+output_filename)
+print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
 
 # create new field name with unique instance ID
 # and filename to save new field data
@@ -63,7 +64,7 @@ scaler = MinMaxScaler()
 df[output_column] = scaler.fit_transform(np_column)
 df[[output_column]].to_csv(workdir+output_filename)
 print ("MinMaxScaler("+col1+")")
-print ("#add_field:"+output_column+",N,"+output_filename)
+print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
 
 # create new field name with unique instance ID
 # and filename to save new field data
@@ -74,4 +75,4 @@ scaler = QuantileTransformer(n_quantiles=100)
 df[output_column] = scaler.fit_transform(np_column)
 df[[output_column]].to_csv(workdir+output_filename)
 print ("QuantileTransformer("+col1+")")
-print ("#add_field:"+output_column+",N,"+output_filename)
+print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
