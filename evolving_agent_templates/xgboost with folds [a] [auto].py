@@ -56,7 +56,27 @@ for i in range(0,len(data_defs)):
 
 print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
 
-is_binary = df.sort_values(target_col)[target_col].unique().tolist()==[0, 1]
+import os.path
+import sys
+if output_mode==1:
+    if os.path.isfile(workdir + output_filename):
+        df_old = pd.read_csv(workdir + output_filename)
+        if len(df)-len(df_old)==1: # incremental mode
+            if os.path.isfile(workdir + output_column + ".model"):
+                df[output_column] = df_old[output_column]
+                predictor = xgb.Booster()
+                predictor.load_model(workdir + output_column + ".model")
+                x_test = df[-1:]
+                x_test = x_test.drop(target_col, 1)
+                dtest = xgb.DMatrix( x_test)
+                pred = predictor.predict(dtest)
+                nrow = len(df)
+                df.at[nrow-1, output_column] = pred[0]
+                df[[output_column]].to_csv(workdir+output_filename)
+                print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
+                sys.exit()
+
+is_binary = df[df[target_col].notnull()].sort_values(target_col)[target_col].unique().tolist()==[0, 1]
 
 if is_binary:
     print ("detected binary target. use LOGLOSS")
@@ -125,6 +145,9 @@ for fold in range(0,nfolds):
     watchlist  = [(dtrain,'train'), (xgb.DMatrix( x_test, label=y_test), 'test')]
     predictor = xgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
 
+    if output_mode==1 and fold==nfolds-1:
+        predictor.save_model(workdir + output_column + ".model")
+    
     pred = predictor.predict(dtest)
     if is_binary:
         result = my_log_loss(y_test, pred)
