@@ -1,8 +1,8 @@
 #start_of_genes_definitions
 #key=colsample_bytree;  type=random_float;  from=0.4;  to=1;  step=0.05
 #key=subsample;  type=random_float;  from=0.4;  to=1;  step=0.05
-#key=fields_to_use;  type=random_int;  from=40;  to=100;  step=1
-#key=data;  type=random_array_of_fields;  length=100
+#key=fields_to_use;  type=random_int;  from=40;  to=70;  step=1
+#key=data;  type=random_array_of_fields;  length=70
 #key=eta;  type=random_float;  from=0.1;  to=0.3;  step=0.01
 #key=max_depth;  type=random_int;  from=6;  to=14;  step=2
 #key=nfolds;  type=random_int;  from=2;  to=2;  step=1
