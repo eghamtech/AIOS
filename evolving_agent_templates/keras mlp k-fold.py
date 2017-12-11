@@ -118,9 +118,9 @@ with tf.device(s_tf_device):
                 df = df.merge(pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
 
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
-
+                
         # analyse target column whether it is binary which may result in different loss function used
-        is_binary = df.sort_values(target_col)[target_col].unique().tolist()==[0, 1]
+        is_binary = df[df[target_col].notnull()].sort_values(target_col)[target_col].unique().tolist()==[0, 1]
         if is_binary:
             print ("detected binary target; use Binary Cross Entropy loss evaluation")
             s_loss_function = 'binary_crossentropy'
@@ -135,11 +135,31 @@ with tf.device(s_tf_device):
         #############################################################
         #                   MLP Model Compiling
         #############################################################
-        from keras.models         import Sequential
+        from keras.models         import Sequential, load_model
         from keras.layers         import Dense, Dropout, Flatten
         from keras.callbacks      import EarlyStopping, Callback
         #from sklearn.model_selection import StratifiedKFold, KFold
-
+        
+        # if agent is called in predictive incremental mode, check if model already exists and apply existing model
+        import os.path
+        import sys
+        if output_mode==1:
+             if os.path.isfile(workdir + output_filename):
+                  df_old = pd.read_csv(workdir + output_filename)
+                  if len(df)-len(df_old)==1: # incremental mode
+                       if os.path.isfile(workdir + output_column + ".model"):
+                                df[output_column] = df_old[output_column]
+                                mlp_model = load_model(workdir + output_column + ".model")
+                                x_test = df[-1:]
+                                x_test = x_test.drop(target_col, 1)
+                                pred = mlp_model.predict(np.array(x_test), verbose=0)
+                                nrow = len(df)
+                                df.at[nrow-1, output_column] = pred[0]
+                                df[[output_column]].to_csv(workdir+output_filename)
+                                print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
+                                sys.exit()
+                                
+                                
         n_folds = {folds}
         s_optimizer = {optimizer}
         s_activation = {activation}
@@ -150,7 +170,7 @@ with tf.device(s_tf_device):
         n_dropout = {dropout}
         s_output_activation = {activation_output}
 
-        early_stopper = EarlyStopping( monitor='val_loss', min_delta=0.1, patience=2, verbose=0, mode='auto' )
+        early_stopper = EarlyStopping( monitor='val_loss', min_delta=0.05, patience=2, verbose=0, mode='auto' )
         mlp_model = Sequential()
 
         # add hidden layers 
@@ -218,6 +238,9 @@ with tf.device(s_tf_device):
             score = mlp_model.evaluate(x_test, y_test, verbose=0)
             print('Test fold loss:', score[0])
             print('Test fold accuracy:', score[1])
+                
+            if output_mode==1 and fold==n_folds-1:
+                    mlp_model.save(workdir + output_column + ".model")
 
             result = score[0]
             weighted_result += result * len(x_test)
@@ -242,8 +265,9 @@ with tf.device(s_tf_device):
         if output_mode==1:
             df[output_column] = prediction
             df[[output_column]].to_csv(workdir+output_filename)
-
-            print ("#add_field:"+output_column+",N,"+output_filename)
+                
+            nrow = len(df)
+            print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
         else:
             print ("fitness="+str(weighted_result))
 
