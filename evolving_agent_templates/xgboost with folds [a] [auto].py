@@ -68,6 +68,7 @@ if output_mode==1:
                 predictor.load_model(workdir + output_column + ".model")
                 x_test = df[-1:]
                 x_test = x_test.drop(target_col, 1)
+                x_test = x_test.drop(output_column, 1)
                 dtest = xgb.DMatrix( x_test)
                 pred = predictor.predict(dtest)
                 nrow = len(df)
