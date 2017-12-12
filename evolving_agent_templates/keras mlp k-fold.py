@@ -152,6 +152,7 @@ with tf.device(s_tf_device):
                                 mlp_model = load_model(workdir + output_column + ".model")
                                 x_test = df[-1:]
                                 x_test = x_test.drop(target_col, 1)
+                                x_test = x_test.drop(output_column, 1)
                                 pred = mlp_model.predict(np.array(x_test), verbose=0)
                                 nrow = len(df)
                                 df.at[nrow-1, output_column] = pred[0]
