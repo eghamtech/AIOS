@@ -8,176 +8,174 @@
 #key=nfolds;  type=random_int;  from=2;  to=2;  step=1
 #end_of_genes_definitions
 
-import warnings
-warnings.filterwarnings("ignore")
+class cls_ev_agent_{id}:
+    import warnings
+    warnings.filterwarnings("ignore")
 
-import pandas as pd
-import xgboost as xgb
-import numpy as np
-import math
+    import pandas as pd
+    import xgboost as xgb
+    import numpy as np
+    import math
+    import os.path
 
-result_id = {id}
-field_ev_prefix = "ev_field_"
-output_column = field_ev_prefix + str(result_id)
-output_filename = output_column + ".csv"
+    result_id = {id}
+    field_ev_prefix = "ev_field_"
+    output_column = field_ev_prefix + str(result_id)
+    output_filename = output_column + ".csv"
 
-target_definition = "{field_to_predict}"
-target_col = target_definition.split("|")[0]
-target_file = target_definition.split("|")[1]
+    target_definition = "{field_to_predict}"
+    target_col = target_definition.split("|")[0]
+    target_file = target_definition.split("|")[1]
 
-data_defs = {data}
+    data_defs = {data}
 
-if target_definition in data_defs:
-    data_defs.remove(target_definition)
+    def __init__(self):
+        if self.target_definition in self.data_defs:
+            self.data_defs.remove(self.target_definition)
+        
+        if self.os.path.isfile(workdir + self.output_column + ".model"):
+            self.predictor_stored = self.xgb.Booster()
+            self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
-#############################################################
-#
-#                   DATA PREPARATION
-#
-#############################################################
+    def my_log_loss(self, a, b):
+        eps = 1e-9
+        sum1 = 0.0
+        for k in range(0, len(a)):
+            bx = min(max(b[k],eps), 1-eps)
+            sum1 += 1.0 * a[k] * self.math.log(bx) + 1.0 * (1 - a[k]) * self.math.log(1 - bx)
+        return -sum1/len(a)
 
-main_data = pd.read_csv(workdir+trainfile)
+    def apply(self, df_add):
+        cols_count = 0
+        for i in range(0,len(self.data_defs)):
+            cols_count+=1
+            if cols_count>{fields_to_use}:
+                break
+            col_name = self.data_defs[i].split("|")[0]
+            file_name = self.data_defs[i].split("|")[1]
 
-df = pd.read_csv(workdir+target_file)[[target_col]] #main_data[[target]]
+            if i==0:
+                df = df_add[[col_name]]
+            else:
+                df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
+            
+        dtest = self.xgb.DMatrix(df)
+        pred = self.predictor_stored.predict(dtest)
+        df_add[self.output_column] = pred
 
-cols_count = 0
-for i in range(0,len(data_defs)):
-    cols_count+=1
-    if cols_count>{fields_to_use}:
-        break
-    col_name = data_defs[i].split("|")[0]
-    file_name = data_defs[i].split("|")[1]
-    
-    if file_name==trainfile:
-        df[col_name] = main_data[col_name]
-    else:
-        df = df.merge(pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
+    def run(self, mode):
+        global trainfile
+        print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
+        main_data = self.pd.read_csv(workdir+trainfile)
+        df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]] #main_data[[target]]
 
-print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
+        cols_count = 0
+        for i in range(0,len(self.data_defs)):
+            cols_count+=1
+            if cols_count>{fields_to_use}:
+                break
+            col_name = self.data_defs[i].split("|")[0]
+            file_name = self.data_defs[i].split("|")[1]
 
-import os.path
-import sys
-if output_mode==1:
-    if os.path.isfile(workdir + output_filename):
-        df_old = pd.read_csv(workdir + output_filename)
-        if len(df)-len(df_old)==1: # incremental mode
-            if os.path.isfile(workdir + output_column + ".model"):
-                df[output_column] = df_old[output_column]
-                predictor = xgb.Booster()
-                predictor.load_model(workdir + output_column + ".model")
-                x_test = df[-1:]
-                x_test = x_test.drop(target_col, 1)
-                x_test = x_test.drop(output_column, 1)
-                dtest = xgb.DMatrix( x_test)
-                pred = predictor.predict(dtest)
-                nrow = len(df)
-                df.at[nrow-1, output_column] = pred[0]
-                df[[output_column]].to_csv(workdir+output_filename)
-                print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
-                sys.exit()
+            if file_name==trainfile:
+                df[col_name] = main_data[col_name]
+            else:
+                df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
 
-is_binary = df[df[target_col].notnull()].sort_values(target_col)[target_col].unique().tolist()==[0, 1]
+        print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
+        is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
 
-if is_binary:
-    print ("detected binary target. use LOGLOSS")
-    param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'binary:logistic', 'eval_metric':'logloss', 'nthread':4}
-else:
-    print ("use MAE")
-    param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:linear', 'eval_metric':'mae', 'nthread':4}
+        if is_binary:
+            print ("detected binary target. use LOGLOSS")
+            param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'binary:logistic', 'eval_metric':'logloss', 'nthread':4}
+        else:
+            print ("use MAE")
+            param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:linear', 'eval_metric':'mae', 'nthread':4}
 
+        #############################################################
+        #
+        #                   MAIN LOOP
+        #
+        #############################################################
 
-def my_log_loss(a, b):
-    eps = 1e-9
-    sum1 = 0.0
-    for k in range(0, len(a)):
-        bx = min(max(b[k],eps), 1-eps)
-        sum1 += 1.0 * a[k] * math.log(bx) + 1.0 * (1 - a[k]) * math.log(1 - bx)
-    return -sum1/len(a)
+        nfolds = {nfolds}
+        block = int(len(df)/nfolds)
 
+        prediction = []
 
-#############################################################
-#
-#                   MAIN LOOP
-#
-#############################################################
+        weighted_result = 0
+        count_records_notnull = 0
 
-nfolds = {nfolds}
-block = int(len(df)/nfolds)
+        for fold in range(0,nfolds):
+            print ("\nFOLD", fold, "\n")
+            range_start = fold*block
+            range_end = (fold+1)*block
+            if fold==nfolds-1:
+                range_end = len(df)
+            range_predict = range(range_start, range_end)
+            print ("range start", range_start, "; range end ", range_end)
 
-prediction = []
+            x_test = df[df.index.isin(range_predict)]
+            x_test.reset_index(drop=True, inplace=True)
+            x_test_orig = x_test.copy()
+            x_test = x_test[x_test[self.target_col].notnull()]
+            x_test.reset_index(drop=True, inplace=True)
 
-weighted_result = 0
-count_records_notnull = 0
+            x_train = df[df.index.isin(range_predict)==False]
+            x_train.reset_index(drop=True, inplace=True)
+            x_train= x_train[x_train[self.target_col].notnull()]
+            x_train.reset_index(drop=True, inplace=True)
 
-for fold in range(0,nfolds):
-    print ("\nFOLD", fold, "\n")
-    range_start = fold*block
-    range_end = (fold+1)*block
-    if fold==nfolds-1:
-        range_end = len(df)
-    range_predict = range(range_start, range_end)
-    print ("range start", range_start, "; range end ", range_end)
-    
-    x_test = df[df.index.isin(range_predict)]
-    x_test.reset_index(drop=True, inplace=True)
-    x_test_orig = x_test.copy()
-    x_test = x_test[x_test[target_col].notnull()]
-    x_test.reset_index(drop=True, inplace=True)
+            print ("x_test rows count: " + str(len(x_test)))
+            print ("x_train rows count: " + str(len(x_train)))
 
-    x_train = df[df.index.isin(range_predict)==False]
-    x_train.reset_index(drop=True, inplace=True)
-    x_train= x_train[x_train[target_col].notnull()]
-    x_train.reset_index(drop=True, inplace=True)
+            y_train = x_train[self.target_col]
+            x_train = x_train.drop(self.target_col, 1)
 
-    print ("x_test rows count: " + str(len(x_test)))
-    print ("x_train rows count: " + str(len(x_train)))
+            y_test = x_test[self.target_col]
+            x_test = x_test.drop(self.target_col, 1)
 
-    y_train = x_train[target_col]
-    x_train = x_train.drop(target_col, 1)
+            dtrain = self.xgb.DMatrix( x_train, label=y_train)
+            dtest = self.xgb.DMatrix( x_test)
 
-    y_test = x_test[target_col]
-    x_test = x_test.drop(target_col, 1)
+            num_round=100000
+            watchlist  = [(dtrain,'train'), (self.xgb.DMatrix( x_test, label=y_test), 'test')]
+            predictor = self.xgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
 
-    dtrain = xgb.DMatrix( x_train, label=y_train)
-    dtest = xgb.DMatrix( x_test)
-    
-    num_round=100000
-    watchlist  = [(dtrain,'train'), (xgb.DMatrix( x_test, label=y_test), 'test')]
-    predictor = xgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
+            if mode==1 and fold==nfolds-1:
+                predictor.save_model(workdir + self.output_column + ".model")
 
-    if output_mode==1 and fold==nfolds-1:
-        predictor.save_model(workdir + output_column + ".model")
-    
-    pred = predictor.predict(dtest)
-    if is_binary:
-        result = my_log_loss(y_test, pred)
-    else:
-        result = sum(abs(y_test-pred))/len(y_test)
+            pred = predictor.predict(dtest)
+            if is_binary:
+                result = self.my_log_loss(y_test, pred)
+            else:
+                result = sum(abs(y_test-pred))/len(y_test)
 
-    print ("result:", result)
-    weighted_result += result * len(pred)
-    count_records_notnull += len(pred)
-    
-    pred_all_test = predictor.predict(xgb.DMatrix(x_test_orig.drop(target_col, axis=1)))
-    
-    prediction = np.concatenate([prediction,pred_all_test])
+            print ("result:", result)
+            weighted_result += result * len(pred)
+            count_records_notnull += len(pred)
 
-weighted_result = weighted_result/count_records_notnull
-print ("weighted_result:", weighted_result)
+            pred_all_test = predictor.predict(self.xgb.DMatrix(x_test_orig.drop(self.target_col, axis=1)))
 
-#############################################################
-#
-#                   OUTPUT
-#
-#############################################################
+            prediction = self.np.concatenate([prediction,pred_all_test])
 
-if output_mode==1:
-    df[output_column] = prediction
-    df[[output_column]].to_csv(workdir+output_filename)
+        weighted_result = weighted_result/count_records_notnull
+        print ("weighted_result:", weighted_result)
 
-    nrow = len(df)
-    print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
-else:
-    print ("fitness="+str(weighted_result))
+        #############################################################
+        #
+        #                   OUTPUT
+        #
+        #############################################################
 
+        if mode==1:
+            df[self.output_column] = prediction
+            df[[self.output_column]].to_csv(workdir+self.output_filename)
+
+            nrow = len(df)
+            print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(nrow))
+        else:
+            print ("fitness="+str(weighted_result))
+
+ev_agent_{id} = cls_ev_agent_{id}()
