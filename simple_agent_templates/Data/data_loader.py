@@ -7,53 +7,66 @@
 # Provide correct source filename in agent parameters
 # workdir and trainfile (target filename) must be setup in 'Constants' area of AIOS
 
-source_filename = "{source_filename}"
-target = "{target}"
+if 'dicts' not in globals():
+    dicts = {}  # dict of dicts. each of dicts has structure: key=string, value=number
 
-####################################################
-print ("start")
+class cls_agent_{id}:
+    import warnings
+    warnings.filterwarnings("ignore")
+    import pandas as pd
+    
+    source_filename = "{source_filename}"
+    target = "{target}"
+    newfilename = trainfile
+    
+    def __init__(self):
+        global dicts
+        self.df = self.pd.read_csv(workdir+self.source_filename)
+        self.char_cols = list(self.df.select_dtypes(include=['object']).columns)
+        print ("source data loaded")
+        print ("char columns:", self.char_cols)
+        #self.dicts = {}
+        for cname in self.char_cols:
+            dicts[cname] = self.make_dict(self.df[cname].fillna(''))
 
-newfilename = trainfile
-import pandas as pd
-df = pd.read_csv(workdir+source_filename)
-
-
-import os.path
-changes = True
-if os.path.isfile(workdir+newfilename):
-    df_old = pd.read_csv(workdir+newfilename)
-    nrow_old = len(df_old.index)
-    print (nrow_old, len(df))
-    if len(df)==nrow_old:
-        changes = False
-
-if changes:
-    char_cols = list(df.select_dtypes(include=['object']).columns)
-    print (char_cols)
-
-    def make_dict(col):
+    def make_dict(self, col):
         a1 = col.unique()
         a1 = [x for x in a1 if str(x) != 'nan']
         keys1 = range(1, len(a1)+1)
         return dict(zip(a1, keys1))
 
+    def run(self, mode):
+        global dicts
+        print ("enter run mode " + str(mode))
+        for cname in self.char_cols:
+            dict1 = dicts[cname]
+            self.df[cname] = self.df[cname].fillna('').map(dict1)
+            self.pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv')    #save new column dict
+        
+        self.df.to_csv(workdir+self.newfilename, index=False)
+        
+        nrow = len(self.df)
 
-    for cname in char_cols:
-        dict1 = make_dict(df[cname].fillna(''))
-        df[cname] = df[cname].fillna('').map(dict1)
-        pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv')    #save new column dict
+        for cname in self.df.columns:
+            if cname in self.char_cols:
+                is_dict="Y"
+            else:
+                is_dict="N"
+            if cname==self.target:
+                is_target="Y"
+            else:
+                is_target="N"
+            print ("#add_field:"+cname+","+is_dict+","+self.newfilename+","+is_target+","+str(nrow))
+    
+    def apply(self, df_add):
+        global dicts
+        for index, row in df_add.iterrows():
+            for cname in df_add.columns:
+                if cname in self.char_cols:
+                    if not (row[cname] in dicts[cname]):
+                        dicts[cname][row[cname]] = 1+max(dicts[cname].values())
+                    df_add.at[index, cname] = dicts[cname][row[cname]]
+                else:
+                    df_add.at[index, cname] = row[cname]
 
-    df.to_csv(workdir+newfilename, index=False)
-
-    nrow = len(df)
-
-    for cname in df.columns:
-        if cname in char_cols:
-            is_dict="Y"
-        else:
-            is_dict="N"
-        if cname==target:
-            is_target="Y"
-        else:
-            is_target="N"
-        print ("#add_field:"+cname+","+is_dict+","+newfilename+","+is_target+","+str(nrow))
+agent_{id} = cls_agent_{id}()
