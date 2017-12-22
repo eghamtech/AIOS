@@ -46,11 +46,13 @@ pd.set_option('display.width', 500)
 
 #print (df_add)
 
-#i = 0
+i = 0
 for agent in agents:
-    #i+=1
+    i+=1
     #print ("applying agent", i)
     agent.apply(df_add)
+    if i==1:
+        df_add = df_add.apply(pd.to_numeric)
     #print (df_add)
 
 print(df_add.at[0,"{return_column}"])
