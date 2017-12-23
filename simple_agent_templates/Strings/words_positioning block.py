@@ -399,45 +399,44 @@ class cls_agent_{id}:
                         if w1 in self.allwords:
                             idb[i]=self.allwords[w1]
                             break
-
-            df_run.loc[index, self.fldprefix + '_1'] = common0
-            df_run.loc[index, self.fldprefix + '_2'] = common2
-            df_run.loc[index, self.fldprefix + '_3'] = common3
-            df_run.loc[index, self.fldprefix + '_4'] = common1
-            df_run.loc[index, self.fldprefix + '_5'] = diff_whats
-            df_run.loc[index, self.fldprefix + '_6'] = repeats1
-            df_run.loc[index, self.fldprefix + '_7'] = diff_words2
-            df_run.loc[index, self.fldprefix + '_8'] = synonyms1
-            df_run.loc[index, self.fldprefix + '_9'] = diff_words3
-            df_run.loc[index, self.fldprefix + '_10'] = diff_countries
-            df_run.loc[index, self.fldprefix + '_11'] = nants
-            df_run.loc[index, self.fldprefix + '_12'] = diff_whats+diff_countries+nants
-            df_run.loc[index, self.fldprefix + '_13'] = nota+notb
-            df_run.loc[index, self.fldprefix + '_14'] = nworda+nwordb
-            df_run.loc[index, self.fldprefix + '_15'] = len(common_caps)
-            df_run.loc[index, self.fldprefix + '_16'] = len(diff_caps1)
-            df_run.loc[index, self.fldprefix + '_17'] = len(diff_caps2)
-            df_run.loc[index, self.fldprefix + '_18'] = len(diff_caps1)+len(diff_caps2)
+            df_run.set_value(index, self.fldprefix + '_1', common0)
+            df_run.set_value(index, self.fldprefix + '_2', common2)
+            df_run.set_value(index, self.fldprefix + '_3', common3)
+            df_run.set_value(index, self.fldprefix + '_4', common1)
+            df_run.set_value(index, self.fldprefix + '_5', diff_whats)
+            df_run.set_value(index, self.fldprefix + '_6', repeats1)
+            df_run.set_value(index, self.fldprefix + '_7', diff_words2)
+            df_run.set_value(index, self.fldprefix + '_8', synonyms1)
+            df_run.set_value(index, self.fldprefix + '_9', diff_words3)
+            df_run.set_value(index, self.fldprefix + '_10', diff_countries)
+            df_run.set_value(index, self.fldprefix + '_11', nants)
+            df_run.set_value(index, self.fldprefix + '_12', diff_whats+diff_countries+nants)
+            df_run.set_value(index, self.fldprefix + '_13', nota+notb)
+            df_run.set_value(index, self.fldprefix + '_14', nworda+nwordb)
+            df_run.set_value(index, self.fldprefix + '_15', len(common_caps))
+            df_run.set_value(index, self.fldprefix + '_16', len(diff_caps1))
+            df_run.set_value(index, self.fldprefix + '_17', len(diff_caps2))
+            df_run.set_value(index, self.fldprefix + '_18', len(diff_caps1)+len(diff_caps2))
             col = 19
             for i in range(self.nfirst):
-                df_run.loc[index, self.fldprefix + '_'+str(col)] = idfa[i]
+                df_run.set_value(index, self.fldprefix + '_'+str(col), idfa[i])
                 col+=1
-                df_run.loc[index, self.fldprefix + '_'+str(col)] = idfb[i]
+                df_run.set_value(index, self.fldprefix + '_'+str(col), idfb[i])
                 col+=1
             for i in range(self.nlast):
-                df_run.loc[index, self.fldprefix + '_'+str(col)] = idla[i]
+                df_run.set_value(index, self.fldprefix + '_'+str(col), idla[i])
                 col+=1
-                df_run.loc[index, self.fldprefix + '_'+str(col)] = idlb[i]
+                df_run.set_value(index, self.fldprefix + '_'+str(col), idlb[i])
                 col+=1
             for i in range(self.nall):
-                df_run.loc[index, self.fldprefix + '_'+str(col)] = ida[i]
+                df_run.set_value(index, self.fldprefix + '_'+str(col), ida[i])
                 col+=1
-                df_run.loc[index, self.fldprefix + '_'+str(col)] = idb[i]
+                df_run.set_value(index, self.fldprefix + '_'+str(col), idb[i])
                 col+=1
             for i in range(self.nextra):
-                df_run.loc[index, self.fldprefix + '_'+str(col)] = idxa[i]
+                df_run.set_value(index, self.fldprefix + '_'+str(col), idxa[i])
                 col+=1
-                df_run.loc[index, self.fldprefix + '_'+str(col)] = idxb[i]
+                df_run.set_value(index, self.fldprefix + '_'+str(col), idxb[i])
                 col+=1
 
             if k>=block and block>=100:
