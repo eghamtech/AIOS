@@ -167,7 +167,7 @@ class cls_agent_{id}:
         print ("done")
         
     def my_tokenize(self, text):
-        filter1 = ',.;`-+#"!?:[]()%$=/\'*@~^&|'
+        filter1 = ',.;`-+#"!?:[]()%$=/' + "'*@~^&|"
         for ch in filter1:
             text = text.replace(ch, ' '+ch)
         return text.strip().split()
@@ -460,6 +460,3 @@ class cls_agent_{id}:
         self.run_on(df_add)
 
 agent_{id} = cls_agent_{id}()
-
-
-
