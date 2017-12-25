@@ -93,6 +93,15 @@ class cls_agent_{id}:
             else:
                 sline2 = ''
 
+            if sline1 in self.qcomb:
+                self.qcomb[sline1][sline2] = 1
+            else:
+                self.qcomb[sline1] = {sline2 : 1}
+
+            if sline2 in self.qcomb:
+                self.qcomb[sline2][sline1] = 1
+            else:
+                self.qcomb[sline2] = {sline1 : 1}
 
             res = 0
             res += len(self.qcomb[sline1])
