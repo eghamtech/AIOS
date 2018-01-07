@@ -110,10 +110,7 @@ class cls_ev_agent_{id}:
             else:
                 df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
         
-        x_test = df
-        x_test = x_test.drop(self.target_col, 1)
-        x_test = x_test.drop(self.output_column, 1)
-        pred = self.predictor_stored.predict(self.np.array(x_test), verbose=0)
+        pred = self.predictor_stored.predict(self.np.array(df), verbose=0)
         df_add[self.output_column] = pred
         
     def run(self, mode):
