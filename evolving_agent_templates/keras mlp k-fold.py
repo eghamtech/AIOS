@@ -100,18 +100,23 @@ class cls_ev_agent_{id}:
                 self.predictor_stored = load_model(workdir + self.output_column + ".model")
     
     def apply(self, df_add):
+        cols = []
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             cols_count+=1
             if cols_count>{fields_to_use}:
                 break
             col_name = self.data_defs[i].split("|")[0]
-            file_name = self.data_defs[i].split("|")[1]
-
-            if i==0:
-                df = df_add[[col_name]]
-            else:
-                df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
+            cols.append(col_name)
+        df = self.pd.DataFrame(0, index=self.np.arange(len(df_add)), columns=cols)
+                
+        cols_count = 0
+        for i in range(0,len(self.data_defs)):
+            cols_count+=1
+            if cols_count>{fields_to_use}:
+                break
+            col_name = cols[i]
+            df[col_name] = df_add[col_name]
         
         with self.tf.device(self.s_tf_device):
             pred = self.predictor_stored.predict(self.np.array(df), verbose=0)
