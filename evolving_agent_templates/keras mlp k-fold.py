@@ -85,6 +85,8 @@ class cls_ev_agent_{id}:
         tf.set_random_seed(1234)
 
         sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
+        init = tf.global_variables_initializer()
+        sess.run(init)
         K.set_session(sess)
     
     def __init__(self):
