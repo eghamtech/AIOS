@@ -26,18 +26,8 @@ class cls_agent_{id}:
         else:
             self.dict1 = {v:k for k,v in dicts[self.col1].items()} # make key=number, value=string
         
-        cols = []
-        for i in range(0,self.nwords*300):
-            fld = self.fldprefix + '_' + str(i)
-            cols.append(fld)
-        dfx2 = self.pd.DataFrame(0, index=self.np.arange(len(df_run)), columns=cols)
-        
         self.dfx = self.pd.DataFrame()
         self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
-        
-        print ("start adding columns")
-        df_run = df_run.join(dfx2)
-        print ("ended adding columns")
         
         block = int(len(df_run)/10000)
         i = 0
@@ -88,6 +78,16 @@ class cls_agent_{id}:
         print ("enter run mode " + str(mode))
         self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
         
+        cols = []
+        for i in range(0,self.nwords*300):
+            fld = self.fldprefix + '_' + str(i)
+            cols.append(fld)
+        dfx2 = self.pd.DataFrame(0, index=self.np.arange(len(self.df)), columns=cols)
+        
+        print ("start adding columns")
+        self.df = self.df.join(dfx2)
+        print ("ended adding columns")
+        
         self.run_on(self.df)
         
         if self.error==1:
@@ -102,6 +102,9 @@ class cls_agent_{id}:
             print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
     def apply(self, df_add):
+        for i in range(0,self.nwords*300):
+            fld = self.fldprefix + '_' + str(i)
+            df_add[fld] = 0.0
         self.run_on(df_add)
     
 agent_{id} = cls_agent_{id}()
