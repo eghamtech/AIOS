@@ -108,7 +108,7 @@ class cls_ev_agent_{id}:
                 break
             col_name = self.data_defs[i].split("|")[0]
             cols.append(col_name)
-        df = self.pd.DataFrame(0, index=self.np.arange(len(df_add)), columns=cols)
+        df = self.pd.DataFrame(0.0, index=self.np.arange(len(df_add)), columns=cols)
                 
         cols_count = 0
         for i in range(0,len(self.data_defs)):
