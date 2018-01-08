@@ -19,7 +19,8 @@ class cls_agent_{id}:
     nwords = {word_count_max}
     error = 0
 
-
+    def _removeNonAscii(self, s): return "".join(i for i in s if ord(i)<128)
+    
     def run_on(self, df_run):
         if self.col1 not in dicts:
             self.dict1 = self.pd.read_csv(workdir+'dict_'+self.col1+'.csv', dtype={'value': object}).set_index('key')["value"].to_dict()
@@ -29,7 +30,7 @@ class cls_agent_{id}:
         self.dfx = self.pd.DataFrame()
         self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
         
-        block = int(len(df_run)/10000)
+        block = int(len(df_run)/500)
         i = 0
 
         import requests
@@ -38,7 +39,7 @@ class cls_agent_{id}:
         for index, row in self.dfx.iterrows():
             i+=1
             if type(row[self.col1])==str:
-                sline1 = row[self.col1]
+                sline1 = self._removeNonAscii(row[self.col1])
             else:
                 sline1 = ''
             
@@ -72,7 +73,7 @@ class cls_agent_{id}:
 
             if i>=block and block>=10:
                 i=0
-                print (index)
+                print (index, sline1, values[0])
     
     def run(self, mode):
         print ("enter run mode " + str(mode))
@@ -82,7 +83,7 @@ class cls_agent_{id}:
         for i in range(0,self.nwords*300):
             fld = self.fldprefix + '_' + str(i)
             cols.append(fld)
-        dfx2 = self.pd.DataFrame(0, index=self.np.arange(len(self.df)), columns=cols)
+        dfx2 = self.pd.DataFrame(0.0, index=self.np.arange(len(self.df)), columns=cols)
         
         print ("start adding columns")
         self.df = self.df.join(dfx2)
