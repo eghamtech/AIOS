@@ -91,10 +91,11 @@ class cls_ev_agent_{id}:
         # remove the target field for this instance from the data used for training
         if self.target_definition in self.data_defs:
             self.data_defs.remove(self.target_definition)
-            
-        if self.os.path.isfile(workdir + self.output_column + ".model"):
-            from keras.models import load_model
-            self.predictor_stored = load_model(workdir + self.output_column + ".model")
+        
+        with self.tf.device(self.s_tf_device):
+            if self.os.path.isfile(workdir + self.output_column + ".model"):
+                from keras.models import load_model
+                self.predictor_stored = load_model(workdir + self.output_column + ".model")
     
     def apply(self, df_add):
         cols_count = 0
@@ -110,8 +111,9 @@ class cls_ev_agent_{id}:
             else:
                 df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
         
-        pred = self.predictor_stored.predict(self.np.array(df), verbose=0)
-        df_add[self.output_column] = pred
+        with self.tf.device(self.s_tf_device):
+            pred = self.predictor_stored.predict(self.np.array(df), verbose=0)
+            df_add[self.output_column] = pred
         
     def run(self, mode):
         global trainfile
