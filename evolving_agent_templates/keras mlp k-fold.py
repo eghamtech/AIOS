@@ -1,6 +1,6 @@
 #start_of_genes_definitions
-#key=fields_to_use;  type=random_int;  from=5;  to=60;  step=1
-#key=data;  type=random_array_of_fields;  length=60
+#key=fields_to_use;  type=random_int;  from=1000;  to=3000;  step=1
+#key=data;  type=random_array_of_fields;  length=3000
 #key=folds;  type=random_int;  from=10;  to=10;  step=1
 #key=optimizer;  type=random_from_set;  set='sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
 #key=activation;  type=random_from_set;  set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
@@ -134,14 +134,29 @@ class cls_ev_agent_{id}:
         # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
         main_data = self.pd.read_csv(workdir+trainfile)
         # read data from CSV file containing the prediction target field selected for this instance
-        df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]]
+        dftarget = self.pd.read_csv(workdir+self.target_file)[[self.target_col]]
 
         # read each required field's data from a corresponding CSV file
         # number of fields actually read specified in {fields_to_use} gene
         n_fields_to_use = {fields_to_use}
+        
+        cols = [self.target_col]
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             cols_count+=1
+            if cols_count>n_fields_to_use:
+                break
+            col_name = self.data_defs[i].split("|")[0]
+            cols.append(col_name)
+        df = self.pd.DataFrame(0.0, index=self.np.arange(len(dftarget)), columns=cols)
+        df[self.target_col] = dftarget[self.target_col]
+        
+        print ("linking dataframe...")
+        cols_count = 0
+        j=0
+        for i in range(0,len(self.data_defs)):
+            cols_count+=1
+            j+=1
             if cols_count>n_fields_to_use:
                 break
             col_name = self.data_defs[i].split("|")[0]
@@ -151,7 +166,11 @@ class cls_ev_agent_{id}:
                 df[col_name] = main_data[col_name]
             else:
                 # read column from another CSV file and add to df
-                df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
+                #df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
+                df[col_name] = self.pd.read_csv(workdir+file_name)[[col_name]]
+            if j>=100:
+                print(cols_count)
+                j = 0
 
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
                 
