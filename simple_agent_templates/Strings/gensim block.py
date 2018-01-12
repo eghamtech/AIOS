@@ -4,6 +4,8 @@
 
 # possible value of google_news_file_path is ../GoogleNews-vectors-negative300.bin.gz
 
+#no_permutation
+
 if 'dicts' not in globals():
     dicts = {}
 
