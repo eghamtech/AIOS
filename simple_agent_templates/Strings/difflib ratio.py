@@ -1,3 +1,5 @@
+#no_permutation
+
 if 'dicts' not in globals():
     dicts = {}
 
