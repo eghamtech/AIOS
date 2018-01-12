@@ -1,3 +1,5 @@
+#no_permutation
+
 class cls_agent_{id}:
     import warnings
     warnings.filterwarnings("ignore")
