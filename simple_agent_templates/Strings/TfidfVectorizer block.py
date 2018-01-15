@@ -1,5 +1,3 @@
-#no_permutation
-
 if 'dicts' not in globals():
     dicts = {}
 
@@ -46,8 +44,8 @@ class cls_agent_{id}:
             self.dict2 = {v:k for k,v in dicts[self.col2].items()} # make key=number, value=string
         
         self.dfx = self.pd.DataFrame()
-        self.dfx[self.col1] = self.df[self.col1].map(self.dict1)
-        self.dfx[self.col2] = self.df[self.col2].map(self.dict2)
+        self.dfx[self.col1] = self.df[self.col1].map(self.dict1).fillna('')
+        self.dfx[self.col2] = self.df[self.col2].map(self.dict2).fillna('')
         
         print ("creating TfidfVectorizer...")
         self.tfidf = self.TfidfVectorizer(stop_words='english', ngram_range=(1, 1))
@@ -57,8 +55,8 @@ class cls_agent_{id}:
 
     def run_on(self, df_run):
         self.dfx = self.pd.DataFrame()
-        self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
-        self.dfx[self.col2] = df_run[self.col2].map(self.dict2)
+        self.dfx[self.col1] = df_run[self.col1].map(self.dict1).fillna('')
+        self.dfx[self.col2] = df_run[self.col2].map(self.dict2).fillna('')
         
         block = int(len(df_run)/50)
         i = 0
