@@ -39,7 +39,7 @@ class cls_agent_{id}:
         new_cols = []
         for i in range(0, len(cols)):
             str = cols[i]
-            for ch in [" ", "/", "(", ")", "?", "!"]:
+            for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
                 str = str.replace(ch, "_")
             new_cols.append(str)
             self.colmap[cols[i]] = str
