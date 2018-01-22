@@ -28,7 +28,7 @@ class cls_agent_{id}:
         
         print ("loading json file to dataframe...")
         
-        with open(workdir + self.source_filename) as f1:
+        with open(workdir + self.source_filename, encoding='utf-8') as f1:
             json_data = self.json.load(f1)
         
         print ("creating dataframe...")
