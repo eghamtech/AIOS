@@ -10,6 +10,7 @@ class cls_agent_{id}:
     import pandas as pd
     import json
     import datetime
+    import calendar
     
     source_filename = "{source_filename_json}"
     # target must be set on constants page
@@ -51,6 +52,8 @@ class cls_agent_{id}:
                 self.df[self.colmap[item["heading"]]+'_Y'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").year if x!=None else 0)
                 self.df[self.colmap[item["heading"]]+'_M'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").month if x!=None else 0)
                 self.df[self.colmap[item["heading"]]+'_D'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").day if x!=None else 0)
+                self.df[self.colmap[item["heading"]]+'_WD'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").weekday() if x!=None else 0)
+                self.df[self.colmap[item["heading"]]+'_TS'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.calendar.timegm(self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").timetuple()) if x!=None else 0)
                 self.df = self.df.drop(self.colmap[item["heading"]], 1)
         
         print ("processing FREETEXT columns")
@@ -111,6 +114,8 @@ class cls_agent_{id}:
             df_add[cname+'_Y'] = df_add[cname].apply(lambda x: self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").year if x!=None else 0)
             df_add[cname+'_M'] = df_add[cname].apply(lambda x: self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").month if x!=None else 0)
             df_add[cname+'_D'] = df_add[cname].apply(lambda x: self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").day if x!=None else 0)
+            df_add[cname+'_WD'] = df_add[cname].apply(lambda x: self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").weekday() if x!=None else 0)
+            df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.datetime.datetime.strptime(x, "%Y-%m-%d %H:%M:%S").timetuple()) if x!=None else 0)
             df_add = df_add.drop(cname, 1)
         for index, row in df_add.iterrows():
             for cname in df_add.columns:
