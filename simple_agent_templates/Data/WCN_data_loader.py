@@ -31,6 +31,8 @@ class cls_agent_{id}:
         with open(workdir + self.source_filename) as f1:
             json_data = self.json.load(f1)
         
+        print ("creating dataframe...")
+        
         self.df = self.pd.DataFrame().from_dict(json_data["training_data"])
         cols = self.df.columns
         new_cols = []
