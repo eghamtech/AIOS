@@ -44,7 +44,7 @@ class cls_agent_{id}:
         for cname in self.char_cols:
             dict1 = dicts[cname]
             self.df[cname] = self.df[cname].fillna('').map(dict1)
-            self.pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv', encoding='utf8')    #save new column dict
+            self.pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv', encoding='utf-8')    #save new column dict
         
         self.df.to_csv(workdir+self.newfilename, index=False)
         
