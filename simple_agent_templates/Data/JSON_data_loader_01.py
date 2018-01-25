@@ -1,6 +1,9 @@
 #start_of_parameters
 #key=source_filename_json;  type=constant;  value=enter_source_filename_json
 #end_of_parameters
+
+# Processes JSON file which has "training_data" and "model_definition" objects according to below specification
+# 
 if 'dicts' not in globals():
     dicts = {}
     
