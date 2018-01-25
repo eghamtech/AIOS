@@ -3,9 +3,11 @@
 #key=target;  type=constant;  value=enter_target
 #end_of_parameters
 
-# This script will scan your file for string columns and convert them to dictionaries.
-# Provide correct source filename in agent parameters
-# workdir and trainfile (target filename) must be setup in 'Constants' area of AIOS
+# This script will scan your CSV file for string columns, convert them to dictionaries
+# and create columns in AIOS Memory with data for each column in the 'source_filename' CSV file.
+# Provide correct 'source_filename' in the agent parameters.
+# Variables 'workdir' and 'trainfile' (target filename) must be setup in 'Constants' area of AIOS
+# Parameter 'target' specifies column to be marked as the prediction target.
 
 if 'dicts' not in globals():
     dicts = {}  # dict of dicts. each of dicts has structure: key=string, value=number
