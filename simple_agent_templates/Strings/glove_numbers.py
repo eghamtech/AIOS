@@ -1,5 +1,7 @@
 #start_of_parameters
 #key=word_count_max;  type=constant;  value=enter_word_count_max
+#key=group_length;  type=constant;  value=enter_group_length
+#key=glove_host;  type=constant;  value=enter_glove_host
 #end_of_parameters
 if 'dicts' not in globals():
     dicts = {}
@@ -17,6 +19,8 @@ class cls_agent_{id}:
     field_prefix = 'glv_'
     fldprefix = field_prefix + str(result_id)
     nwords = {word_count_max}
+    group_length = {group_length}
+    numbers_count = nwords * int(300/group_length)
     error = 0
 
     def _removeNonAscii(self, s): return "".join(i for i in s if ord(i)<128)
@@ -44,7 +48,7 @@ class cls_agent_{id}:
                 sline1 = ''
             
             #values = [0]*(self.nwords*300)
-            r = requests.post("https://os.aichoo.ai:8080", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'string': sline1})
+            r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
             if r.status_code!=200:
                 print(r.reason)
                 print("#error")
@@ -53,7 +57,7 @@ class cls_agent_{id}:
             
             obj = json.loads(r.text)
             values = [float(v) for v in obj['data'].split(',')]
-            if len(values)!=self.nwords*300:
+            if len(values)!=self.numbers_count:
                 print("wrong response length")
                 print("#error")
                 self.error = 1
@@ -80,7 +84,7 @@ class cls_agent_{id}:
         self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
         
         cols = []
-        for i in range(0,self.nwords*300):
+        for i in range(0,self.numbers_count):
             fld = self.fldprefix + '_' + str(i)
             cols.append(fld)
         dfx2 = self.pd.DataFrame(0.0, index=self.np.arange(len(self.df)), columns=cols)
@@ -96,14 +100,14 @@ class cls_agent_{id}:
         
         nrow = len(self.df)
         
-        for i in range(0,self.nwords*300):
+        for i in range(0,self.numbers_count):
             fld = self.fldprefix + '_' + str(i)
             fname = fld + '.csv'
             self.df[[fld]].to_csv(workdir+fname)
             print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
     def apply(self, df_add):
-        for i in range(0,self.nwords*300):
+        for i in range(0,self.numbers_count):
             fld = self.fldprefix + '_' + str(i)
             df_add[fld] = 0.0
         self.run_on(df_add)
