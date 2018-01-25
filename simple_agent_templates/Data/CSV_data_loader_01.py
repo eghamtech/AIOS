@@ -24,7 +24,7 @@ class cls_agent_{id}:
     def __init__(self):
         global dicts
         self.df = self.pd.read_csv(workdir+self.source_filename, encoding='utf8')
-        print (self.df)
+        #print (self.df)
         self.char_cols = list(self.df.select_dtypes(include=['object']).columns)
         print ("source data loaded")
         print ("char columns:", self.char_cols)
