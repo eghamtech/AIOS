@@ -75,11 +75,22 @@ class cls_agent_{id}:
         
         print ("processing OUTCOME columns")
         self.target_cols = []
+        self.use_for_models = []
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
             item = json_data["model_definition"]["layout"]["columns"][i]
             if item["analysis"]=='outcome':
                 print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
                 self.target_cols.append(self.colmap[item["heading"]])
+                self.use_for_models.append(self.colmap[item["heading"]])
+                self.df[self.colmap[item["heading"]]] = self.df[self.colmap[item["heading"]]].astype(int)
+            elif item["analysis"]=='data':
+                self.use_for_models.append(self.colmap[item["heading"]])
+                if item["heading"] in self.date_cols:
+                    self.use_for_models.append(self.colmap[item["heading"]]+'_Y')
+                    self.use_for_models.append(self.colmap[item["heading"]]+'_M')
+                    self.use_for_models.append(self.colmap[item["heading"]]+'_D')
+                    self.use_for_models.append(self.colmap[item["heading"]]+'_WD')
+                    self.use_for_models.append(self.colmap[item["heading"]]+'_TS')
                 
         print ("target columns:", self.target_cols)
         
@@ -113,7 +124,11 @@ class cls_agent_{id}:
                 is_target="Y"
             else:
                 is_target="N"
-            print ("#add_field:"+cname+","+is_dict+","+self.newfilename+","+is_target+","+str(nrow))
+            if cname in self.use_for_models:
+                is_use_for_models="Y"
+            else:
+                is_use_for_models="N"
+            print ("#add_field:"+cname+","+is_dict+","+self.newfilename+","+is_target+","+str(nrow)+","+is_use_for_models)
     
     def apply(self, df_add):
         global dicts
