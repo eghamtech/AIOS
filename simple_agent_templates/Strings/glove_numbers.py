@@ -58,7 +58,8 @@ class cls_agent_{id}:
             obj = json.loads(r.text)
             values = [float(v) for v in obj['data'].split(',')]
             if len(values)!=self.numbers_count:
-                print("wrong response length")
+                print("wrong response length. got", len(values), ", must be", self.numbers_count, ", nwords", self.nwords, ", grp_length", self.group_length)
+                print("string:", sline1)
                 print("#error")
                 self.error = 1
                 break
