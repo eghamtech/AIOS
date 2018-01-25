@@ -11,6 +11,7 @@ class cls_agent_{id}:
     warnings.filterwarnings("ignore")
     import pandas as pd
     import numpy as np
+    import re
 
     col_definition1 = "{random_dict}"
     col1 = col_definition1.split("|")[0]
@@ -24,6 +25,9 @@ class cls_agent_{id}:
     error = 0
 
     def _removeNonAscii(self, s): return "".join(i for i in s if ord(i)<128)
+    
+    def _tokenize(self, s):
+        return ' '.join(self.re.findall(r"[\w'`]+|[.,!?;]", s))
     
     def run_on(self, df_run):
         if self.col1 not in dicts:
@@ -43,7 +47,7 @@ class cls_agent_{id}:
         for index, row in self.dfx.iterrows():
             i+=1
             if type(row[self.col1])==str:
-                sline1 = self._removeNonAscii(row[self.col1])
+                sline1 = self._tokenize(row[self.col1])
             else:
                 sline1 = ''
             
