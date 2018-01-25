@@ -23,7 +23,8 @@ class cls_agent_{id}:
     
     def __init__(self):
         global dicts
-        self.df = self.pd.read_csv(workdir+self.source_filename)
+        self.df = self.pd.read_csv(workdir+self.source_filename, encoding='utf8')
+        print (self.df)
         self.char_cols = list(self.df.select_dtypes(include=['object']).columns)
         print ("source data loaded")
         print ("char columns:", self.char_cols)
@@ -43,7 +44,7 @@ class cls_agent_{id}:
         for cname in self.char_cols:
             dict1 = dicts[cname]
             self.df[cname] = self.df[cname].fillna('').map(dict1)
-            self.pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv')    #save new column dict
+            self.pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv', encoding='utf8')    #save new column dict
         
         self.df.to_csv(workdir+self.newfilename, index=False)
         
