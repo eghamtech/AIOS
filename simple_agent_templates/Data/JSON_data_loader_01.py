@@ -2,8 +2,9 @@
 #key=source_filename_json;  type=constant;  value=enter_source_filename_json
 #end_of_parameters
 
-# Processes JSON file which has "training_data" and "model_definition" objects according to below specification
-# 
+# Processes JSON file which has "training_data" and "model_definition" objects according to below specification in Wiki:
+# https://github.com/eghamtech/AIOS/wiki/Input-data-JSON-format-01
+
 if 'dicts' not in globals():
     dicts = {}
     
@@ -62,11 +63,11 @@ class cls_agent_{id}:
                 self.df[self.colmap[item["heading"]]+'_TS'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None else 0)
                 self.df = self.df.drop(self.colmap[item["heading"]], 1)
         
-        print ("processing FREETEXT columns")
+        print ("processing FREETEXT/LARGETEXT columns")
         self.char_cols = [] #list(self.df.select_dtypes(include=['object']).columns)
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
             item = json_data["model_definition"]["layout"]["columns"][i]
-            if item["data_type"]=='FREETEXT':
+            if item["data_type"]=='FREETEXT' or item["data_type"]=='LARGETEXT':
                 print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
                 self.char_cols.append(self.colmap[item["heading"]])
                 
