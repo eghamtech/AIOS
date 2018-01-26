@@ -65,6 +65,7 @@ class cls_ev_agent_{id}:
 
     def run(self, mode):
         global trainfile
+        from sklearn.metrics import roc_auc_score
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
         main_data = self.pd.read_csv(workdir+trainfile)
@@ -149,10 +150,12 @@ class cls_ev_agent_{id}:
             pred = predictor.predict(dtest)
             if is_binary:
                 result = self.my_log_loss(y_test, pred)
+                result_roc_auc = roc_auc_score(y_test, pred)
             else:
                 result = sum(abs(y_test-pred))/len(y_test)
 
-            print ("result:", result)
+            print ("result: ", result)
+            print ("ROC AUC score: ", result_roc_auc)
             weighted_result += result * len(pred)
             count_records_notnull += len(pred)
 
