@@ -37,6 +37,12 @@ class cls_ev_agent_{id}:
             self.predictor_stored = self.xgb.Booster()
             self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
+    def plot_feature_importance(self, n_top_features=20, graph_width=10, graph_height=25):
+        # this method can be used in Jupyter notebook to plot features of a particular model created by AIOS
+        # copy whole DNA code as executed by AIOS into notebook with global Constants, initialise/run the class first
+        %matplotlib inline
+        self.xgb.plot_importance(self.bst, max_num_features=n_top_features).figure.set_size_inches(graph_width,graph_height)
+
     def my_log_loss(self, a, b):
         eps = 1e-9
         sum1 = 0.0
@@ -143,7 +149,8 @@ class cls_ev_agent_{id}:
             num_round=100000
             watchlist  = [(dtrain,'train'), (self.xgb.DMatrix( x_test, label=y_test), 'test')]
             predictor = self.xgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
-
+            self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
+            
             if mode==1 and fold==nfolds-1:
                 predictor.save_model(workdir + self.output_column + ".model")
 
