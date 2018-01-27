@@ -72,6 +72,8 @@ class cls_ev_agent_{id}:
     def run(self, mode):
         global trainfile
         from sklearn.metrics import roc_auc_score
+        from sklearn.metrics import confusion_matrix
+        from sklearn.metrics import classification_report
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
         main_data = self.pd.read_csv(workdir+trainfile)
@@ -157,12 +159,19 @@ class cls_ev_agent_{id}:
             pred = predictor.predict(dtest)
             if is_binary:
                 result = self.my_log_loss(y_test, pred)
+                # show various metrics as per
+                # http://scikit-learn.org/stable/modules/model_evaluation.html#classification-report
                 result_roc_auc = roc_auc_score(y_test, pred)
+                result_cm = confusion_matrix(y_test, (pred>0.5))  # assume 0.5 probability threshold
+                result_cr = classification_report(y_test, (pred>0.5))
+                print ("ROC AUC score: ", result_roc_auc)
+                print ("Confusion Matrix:\n", result_cm)
+                print ("Classification Report:\n", result_cr)
             else:
                 result = sum(abs(y_test-pred))/len(y_test)
 
             print ("result: ", result)
-            print ("ROC AUC score: ", result_roc_auc)
+            
             weighted_result += result * len(pred)
             count_records_notnull += len(pred)
 
