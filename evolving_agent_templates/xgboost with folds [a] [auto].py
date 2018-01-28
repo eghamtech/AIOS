@@ -52,6 +52,9 @@ class cls_ev_agent_{id}:
         return -sum1/len(a)
 
     def apply(self, df_add):
+        columns_new = []
+        columns = []
+        
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             cols_count+=1
@@ -65,6 +68,14 @@ class cls_ev_agent_{id}:
             else:
                 df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
             
+            columns.append(col_name)
+            ncol_count = columns.count(col_name)
+            if ncol_count==1:
+                columns_new.append(col_name)
+            else:
+                columns_new.append(col_name+"_v"+str(ncol_count))
+        
+        df.columns = columns_new
         dtest = self.xgb.DMatrix(df)
         pred = self.predictor_stored.predict(dtest)
         df_add[self.output_column] = pred
@@ -76,8 +87,10 @@ class cls_ev_agent_{id}:
         from sklearn.metrics import classification_report
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
-        main_data = self.pd.read_csv(workdir+trainfile)
         df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]] #main_data[[target]]
+
+        columns_new = [self.target_col]
+        columns = [self.target_col]
 
         cols_count = 0
         for i in range(0,len(self.data_defs)):
@@ -87,11 +100,16 @@ class cls_ev_agent_{id}:
             col_name = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
 
-            if file_name==trainfile:
-                df[col_name] = main_data[col_name]
-            else:
-                df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
+            df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
 
+            columns.append(col_name)
+            ncol_count = columns.count(col_name)
+            if ncol_count==1:
+                columns_new.append(col_name)
+            else:
+                columns_new.append(col_name+"_v"+str(ncol_count))
+
+        df.columns = columns_new
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
 
