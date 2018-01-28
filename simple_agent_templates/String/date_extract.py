@@ -8,6 +8,7 @@ class cls_agent_{id}:
     import numpy as np
     import re
     months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+    months2 = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
         
     col_definition1 = "{random_dict}"
     col1 = col_definition1.split("|")[0]
@@ -26,6 +27,8 @@ class cls_agent_{id}:
                 item = item.lower()
                 if item in self.months:
                     return self.months.index(item)+1
+                elif item in self.months2:
+                    return self.months2.index(item)+1
             return -1
 
     def get_day(self, x):
@@ -34,9 +37,11 @@ class cls_agent_{id}:
         else:
             x = x.split(" ")
             for item in x:
-                item = int("0"+self.re.sub("[^0-9]", "", item))
-                if item>0 and item <= 31:
-                    return item
+                if len(item)>0:
+                    if item[0]!="'":
+                        item = int("0"+self.re.sub("[^0-9]", "", item))
+                        if item>0 and item <= 31:
+                            return item
             return -1
 
     def get_year(self, x):
@@ -45,9 +50,16 @@ class cls_agent_{id}:
         else:
             x = x.split(" ")
             for item in x:
-                item = int("0"+self.re.sub("[^0-9]", "", item))
-                if item>1900 and item<2100:
-                    return item
+                if len(item)>0:
+                    item_n = int("0"+self.re.sub("[^0-9]", "", item))
+                    if item[0]=="'":
+                        if item_n>30:
+                            return 1900+item_n
+                        elif item_n>0:
+                            return 2000+item_n
+                    else:
+                        if item_n>1900 and item_n<2100:
+                            return item_n
             return -1
     
     
