@@ -101,6 +101,7 @@ class cls_ev_agent_{id}:
     
     def apply(self, df_add):
         cols = []
+        columns_new = []
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             cols_count+=1
@@ -108,15 +109,24 @@ class cls_ev_agent_{id}:
                 break
             col_name = self.data_defs[i].split("|")[0]
             cols.append(col_name)
-        df = self.pd.DataFrame(0.0, index=self.np.arange(len(df_add)), columns=cols)
-                
+            ncol_count = cols.count(col_name)
+            if ncol_count==1:
+                columns_new.append(col_name)
+            else:
+                columns_new.append(col_name+"_v"+str(ncol_count))
+        df = self.pd.DataFrame(0.0, index=self.np.arange(len(df_add)), columns=columns_new)
+        
+        columns_new = []
+        columns = []
+        
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             cols_count+=1
             if cols_count>{fields_to_use}:
                 break
             col_name = cols[i]
-            df[col_name] = df_add[col_name]
+            col_new_name = columns_new[i]
+            df[col_new_name] = df_add[col_name]
         
         with self.tf.device(self.s_tf_device):
             pred = self.predictor_stored.predict(self.np.array(df), verbose=0)
@@ -132,7 +142,7 @@ class cls_ev_agent_{id}:
 
         # read data from the original data file loaded into Memory (specified in Constants as "trainfile")
         # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
-        main_data = self.pd.read_csv(workdir+trainfile)
+        #main_data = self.pd.read_csv(workdir+trainfile)
         # read data from CSV file containing the prediction target field selected for this instance
         dftarget = self.pd.read_csv(workdir+self.target_file)[[self.target_col]]
 
@@ -141,6 +151,7 @@ class cls_ev_agent_{id}:
         n_fields_to_use = {fields_to_use}
         
         cols = [self.target_col]
+        columns_new = [self.target_col]
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             cols_count+=1
@@ -148,7 +159,12 @@ class cls_ev_agent_{id}:
                 break
             col_name = self.data_defs[i].split("|")[0]
             cols.append(col_name)
-        df = self.pd.DataFrame(0.0, index=self.np.arange(len(dftarget)), columns=cols)
+            ncol_count = cols.count(col_name)
+            if ncol_count==1:
+                columns_new.append(col_name)
+            else:
+                columns_new.append(col_name+"_v"+str(ncol_count))
+        df = self.pd.DataFrame(0.0, index=self.np.arange(len(dftarget)), columns=columns_new)
         df[self.target_col] = dftarget[self.target_col]
         
         print ("linking dataframe...")
@@ -161,13 +177,14 @@ class cls_ev_agent_{id}:
                 break
             col_name = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
+            
+            col_new_name = columns_new[i+1]  #+1 because 1st column is traget
 
-            if file_name==trainfile:
-                df[col_name] = main_data[col_name]
-            else:
-                # read column from another CSV file and add to df
-                #df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
-                df[col_name] = self.pd.read_csv(workdir+file_name)[[col_name]]
+            #if file_name==trainfile:
+            #    df[col_name] = main_data[col_name]
+            #else:
+            # read column from another CSV file and add to df
+            df[col_new_name] = self.pd.read_csv(workdir+file_name)[[col_name]]
             if j>=100:
                 print(cols_count)
                 j = 0
