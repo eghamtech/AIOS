@@ -54,7 +54,7 @@ class cls_ev_agent_{id}:
     result_id = {id}
     # create new field name based on "field_ev_prefix" (also specified in Constants) with unique instance ID
     # and filename to save new field data
-    field_ev_prefix = "ev_field_"
+    field_ev_prefix = "ev_field_mlp_"
     output_column = field_ev_prefix + str(result_id)
     output_filename = output_column + ".csv"
 
@@ -100,25 +100,33 @@ class cls_ev_agent_{id}:
                 self.predictor_stored = load_model(workdir + self.output_column + ".model")
     
     def apply(self, df_add):
+        # this method is called by AIOS when additional data is supplied and needs to be predicted on
         cols = []
         columns_new = []
         cols_count = 0
+        # assemble a list of column names given to the agent by AIOS in {data} DNA gene up-to {fields_to_use} gene
         for i in range(0,len(self.data_defs)):
             cols_count+=1
             if cols_count>{fields_to_use}:
                 break
+            # data_defs item contains two parts: column name and file name - extract column name only
             col_name = self.data_defs[i].split("|")[0]
             cols.append(col_name)
+            # some columns may appear multiple times in data_defs as inhereted from parents DNA
+            # assemble a list of columns assigning unique names to repeating columns
             ncol_count = cols.count(col_name)
             if ncol_count==1:
                 columns_new.append(col_name)
             else:
                 columns_new.append(col_name+"_v"+str(ncol_count))
+        
+        # create dataframe with complete list of unique columns
         df = self.pd.DataFrame(0.0, index=self.np.arange(len(df_add)), columns=columns_new)
         
         columns_new = []
         columns = []
         
+        # find each column in supplied new data df_add and copy it to df with unique column name
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             cols_count+=1
@@ -128,12 +136,16 @@ class cls_ev_agent_{id}:
             col_new_name = columns_new[i]
             df[col_new_name] = df_add[col_name]
         
+        # apply previously loaded model to new data and obtain predictions
         with self.tf.device(self.s_tf_device):
             pred = self.predictor_stored.predict(self.np.array(df), verbose=0)
             df_add[self.output_column] = pred
         
     def run(self, mode):
         global trainfile
+        from sklearn.metrics import roc_auc_score
+        from sklearn.metrics import confusion_matrix
+        from sklearn.metrics import classification_report
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
         
         #############################################################
@@ -150,20 +162,26 @@ class cls_ev_agent_{id}:
         # number of fields actually read specified in {fields_to_use} gene
         n_fields_to_use = {fields_to_use}
         
-        cols = [self.target_col]
-        columns_new = [self.target_col]
+        # assemble a list of column names given to the agent by AIOS in {data} DNA gene up-to {fields_to_use} gene
+        cols = [self.target_col]         # cols wil be a non-unique list of columns
+        columns_new = [self.target_col]  # columns_new will be a unique list of columns
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             cols_count+=1
             if cols_count>n_fields_to_use:
                 break
+            # data_defs item contains two parts: column name and file name - extract column name only
             col_name = self.data_defs[i].split("|")[0]
             cols.append(col_name)
+            # some columns may appear multiple times in data_defs as inhereted from parents DNA
+            # assemble a list of columns assigning unique names to repeating columns
             ncol_count = cols.count(col_name)
             if ncol_count==1:
                 columns_new.append(col_name)
             else:
                 columns_new.append(col_name+"_v"+str(ncol_count))
+                
+        # create dataframe with complete list of unique columns and a target column
         df = self.pd.DataFrame(0.0, index=self.np.arange(len(dftarget)), columns=columns_new)
         df[self.target_col] = dftarget[self.target_col]
         
@@ -178,7 +196,7 @@ class cls_ev_agent_{id}:
             col_name = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
             
-            col_new_name = columns_new[i+1]  #+1 because 1st column is traget
+            col_new_name = columns_new[i+1]  #+1 because 1st column is target
 
             #if file_name==trainfile:
             #    df[col_name] = main_data[col_name]
@@ -302,7 +320,18 @@ class cls_ev_agent_{id}:
                     print ('Test Loss is NaN or Accuracy = 0, no point to carry on with more folds')
                     weighted_result = 99999*count_records_notnull      
                     break
-
+                
+                pred = mlp_model.predict(x_test, verbose=0)
+                if is_binary:
+                    # show various metrics as per
+                    # http://scikit-learn.org/stable/modules/model_evaluation.html#classification-report
+                    result_roc_auc = roc_auc_score(y_test, pred)
+                    result_cm = confusion_matrix(y_test, (pred>0.5))  # assume 0.5 probability threshold
+                    result_cr = classification_report(y_test, (pred>0.5))
+                    print ("ROC AUC score: ", result_roc_auc)
+                    print ("Confusion Matrix:\n", result_cm)
+                    print ("Classification Report:\n", result_cr)
+                
                 pred_all_test = mlp_model.predict(self.np.array(x_test_orig.drop(self.target_col, axis=1)), verbose=0)
                 pred_all_test = [item for sublist in pred_all_test for item in sublist]
 
