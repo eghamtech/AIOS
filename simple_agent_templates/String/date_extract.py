@@ -16,7 +16,7 @@ class cls_agent_{id}:
     col1 = col_definition1.split("|")[0]
     file1 = col_definition1.split("|")[1]
     result_id = {id}
-    field_prefix = 'dte_'
+    field_prefix = 'dte_' + col1 + '_'
     fldprefix = field_prefix + str(result_id)
     
     
