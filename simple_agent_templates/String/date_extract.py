@@ -7,6 +7,8 @@ class cls_agent_{id}:
     import pandas as pd
     import numpy as np
     import re
+    import datetime
+    import time
     months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
     months2 = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
         
@@ -62,6 +64,15 @@ class cls_agent_{id}:
                             return item_n
             return -1
     
+    def get_ts(self, row):
+        if row[0]>0 and row[1]>0 and row[1]>0:
+            try:
+                dt = self.datetime.datetime(year=int(row[0]), month=int(row[1]), day=int(row[2]))
+                return self.time.mktime(dt.timetuple())
+            except ValueError:
+                return float('nan')
+        else:
+            return float('nan')
     
     def run_on(self, df_run):
         
@@ -76,6 +87,7 @@ class cls_agent_{id}:
         df_run[self.fldprefix + '_y'] = self.dfx[self.col1].apply(lambda x: self.get_year(x))
         df_run[self.fldprefix + '_m'] = self.dfx[self.col1].apply(lambda x: self.get_month(x))
         df_run[self.fldprefix + '_d'] = self.dfx[self.col1].apply(lambda x: self.get_day(x))
+        df_run[self.fldprefix + '_ts'] = df_run[[self.fldprefix + '_y', self.fldprefix + '_m', self.fldprefix + '_d']].apply(self.get_ts, axis=1)
 
     def run(self, mode):
         print ("enter run mode " + str(mode))
@@ -90,6 +102,8 @@ class cls_agent_{id}:
         print ("#add_field:"+self.fldprefix + '_m'+",N,"+self.fldprefix + '_m.csv'+","+str(nrow))
         df[[self.fldprefix + '_d']].to_csv(workdir+self.fldprefix + '_d.csv')
         print ("#add_field:"+self.fldprefix + '_d'+",N,"+self.fldprefix + '_d.csv'+","+str(nrow))
+        df[[self.fldprefix + '_ts']].to_csv(workdir+self.fldprefix + '_ts.csv')
+        print ("#add_field:"+self.fldprefix + '_ts'+",N,"+self.fldprefix + '_ts.csv'+","+str(nrow))
         
     def apply(self, df_add):
         self.run_on(df_add)
