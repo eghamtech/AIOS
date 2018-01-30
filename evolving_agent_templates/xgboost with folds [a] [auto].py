@@ -1,14 +1,14 @@
 #start_of_genes_definitions
 #key=colsample_bytree;  type=random_float;  from=0.4;  to=1;  step=0.05
 #key=subsample;  type=random_float;  from=0.4;  to=1;  step=0.05
-#key=fields_to_use;  type=random_int;  from=40;  to=700;  step=1
-#key=data;  type=random_array_of_fields;  length=700
+#key=fields_to_use;  type=random_int;  from=40;  to=400;  step=1
+#key=data;  type=random_array_of_fields;  length=400
 #key=eta;  type=random_float;  from=0.03;  to=0.3;  step=0.01
 #key=max_depth;  type=random_int;  from=6;  to=14;  step=2
 #key=nfolds;  type=random_int;  from=10;  to=10;  step=1
 #key=use_validation_set;  type=random_from_set;  set=True
-#key=filter_column;  type=random_from_set;  set=Submission_Date_TS
-#key=validation_set_start_value;  type=random_from_set;  set=self.timestamp('2014-10-01')
+#key=filter_column;  type=random_from_set;  set=id
+#key=validation_set_start_value;  type=random_from_set;  set=350000
 #end_of_genes_definitions
 
 class cls_ev_agent_{id}:
@@ -132,10 +132,10 @@ class cls_ev_agent_{id}:
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
 
         if use_validation_set:
-            df = df[df.index.isin(use_indexes)]
-            df.reset_index(drop=True, inplace=True)
             df_valid = df[df.index.isin(use_indexes)==False]
             df_valid.reset_index(drop=True, inplace=True)
+            df = df[df.index.isin(use_indexes)]
+            df.reset_index(drop=True, inplace=True)
             predicted_valid_set = self.np.zeros(len(df_valid))
             
         if is_binary:
