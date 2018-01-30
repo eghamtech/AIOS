@@ -10,6 +10,9 @@
 #key=batch_size;  type=random_int;  from=5;  to=256;  step=1
 #key=epochs;  type=random_int;  from=5;  to=100;  step=1
 #key=dropout;  type=random_float;  from=0.02;  to=0.7;  step=0.02
+#key=use_validation_set;  type=random_from_set;  set=True
+#key=filter_column;  type=random_from_set;  set=Submission_Date_TS
+#key=validation_set_start_value;  type=random_from_set;  set=self.timestamp('2014-11-01')
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -24,6 +27,8 @@ class cls_ev_agent_{id}:
     import tensorflow as tf
     import numpy as np
     import random as rn
+    import dateutil
+    import calendar
 
     # specify whether to run Keras/TensorFlow on CPU or GPU (and which GPU, if you have multiple)
     s_tf_device = '/cpu:0'
@@ -68,6 +73,9 @@ class cls_ev_agent_{id}:
     # obtain random selection of fields; number of fields to be selected specified in {data}:length gene for this instance
     data_defs = {data}
     
+    filter_column = "{filter_column}"
+    filter_filename = trainfile
+    
     with tf.device(s_tf_device):
         # Force TensorFlow to use single thread.
         # Multiple threads are a potential source of
@@ -98,6 +106,17 @@ class cls_ev_agent_{id}:
             if self.os.path.isfile(workdir + self.output_column + ".model"):
                 from keras.models import load_model
                 self.predictor_stored = load_model(workdir + self.output_column + ".model")
+    
+    def timestamp(self, x):
+        return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
+    
+    def my_log_loss(self, a, b):
+        eps = 1e-9
+        sum1 = 0.0
+        for k in range(0, len(a)):
+            bx = min(max(b[k],eps), 1-eps)
+            sum1 += 1.0 * a[k] * self.math.log(bx) + 1.0 * (1 - a[k]) * self.math.log(1 - bx)
+        return -sum1/len(a)
     
     def apply(self, df_add):
         # this method is called by AIOS when additional data is supplied and needs to be predicted on
@@ -148,6 +167,13 @@ class cls_ev_agent_{id}:
         from sklearn.metrics import classification_report
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
         
+        use_validation_set = {use_validation_set}
+        
+        if use_validation_set:
+            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
+            use_indexes = df_filter_column[df_filter_column[self.filter_column]<{validation_set_start_value}].index
+            print ("Length of train set:", len(use_indexes), ", length of validation set:", len(df_filter_column)-len(use_indexes))
+            
         #############################################################
         #                   DATA PREPARATION
         #############################################################
@@ -208,7 +234,16 @@ class cls_ev_agent_{id}:
                 j = 0
 
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
-                
+        
+        original_row_count = len(df)
+        
+        if use_validation_set:
+            df_valid = df[df.index.isin(use_indexes)==False]
+            df_valid.reset_index(drop=True, inplace=True)
+            df = df[df.index.isin(use_indexes)]
+            df.reset_index(drop=True, inplace=True)
+            predicted_valid_set = self.np.zeros(len(df_valid))
+            
         # analyse target column whether it is binary which may result in different loss function used
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
         if is_binary:
@@ -336,10 +371,38 @@ class cls_ev_agent_{id}:
                 pred_all_test = [item for sublist in pred_all_test for item in sublist]
 
                 prediction = self.np.concatenate([prediction,pred_all_test])
+                
+                if use_validation_set:
+                    pred1 = mlp_model.predict(self.np.array(df_valid.drop(self.target_col, axis=1)), verbose=0)
+                    pred1 = [item for sublist in pred1 for item in sublist]
+                    predicted_valid_set += self.np.array(pred1)
 
             weighted_result = weighted_result/count_records_notnull
             print ("weighted_result:", weighted_result)
 
+            if use_validation_set:
+                print()
+                print()
+                print ("*************  VALIDATION SET RESULTS  *****************")
+                print ("Length of validation set:", len(predicted_valid_set))
+                if is_binary:
+                    predicted_valid_set = predicted_valid_set / n_folds
+                    y_valid = df_valid[self.target_col]
+                    try:
+                        result = self.my_log_loss(y_valid, predicted_valid_set)
+                        print ("LOGLOSS: ", result)
+                        result_roc_auc = roc_auc_score(y_valid, predicted_valid_set)
+                        print ("ROC AUC score: ", result_roc_auc)
+                        result_cm = confusion_matrix(y_valid, (predicted_valid_set>0.5))  # assume 0.5 probability threshold
+                        print ("Confusion Matrix:\n", result_cm)
+                        result_cr = classification_report(y_valid, (predicted_valid_set>0.5))
+                        print ("Classification Report:\n", result_cr)
+                    except Exception as e:
+                        print (e)
+                else:
+                    result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
+                    print ("MAE: ", result)
+            
             #############################################################
             #                   OUTPUT
             #############################################################
@@ -347,8 +410,7 @@ class cls_ev_agent_{id}:
                 df[self.output_column] = prediction
                 df[[self.output_column]].to_csv(workdir+self.output_filename)
 
-                nrow = len(df)
-                print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(nrow))
+                print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
             else:
                 print ("fitness="+str(weighted_result))
             
