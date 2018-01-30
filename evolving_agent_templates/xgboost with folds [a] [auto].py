@@ -1,11 +1,14 @@
 #start_of_genes_definitions
 #key=colsample_bytree;  type=random_float;  from=0.4;  to=1;  step=0.05
 #key=subsample;  type=random_float;  from=0.4;  to=1;  step=0.05
-#key=fields_to_use;  type=random_int;  from=40;  to=70;  step=1
-#key=data;  type=random_array_of_fields;  length=70
-#key=eta;  type=random_float;  from=0.1;  to=0.3;  step=0.01
+#key=fields_to_use;  type=random_int;  from=40;  to=700;  step=1
+#key=data;  type=random_array_of_fields;  length=700
+#key=eta;  type=random_float;  from=0.03;  to=0.3;  step=0.01
 #key=max_depth;  type=random_int;  from=6;  to=14;  step=2
-#key=nfolds;  type=random_int;  from=2;  to=2;  step=1
+#key=nfolds;  type=random_int;  from=10;  to=10;  step=1
+#key=use_validation_set;  type=random_from_set;  set=True
+#key=filter_column;  type=random_from_set;  set=Submission_Date_TS
+#key=validation_set_start_value;  type=random_from_set;  set=self.timestamp('2014-10-01')
 #end_of_genes_definitions
 
 class cls_ev_agent_{id}:
@@ -17,6 +20,8 @@ class cls_ev_agent_{id}:
     import numpy as np
     import math
     import os.path
+    import dateutil
+    import calendar
 
     result_id = {id}
     field_ev_prefix = "ev_field_"
@@ -28,6 +33,9 @@ class cls_ev_agent_{id}:
     target_file = target_definition.split("|")[1]
 
     data_defs = {data}
+    
+    filter_column = "{filter_column}"
+    filter_filename = trainfile
 
     def __init__(self):
         if self.target_definition in self.data_defs:
@@ -37,6 +45,9 @@ class cls_ev_agent_{id}:
             self.predictor_stored = self.xgb.Booster()
             self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
+    def timestamp(self, x):
+        return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
+    
     def plot_feature_importance(self, n_top_features=20, graph_width=10, graph_height=25):
         # this method can be used in Jupyter notebook to plot features of a particular model created by AIOS
         # copy whole DNA code as executed by AIOS into notebook with global Constants, initialise/run the class first
@@ -87,6 +98,13 @@ class cls_ev_agent_{id}:
         from sklearn.metrics import classification_report
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
+        use_validation_set = {use_validation_set}
+        
+        if use_validation_set:
+            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
+            use_indexes = df_filter_column[df_filter_column[self.filter_column]<{validation_set_start_value}].index
+            print ("Length of train set:", len(use_indexes), ", length of validation set:", len(df_filter_column)-len(use_indexes))
+        
         df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]] #main_data[[target]]
 
         columns_new = [self.target_col]
@@ -113,6 +131,13 @@ class cls_ev_agent_{id}:
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
 
+        if use_validation_set:
+            df = df[df.index.isin(use_indexes)]
+            df.reset_index(drop=True, inplace=True)
+            df_valid = df[df.index.isin(use_indexes)==False]
+            df_valid.reset_index(drop=True, inplace=True)
+            predicted_valid_set = self.np.zeros(len(df_valid))
+            
         if is_binary:
             print ("detected binary target. use LOGLOSS")
             param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'binary:logistic', 'eval_metric':'logloss', 'nthread':4}
@@ -193,13 +218,35 @@ class cls_ev_agent_{id}:
             weighted_result += result * len(pred)
             count_records_notnull += len(pred)
 
+            # this must be tested once more, may be this actions must be done only for the last fold???
             pred_all_test = predictor.predict(self.xgb.DMatrix(x_test_orig.drop(self.target_col, axis=1)))
-
             prediction = self.np.concatenate([prediction,pred_all_test])
 
+            if use_validation_set:
+                predicted_valid_set += predictor.predict(self.xgb.DMatrix(df_valid.drop(self.target_col, axis=1)))
+                
         weighted_result = weighted_result/count_records_notnull
         print ("weighted_result:", weighted_result)
 
+        if use_validation_set:
+            print()
+            print()
+            print ("*************  VALIDATION SET RESULTS  *****************")
+            if is_binary:
+                predicted_valid_set = predicted_valid_set / nfolds
+                y_valid = df_valid[self.target_col]
+                result = self.my_log_loss(y_valid, predicted_valid_set)
+                result_roc_auc = roc_auc_score(y_valid, predicted_valid_set)
+                result_cm = confusion_matrix(y_valid, (predicted_valid_set>0.5))  # assume 0.5 probability threshold
+                result_cr = classification_report(y_valid, (predicted_valid_set>0.5))
+                print ("LOGLOSS: ", result)
+                print ("ROC AUC score: ", result_roc_auc)
+                print ("Confusion Matrix:\n", result_cm)
+                print ("Classification Report:\n", result_cr)
+            else:
+                result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
+                print ("MAE: ", result)
+                
         #############################################################
         #
         #                   OUTPUT
