@@ -36,7 +36,7 @@ class cls_ev_agent_{id}:
     
     filter_column = "{filter_column}"
     filter_filename = trainfile
-
+    
     def __init__(self):
         if self.target_definition in self.data_defs:
             self.data_defs.remove(self.target_definition)
@@ -129,6 +129,7 @@ class cls_ev_agent_{id}:
 
         df.columns = columns_new
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
+        original_row_count = len(df)
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
 
         if use_validation_set:
@@ -261,8 +262,7 @@ class cls_ev_agent_{id}:
             df[self.output_column] = prediction
             df[[self.output_column]].to_csv(workdir+self.output_filename)
 
-            nrow = len(df)
-            print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(nrow))
+            print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
         else:
             print ("fitness="+str(weighted_result))
 
