@@ -7,8 +7,8 @@
 #key=max_depth;  type=random_int;  from=6;  to=14;  step=2
 #key=nfolds;  type=random_int;  from=10;  to=10;  step=1
 #key=use_validation_set;  type=random_from_set;  set=True
-#key=filter_column;  type=random_from_set;  set=id
-#key=validation_set_start_value;  type=random_from_set;  set=350000
+#key=filter_column;  type=random_from_set;  set=Submission_Date_TS
+#key=validation_set_start_value;  type=random_from_set;  set=self.timestamp('2014-11-01')
 #end_of_genes_definitions
 
 class cls_ev_agent_{id}:
@@ -232,6 +232,7 @@ class cls_ev_agent_{id}:
             print()
             print()
             print ("*************  VALIDATION SET RESULTS  *****************")
+            print ("Length of validation set:", len(predicted_valid_set))
             if is_binary:
                 predicted_valid_set = predicted_valid_set / nfolds
                 y_valid = df_valid[self.target_col]
