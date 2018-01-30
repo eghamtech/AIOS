@@ -235,14 +235,17 @@ class cls_ev_agent_{id}:
             if is_binary:
                 predicted_valid_set = predicted_valid_set / nfolds
                 y_valid = df_valid[self.target_col]
-                result = self.my_log_loss(y_valid, predicted_valid_set)
-                result_roc_auc = roc_auc_score(y_valid, predicted_valid_set)
-                result_cm = confusion_matrix(y_valid, (predicted_valid_set>0.5))  # assume 0.5 probability threshold
-                result_cr = classification_report(y_valid, (predicted_valid_set>0.5))
-                print ("LOGLOSS: ", result)
-                print ("ROC AUC score: ", result_roc_auc)
-                print ("Confusion Matrix:\n", result_cm)
-                print ("Classification Report:\n", result_cr)
+                try:
+                    result = self.my_log_loss(y_valid, predicted_valid_set)
+                    print ("LOGLOSS: ", result)
+                    result_roc_auc = roc_auc_score(y_valid, predicted_valid_set)
+                    print ("ROC AUC score: ", result_roc_auc)
+                    result_cm = confusion_matrix(y_valid, (predicted_valid_set>0.5))  # assume 0.5 probability threshold
+                    print ("Confusion Matrix:\n", result_cm)
+                    result_cr = classification_report(y_valid, (predicted_valid_set>0.5))
+                    print ("Classification Report:\n", result_cr)
+                except Exception as e:
+                    print (e)
             else:
                 result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
                 print ("MAE: ", result)
