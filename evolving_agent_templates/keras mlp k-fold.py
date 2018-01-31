@@ -172,7 +172,8 @@ class cls_ev_agent_{id}:
         if use_validation_set:
             df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
             use_indexes = df_filter_column[df_filter_column[self.filter_column]<{validation_set_start_value}].index
-            print ("Length of train set:", len(use_indexes), ", length of validation set:", len(df_filter_column)-len(use_indexes))
+            validation_set_indexes = df_filter_column[df_filter_column[self.filter_column]>=validation_set_start_value].index
+            print ("Length of train set:", len(use_indexes), ", length of validation set:", len(validation_set_indexes))
             
         #############################################################
         #                   DATA PREPARATION
@@ -407,8 +408,14 @@ class cls_ev_agent_{id}:
             #                   OUTPUT
             #############################################################
             if mode==1:
-                df[self.output_column] = prediction
-                df[[self.output_column]].to_csv(workdir+self.output_filename)
+                if use_validation_set:
+                    df_filter_column[self.output_column] = float('nan')
+                    df_filter_column.ix[use_indexes, self.output_column] = prediction
+                    df_filter_column.ix[validation_set_indexes, self.output_column] = predicted_valid_set
+                    df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
+                else:
+                    df[self.output_column] = prediction
+                    df[[self.output_column]].to_csv(workdir+self.output_filename)
 
                 print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
             else:
