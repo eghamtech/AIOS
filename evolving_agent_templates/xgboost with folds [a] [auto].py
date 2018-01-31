@@ -101,9 +101,11 @@ class cls_ev_agent_{id}:
         use_validation_set = {use_validation_set}
         
         if use_validation_set:
+            validation_set_start_value = {validation_set_start_value}
             df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
-            use_indexes = df_filter_column[df_filter_column[self.filter_column]<{validation_set_start_value}].index
-            print ("Length of train set:", len(use_indexes), ", length of validation set:", len(df_filter_column)-len(use_indexes))
+            use_indexes = df_filter_column[df_filter_column[self.filter_column]<validation_set_start_value].index
+            validation_set_indexes = df_filter_column[df_filter_column[self.filter_column]>=validation_set_start_value].index
+            print ("Length of train set:", len(use_indexes), ", length of validation set:", len(validation_set_indexes))
         
         df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]] #main_data[[target]]
 
@@ -219,7 +221,6 @@ class cls_ev_agent_{id}:
             weighted_result += result * len(pred)
             count_records_notnull += len(pred)
 
-            # this must be tested once more, may be this actions must be done only for the last fold???
             pred_all_test = predictor.predict(self.xgb.DMatrix(x_test_orig.drop(self.target_col, axis=1)))
             prediction = self.np.concatenate([prediction,pred_all_test])
 
@@ -259,8 +260,14 @@ class cls_ev_agent_{id}:
         #############################################################
 
         if mode==1:
-            df[self.output_column] = prediction
-            df[[self.output_column]].to_csv(workdir+self.output_filename)
+            if use_validation_set:
+                df_filter_column[self.output_column] = float('nan')
+                df_filter_column.ix[use_indexes, self.output_column] = prediction
+                df_filter_column.ix[validation_set_indexes, self.output_column] = predicted_valid_set
+                df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
+            else:
+                df[self.output_column] = prediction
+                df[[self.output_column]].to_csv(workdir+self.output_filename)
 
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
         else:
