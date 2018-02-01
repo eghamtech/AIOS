@@ -7,8 +7,8 @@
 #key=max_depth;  type=random_int;  from=6;  to=14;  step=2
 #key=nfolds;  type=random_int;  from=10;  to=10;  step=1
 #key=use_validation_set;  type=random_from_set;  set=True
-#key=filter_column;  type=random_from_set;  set=Submission_Date_TS
-#key=validation_set_start_value;  type=random_from_set;  set=self.timestamp('2014-11-01')
+#key=filter_column;  type=random_from_set;  set=id
+#key=validation_set_start_value;  type=random_from_set;  set=350000
 #end_of_genes_definitions
 
 class cls_ev_agent_{id}:
@@ -48,11 +48,11 @@ class cls_ev_agent_{id}:
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
     
-    def plot_feature_importance(self, n_top_features=20, graph_width=10, graph_height=25):
+    #def plot_feature_importance(self, n_top_features=20, graph_width=10, graph_height=25):
         # this method can be used in Jupyter notebook to plot features of a particular model created by AIOS
         # copy whole DNA code as executed by AIOS into notebook with global Constants, initialise/run the class first
-        %matplotlib inline
-        self.xgb.plot_importance(self.bst, max_num_features=n_top_features).figure.set_size_inches(graph_width,graph_height)
+        #%matplotlib inline
+        #self.xgb.plot_importance(self.bst, max_num_features=n_top_features).figure.set_size_inches(graph_width,graph_height)
 
     def my_log_loss(self, a, b):
         eps = 1e-9
