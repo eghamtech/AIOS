@@ -170,6 +170,7 @@ class cls_ev_agent_{id}:
         use_validation_set = {use_validation_set}
         
         if use_validation_set:
+            validation_set_start_value = {validation_set_start_value}
             df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
             use_indexes = df_filter_column[df_filter_column[self.filter_column]<{validation_set_start_value}].index
             validation_set_indexes = df_filter_column[df_filter_column[self.filter_column]>=validation_set_start_value].index
