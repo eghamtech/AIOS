@@ -9,6 +9,7 @@
 #key=neurons;  type=random_int;  from=4;  to=256;  step=1
 #key=batch_size;  type=random_int;  from=5;  to=256;  step=1
 #key=epochs;  type=random_int;  from=5;  to=100;  step=1
+#key=early_stopping_min_delta; type=random_float;  from=0.01;  to=0.04;  step=0.01
 #key=dropout;  type=random_float;  from=0.02;  to=0.7;  step=0.02
 #key=use_validation_set;  type=random_from_set;  set=True
 #key=filter_column;  type=random_from_set;  set=Submission_Date_TS
@@ -271,6 +272,7 @@ class cls_ev_agent_{id}:
         n_epochs = {epochs}
         n_dropout = {dropout}
         s_output_activation = {activation_output}
+        n_early_stopping_min_delta = {early_stopping_min_delta}
 
         #############################################################
         #                   MLP Model Compiling
@@ -280,7 +282,7 @@ class cls_ev_agent_{id}:
         from keras.callbacks      import EarlyStopping
 
         with self.tf.device(self.s_tf_device):
-            early_stopper = EarlyStopping( monitor='val_loss', min_delta=0.05, patience=2, verbose=0, mode='auto' )
+            early_stopper = EarlyStopping( monitor='val_loss', min_delta=n_early_stopping_min_delta, patience=2, verbose=0, mode='auto' )
             mlp_model = Sequential()
 
             # add hidden layers 
