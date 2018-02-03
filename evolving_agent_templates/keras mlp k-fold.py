@@ -154,6 +154,7 @@ class cls_ev_agent_{id}:
             col_name = cols[i]
             col_new_name = columns_new[i]
             df[col_new_name] = df_add[col_name]
+            df[col_new_name] = df[col_new_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
         
         # apply previously loaded model to new data and obtain predictions
         with self.tf.device(self.s_tf_device):
