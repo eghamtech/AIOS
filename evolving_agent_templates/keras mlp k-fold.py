@@ -231,6 +231,8 @@ class cls_ev_agent_{id}:
             #else:
             # read column from another CSV file and add to df
             df[col_new_name] = self.pd.read_csv(workdir+file_name)[[col_name]]
+            df[col_new_name] = df[col_new_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
+            
             if j>=100:
                 print(cols_count)
                 j = 0
