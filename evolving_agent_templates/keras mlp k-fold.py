@@ -392,9 +392,10 @@ class cls_ev_agent_{id}:
                 print()
                 print ("*************  VALIDATION SET RESULTS  *****************")
                 print ("Length of validation set:", len(predicted_valid_set))
-                if is_binary:
-                    predicted_valid_set = predicted_valid_set / n_folds
-                    y_valid = df_valid[self.target_col]
+                predicted_valid_set = predicted_valid_set / n_folds
+                y_valid = df_valid[self.target_col]
+                
+                if is_binary:                 
                     try:
                         result = self.my_log_loss(y_valid, predicted_valid_set)
                         print ("LOGLOSS: ", result)
