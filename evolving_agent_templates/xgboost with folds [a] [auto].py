@@ -57,7 +57,7 @@ class cls_ev_agent_{id}:
             self.predictor_stored = self.xgb.Booster()
             self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
-        filter_columns = [self.filter_column]
+        self.filter_columns = [self.filter_column]
         if self.is_set(self.filter_column_2):
             self.filter_columns.append(self.filter_column_2)
     
