@@ -17,6 +17,7 @@
 #key=train_set_to_2;  type=random_from_set;  set=
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
+#key=deny_columns_started_with;  type=random_from_set;  set=ev_
 #end_of_genes_definitions
 
 class cls_ev_agent_{id}:
@@ -44,10 +45,9 @@ class cls_ev_agent_{id}:
     
     filter_column = "{filter_column}"
     filter_column_2 = "{filter_column_2}"
-    filter_columns = [filter_column]
-    if len(filter_column_2)>0 and filter_column_2!="0":
-        filter_columns.append(filter_column_2)
     filter_filename = trainfile
+    
+    deny_columns_started_with = "{deny_columns_started_with}"
     
     def __init__(self):
         if self.target_definition in self.data_defs:
@@ -57,6 +57,20 @@ class cls_ev_agent_{id}:
             self.predictor_stored = self.xgb.Booster()
             self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
+        filter_columns = [self.filter_column]
+        if self.is_set(self.filter_column_2):
+            self.filter_columns.append(self.filter_column_2)
+    
+    def is_set(self, s):
+        return len(s)>0 and s!="0"
+
+    def is_use_column(self, s):
+        if not self.is_set(self.deny_columns_started_with):
+            return True
+        if s.find(self.deny_columns_started_with)==0:
+            return False
+        return True
+        
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
     
@@ -80,23 +94,26 @@ class cls_ev_agent_{id}:
         
         cols_count = 0
         for i in range(0,len(self.data_defs)):
-            cols_count+=1
-            if cols_count>{fields_to_use}:
-                break
             col_name = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
-
-            if i==0:
-                df = df_add[[col_name]]
-            else:
-                df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
             
-            columns.append(col_name)
-            ncol_count = columns.count(col_name)
-            if ncol_count==1:
-                columns_new.append(col_name)
-            else:
-                columns_new.append(col_name+"_v"+str(ncol_count))
+            if self.is_use_column(col_name):
+                cols_count+=1
+                if cols_count>{fields_to_use}:
+                    break
+
+
+                if cols_count==1:
+                    df = df_add[[col_name]]
+                else:
+                    df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
+
+                columns.append(col_name)
+                ncol_count = columns.count(col_name)
+                if ncol_count==1:
+                    columns_new.append(col_name)
+                else:
+                    columns_new.append(col_name+"_v"+str(ncol_count))
         
         df.columns = columns_new
         dtest = self.xgb.DMatrix(df)
@@ -114,7 +131,7 @@ class cls_ev_agent_{id}:
         
         if use_validation_set:
             df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = self.filter_columns)
-            if len(self.filter_column_2)==0 or self.filter_column_2=="0":
+            if not self.is_set(self.filter_column_2):
                 condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
                 train_indexes = df_filter_column[condition1].index
                 test_indexes = df_filter_column[self.np.logical_not(condition1)].index
@@ -140,20 +157,22 @@ class cls_ev_agent_{id}:
 
         cols_count = 0
         for i in range(0,len(self.data_defs)):
-            cols_count+=1
-            if cols_count>{fields_to_use}:
-                break
             col_name = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
+            
+            if self.is_use_column(col_name):
+                cols_count+=1
+                if cols_count>{fields_to_use}:
+                    break
 
-            df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
+                df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
 
-            columns.append(col_name)
-            ncol_count = columns.count(col_name)
-            if ncol_count==1:
-                columns_new.append(col_name)
-            else:
-                columns_new.append(col_name+"_v"+str(ncol_count))
+                columns.append(col_name)
+                ncol_count = columns.count(col_name)
+                if ncol_count==1:
+                    columns_new.append(col_name)
+                else:
+                    columns_new.append(col_name+"_v"+str(ncol_count))
 
         df.columns = columns_new
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
