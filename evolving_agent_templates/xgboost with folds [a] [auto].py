@@ -153,6 +153,7 @@ class cls_ev_agent_{id}:
         from sklearn.metrics import confusion_matrix
         from sklearn.metrics import classification_report
         from sklearn.metrics import mean_squared_error
+        from math import sqrt
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
         use_validation_set = {use_validation_set}
@@ -304,7 +305,7 @@ class cls_ev_agent_{id}:
                 print ("Classification Report:\n", result_cr)
             else:
                 #result = sum(abs(y_test-pred))/len(y_test)
-                result = mean_squared_error(y_test, pred)
+                result = sqrt(mean_squared_error(y_test, pred))
                 
             print ("result: ", result)
             
@@ -347,8 +348,8 @@ class cls_ev_agent_{id}:
             else:
                 #result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
                 #print ("MAE: ", result)
-                result = mean_squared_error(y_valid, predicted_valid_set)
-                print ("Mean Squared Error: ", result)
+                result = sqrt(mean_squared_error(y_valid, predicted_valid_set))
+                print ("Root Mean Squared Error: ", result)
                 
         #############################################################
         #
