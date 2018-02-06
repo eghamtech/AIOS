@@ -144,14 +144,17 @@ class cls_ev_agent_{id}:
         df_add[self.output_column] = pred
 
     def run(self, mode):
+        # this is main method called by AIOS with supplied DNA Genes to process data
         global trainfile
         from sklearn.metrics import roc_auc_score
         from sklearn.metrics import confusion_matrix
         from sklearn.metrics import classification_report
+        from sklearn.metrics import mean_squared_error
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
         use_validation_set = {use_validation_set}
         
+        # obtain indexes for train, validation and remainder sets, if validation set is required
         if use_validation_set:
             df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = self.filter_columns)
             if not self.is_set(self.filter_column_2):
@@ -172,14 +175,15 @@ class cls_ev_agent_{id}:
                 validation_set_indexes = df_filter_column[self.np.logical_and(condition1, condition2)].index
             
             print ("Length of train set:", len(train_indexes))
-            print ("Length of test set:", len(test_indexes))
-            print ("length of validation set:", len(validation_set_indexes))
+            print ("Length of test/remainder set:", len(test_indexes))
+            print ("Length of validation set:", len(validation_set_indexes))
         
-        df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]] #main_data[[target]]
+        # start from loading the target field
+        df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]]
 
         columns_new = [self.target_col]
         columns = [self.target_col]
-
+        # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             col_name = self.data_defs[i].split("|")[0]
@@ -192,6 +196,8 @@ class cls_ev_agent_{id}:
 
                 df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
 
+                # some columns may appear multiple times in data_defs as inhereted from parents DNA
+                # assemble a list of columns assigning unique names to repeating columns
                 columns.append(col_name)
                 ncol_count = columns.count(col_name)
                 if ncol_count==1:
@@ -199,27 +205,33 @@ class cls_ev_agent_{id}:
                 else:
                     columns_new.append(col_name+"_v"+str(ncol_count))
 
+        # rename columns in df to unique names
         df.columns = columns_new
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
         original_row_count = len(df)
+        
+        # analyse target column whether it is binary which may result in different loss function used
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
 
         if use_validation_set:
+            # use previously calculated indexes to select train, validation and remainder sets
             df_test = df[df.index.isin(test_indexes)]
             df_test.reset_index(drop=True, inplace=True)
             df_valid = df[df.index.isin(validation_set_indexes)]
             df_valid.reset_index(drop=True, inplace=True)
             df = df[df.index.isin(train_indexes)]
             df.reset_index(drop=True, inplace=True)
+            # initialise prediction columns for validation and test as they will be aggregate predictions from multiple folds
             predicted_valid_set = self.np.zeros(len(df_valid))
             predicted_test_set = self.np.zeros(len(df_test))
             
         if is_binary:
-            print ("detected binary target. use LOGLOSS")
+            print ("detected binary target: use LOGLOSS")
             param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'binary:logistic', 'eval_metric':'logloss', 'nthread':4}
         else:
-            print ("use MAE")
-            param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:linear', 'eval_metric':'mae', 'nthread':4}
+            print ("detected regression target: use Logistic Regression")
+            #param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:linear', 'eval_metric':'mae', 'nthread':4}
+            param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:logistic', 'nthread':4}
 
         #############################################################
         #
@@ -228,6 +240,7 @@ class cls_ev_agent_{id}:
         #############################################################
 
         nfolds = {nfolds}
+        # divide training data into nfolds of size block
         block = int(len(df)/nfolds)
 
         prediction = []
@@ -246,25 +259,25 @@ class cls_ev_agent_{id}:
 
             x_test = df[df.index.isin(range_predict)]
             x_test.reset_index(drop=True, inplace=True)
-            x_test_orig = x_test.copy()
-            x_test = x_test[x_test[self.target_col].notnull()]
+            x_test_orig = x_test.copy()                           # save original test set before removing null values
+            x_test = x_test[x_test[self.target_col].notnull()]    # remove examples that have no proper target label
             x_test.reset_index(drop=True, inplace=True)
 
             x_train = df[df.index.isin(range_predict)==False]
             x_train.reset_index(drop=True, inplace=True)
-            x_train= x_train[x_train[self.target_col].notnull()]
+            x_train= x_train[x_train[self.target_col].notnull()]  # remove examples that have no proper target label
             x_train.reset_index(drop=True, inplace=True)
 
             print ("x_test rows count: " + str(len(x_test)))
             print ("x_train rows count: " + str(len(x_train)))
 
-            y_train = x_train[self.target_col]
+            y_train = x_train[self.target_col]                    # separate training fields and the target
             x_train = x_train.drop(self.target_col, 1)
 
             y_test = x_test[self.target_col]
             x_test = x_test.drop(self.target_col, 1)
 
-            dtrain = self.xgb.DMatrix( x_train, label=y_train)
+            dtrain = self.xgb.DMatrix( x_train, label=y_train)    # convert DF to xgb.DMatrix as required by XGB
             dtest = self.xgb.DMatrix( x_test)
 
             num_round=100000
@@ -287,16 +300,19 @@ class cls_ev_agent_{id}:
                 print ("Confusion Matrix:\n", result_cm)
                 print ("Classification Report:\n", result_cr)
             else:
-                result = sum(abs(y_test-pred))/len(y_test)
-
+                #result = sum(abs(y_test-pred))/len(y_test)
+                result = mean_squared_error(y_test, pred)
+                
             print ("result: ", result)
             
             weighted_result += result * len(pred)
             count_records_notnull += len(pred)
 
+            # predict all examples in the original test set which may include erroneous examples previously removed
             pred_all_test = predictor.predict(self.xgb.DMatrix(x_test_orig.drop(self.target_col, axis=1)))
             prediction = self.np.concatenate([prediction,pred_all_test])
 
+            # predict validation and remainder sets examples
             if use_validation_set:
                 predicted_valid_set += predictor.predict(self.xgb.DMatrix(df_valid.drop(self.target_col, axis=1)))
                 predicted_test_set += predictor.predict(self.xgb.DMatrix(df_test.drop(self.target_col, axis=1)))
@@ -326,8 +342,10 @@ class cls_ev_agent_{id}:
                 except Exception as e:
                     print (e)
             else:
-                result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
-                print ("MAE: ", result)
+                #result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
+                #print ("MAE: ", result)
+                result = mean_squared_error(y_valid, predicted_valid_set)
+                print ("Mean Squared Error: ", result)
                 
         #############################################################
         #
