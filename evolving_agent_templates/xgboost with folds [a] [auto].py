@@ -17,8 +17,13 @@
 #key=train_set_to_2;  type=random_from_set;  set=
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
-#key=deny_columns_started_with;  type=random_from_set;  set=ev_
+#key=ignore_columns_started_with;  type=random_from_set;  set=ev_
 #end_of_genes_definitions
+
+# AICHOO OS Evolving Agent 
+# Documentation about AIOS and how to create Evolving Agents can be found on our WiKi
+# https://github.com/eghamtech/AIOS/wiki/Evolving-Agents
+# https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 
 class cls_ev_agent_{id}:
     import warnings
@@ -32,31 +37,44 @@ class cls_ev_agent_{id}:
     import dateutil
     import calendar
 
+    # obtain a unique ID for the current instance
     result_id = {id}
+    # create new field name based on "field_ev_prefix" with unique instance ID
+    # and filename to save new field data
     field_ev_prefix = "ev_field_"
     output_column = field_ev_prefix + str(result_id)
     output_filename = output_column + ".csv"
 
+    # obtain random field (same for all instances within the evolution) which will be the prediction target for this instance/evolution
     target_definition = "{field_to_predict}"
+    # field definition received from the kernel contains two parts: name of the field and CSV filename that holds the actual data
+    # load these two parts into variables
     target_col = target_definition.split("|")[0]
     target_file = target_definition.split("|")[1]
 
+    # obtain random selection of fields; number of fields to be selected specified in data:length gene for this instance
     data_defs = {data}
     
+    # if filter columns are specified then training and validation sets will be selected based on filter criteria
+    # based on filter criteria training + validation sets will not necessarily constitute all data, the remainder will be called "test set"
     filter_column = "{filter_column}"
     filter_column_2 = "{filter_column_2}"
-    filter_filename = trainfile
+    filter_filename = trainfile   # filter columns are in trainfile which must be specified in Constants
     
-    deny_columns_started_with = "{deny_columns_started_with}"
+    # fields matching the specified prefix will not be used in the model
+    ignore_columns_started_with = "{ignore_columns_started_with}"
     
     def __init__(self):
+        # remove the target field for this instance from the data used for training
         if self.target_definition in self.data_defs:
             self.data_defs.remove(self.target_definition)
         
+        # if saved model for the target field already exists then load it from filesystem
         if self.os.path.isfile(workdir + self.output_column + ".model"):
             self.predictor_stored = self.xgb.Booster()
             self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
+        # create a list of columns to filter data set by
         self.filter_columns = [self.filter_column]
         if self.is_set(self.filter_column_2):
             self.filter_columns.append(self.filter_column_2)
@@ -65,9 +83,10 @@ class cls_ev_agent_{id}:
         return len(s)>0 and s!="0"
 
     def is_use_column(self, s):
-        if not self.is_set(self.deny_columns_started_with):
+        # determine whether given column should be ignored
+        if not self.is_set(self.ignore_columns_started_with):
             return True
-        if s.find(self.deny_columns_started_with)==0:
+        if s.find(self.ignore_columns_started_with)==0:
             return False
         return True
         
@@ -89,9 +108,10 @@ class cls_ev_agent_{id}:
         return -sum1/len(a)
 
     def apply(self, df_add):
+        # this method is called by AIOS when additional data is supplied and needs to be predicted on
         columns_new = []
         columns = []
-        
+        # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
         cols_count = 0
         for i in range(0,len(self.data_defs)):
             col_name = self.data_defs[i].split("|")[0]
@@ -101,13 +121,14 @@ class cls_ev_agent_{id}:
                 cols_count+=1
                 if cols_count>{fields_to_use}:
                     break
-
-
+                # assemble dataframe column by column
                 if cols_count==1:
                     df = df_add[[col_name]]
                 else:
                     df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
-
+                
+                # some columns may appear multiple times in data_defs as inhereted from parents DNA
+                # assemble a list of columns assigning unique names to repeating columns
                 columns.append(col_name)
                 ncol_count = columns.count(col_name)
                 if ncol_count==1:
@@ -115,7 +136,9 @@ class cls_ev_agent_{id}:
                 else:
                     columns_new.append(col_name+"_v"+str(ncol_count))
         
+        # rename columns in df to unique names
         df.columns = columns_new
+        # predict new data set in df
         dtest = self.xgb.DMatrix(df)
         pred = self.predictor_stored.predict(dtest)
         df_add[self.output_column] = pred
@@ -132,12 +155,14 @@ class cls_ev_agent_{id}:
         if use_validation_set:
             df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = self.filter_columns)
             if not self.is_set(self.filter_column_2):
+                # one filter column used
                 condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
                 train_indexes = df_filter_column[condition1].index
                 test_indexes = df_filter_column[self.np.logical_not(condition1)].index
                 condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={valid_set_from}, df_filter_column[self.filter_column]<{valid_set_to})
                 validation_set_indexes = df_filter_column[condition1].index
             else:
+                # two filter columns specified
                 condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
                 condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>={train_set_from_2}, df_filter_column[self.filter_column_2]<{train_set_to_2})
                 train_indexes = df_filter_column[self.np.logical_and(condition1, condition2)].index
