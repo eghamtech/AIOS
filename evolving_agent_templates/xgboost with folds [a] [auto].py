@@ -84,8 +84,11 @@ class cls_ev_agent_{id}:
 
     def is_use_column(self, s):
         # determine whether given column should be ignored
+        if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
+            return False 
         if not self.is_set(self.ignore_columns_containing):
             return True
+        # ignore other columns containing specified parameter value
         if s.find(self.ignore_columns_containing)>=0:
             return False
         return True
