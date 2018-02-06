@@ -17,7 +17,7 @@
 #key=train_set_to_2;  type=random_from_set;  set=
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
-#key=ignore_columns_started_with;  type=random_from_set;  set=ev_
+#key=ignore_columns_containing;  type=random_from_set;  set=ev_field
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -62,7 +62,7 @@ class cls_ev_agent_{id}:
     filter_filename = trainfile   # filter columns are in trainfile which must be specified in Constants
     
     # fields matching the specified prefix will not be used in the model
-    ignore_columns_started_with = "{ignore_columns_started_with}"
+    ignore_columns_containing = "{ignore_columns_containing}"
     
     def __init__(self):
         # remove the target field for this instance from the data used for training
@@ -84,9 +84,9 @@ class cls_ev_agent_{id}:
 
     def is_use_column(self, s):
         # determine whether given column should be ignored
-        if not self.is_set(self.ignore_columns_started_with):
+        if not self.is_set(self.ignore_columns_containing):
             return True
-        if s.find(self.ignore_columns_started_with)==0:
+        if s.find(self.ignore_columns_containing)>=0:
             return False
         return True
         
