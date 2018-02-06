@@ -45,7 +45,7 @@ class cls_ev_agent_{id}:
     filter_column = "{filter_column}"
     filter_column_2 = "{filter_column_2}"
     filter_columns = [filter_column]
-    if len(filter_column_2)>0:
+    if len(filter_column_2)>0 and filter_column_2!="0":
         filter_columns.append(filter_column_2)
     filter_filename = trainfile
     
@@ -114,7 +114,7 @@ class cls_ev_agent_{id}:
         
         if use_validation_set:
             df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = self.filter_columns)
-            if len(self.filter_column_2)==0:
+            if len(self.filter_column_2)==0 or self.filter_column_2=="0":
                 condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
                 train_indexes = df_filter_column[condition1].index
                 test_indexes = df_filter_column[self.np.logical_not(condition1)].index
@@ -163,7 +163,7 @@ class cls_ev_agent_{id}:
         if use_validation_set:
             df_test = df[df.index.isin(test_indexes)]
             df_test.reset_index(drop=True, inplace=True)
-            df_valid = df[df.index.isin(valid_indexes)]
+            df_valid = df[df.index.isin(validation_set_indexes)]
             df_valid.reset_index(drop=True, inplace=True)
             df = df[df.index.isin(train_indexes)]
             df.reset_index(drop=True, inplace=True)
