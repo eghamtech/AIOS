@@ -7,8 +7,16 @@
 #key=max_depth;  type=random_int;  from=6;  to=14;  step=2
 #key=nfolds;  type=random_int;  from=10;  to=10;  step=1
 #key=use_validation_set;  type=random_from_set;  set=True
-#key=filter_column;  type=random_from_set;  set=id
-#key=validation_set_start_value;  type=random_from_set;  set=350000
+#key=filter_column;  type=random_from_set;  set=Submission_Date_TS
+#key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
+#key=train_set_to;  type=random_from_set;  set=self.timestamp('2014-11-01')
+#key=valid_set_from;  type=random_from_set;  set=self.timestamp('2014-11-01')
+#key=valid_set_to;  type=random_from_set;  set=self.timestamp('2016-11-01')
+#key=filter_column_2;  type=random_from_set;  set=
+#key=train_set_from_2;  type=random_from_set;  set=
+#key=train_set_to_2;  type=random_from_set;  set=
+#key=valid_set_from_2;  type=random_from_set;  set=
+#key=valid_set_to_2;  type=random_from_set;  set=
 #end_of_genes_definitions
 
 class cls_ev_agent_{id}:
@@ -35,6 +43,10 @@ class cls_ev_agent_{id}:
     data_defs = {data}
     
     filter_column = "{filter_column}"
+    filter_column_2 = "{filter_column_2}"
+    filter_columns = [filter_column]
+    if len(filter_column_2)>0:
+        filter_columns.append(filter_column_2)
     filter_filename = trainfile
     
     def __init__(self):
@@ -101,11 +113,25 @@ class cls_ev_agent_{id}:
         use_validation_set = {use_validation_set}
         
         if use_validation_set:
-            validation_set_start_value = {validation_set_start_value}
-            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
-            use_indexes = df_filter_column[df_filter_column[self.filter_column]<validation_set_start_value].index
-            validation_set_indexes = df_filter_column[df_filter_column[self.filter_column]>=validation_set_start_value].index
-            print ("Length of train set:", len(use_indexes), ", length of validation set:", len(validation_set_indexes))
+            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = self.filter_columns)
+            if len(self.filter_column_2)==0:
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
+                train_indexes = df_filter_column[condition1].index
+                test_indexes = df_filter_column[self.np.logical_not(condition1)].index
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={valid_set_from}, df_filter_column[self.filter_column]<{valid_set_to})
+                validation_set_indexes = df_filter_column[condition1].index
+            else:
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
+                condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>={train_set_from_2}, df_filter_column[self.filter_column_2]<{train_set_to_2})
+                train_indexes = df_filter_column[self.np.logical_and(condition1, condition2)].index
+                test_indexes = df_filter_column[self.np.logical_not(self.np.logical_and(condition1, condition2))].index
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={valid_set_from}, df_filter_column[self.filter_column]<{valid_set_to})
+                condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>={valid_set_from_2}, df_filter_column[self.filter_column_2]<{valid_set_to_2})
+                validation_set_indexes = df_filter_column[self.np.logical_and(condition1, condition2)].index
+            
+            print ("Length of train set:", len(train_indexes))
+            print ("Length of test set:", len(test_indexes))
+            print ("length of validation set:", len(validation_set_indexes))
         
         df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]] #main_data[[target]]
 
@@ -135,11 +161,14 @@ class cls_ev_agent_{id}:
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
 
         if use_validation_set:
-            df_valid = df[df.index.isin(use_indexes)==False]
+            df_test = df[df.index.isin(test_indexes)]
+            df_test.reset_index(drop=True, inplace=True)
+            df_valid = df[df.index.isin(valid_indexes)]
             df_valid.reset_index(drop=True, inplace=True)
-            df = df[df.index.isin(use_indexes)]
+            df = df[df.index.isin(train_indexes)]
             df.reset_index(drop=True, inplace=True)
             predicted_valid_set = self.np.zeros(len(df_valid))
+            predicted_test_set = self.np.zeros(len(df_test))
             
         if is_binary:
             print ("detected binary target. use LOGLOSS")
@@ -226,6 +255,7 @@ class cls_ev_agent_{id}:
 
             if use_validation_set:
                 predicted_valid_set += predictor.predict(self.xgb.DMatrix(df_valid.drop(self.target_col, axis=1)))
+                predicted_test_set += predictor.predict(self.xgb.DMatrix(df_test.drop(self.target_col, axis=1)))
                 
         weighted_result = weighted_result/count_records_notnull
         print ("weighted_result:", weighted_result)
@@ -237,6 +267,7 @@ class cls_ev_agent_{id}:
             print ("Length of validation set:", len(predicted_valid_set))
             y_valid = df_valid[self.target_col]
             predicted_valid_set = predicted_valid_set / nfolds
+            predicted_test_set = predicted_test_set / nfolds
             
             if is_binary:                        
                 try:
@@ -263,8 +294,8 @@ class cls_ev_agent_{id}:
         if mode==1:
             if use_validation_set:
                 df_filter_column[self.output_column] = float('nan')
-                df_filter_column.ix[use_indexes, self.output_column] = prediction
-                df_filter_column.ix[validation_set_indexes, self.output_column] = predicted_valid_set
+                df_filter_column.ix[train_indexes, self.output_column] = prediction
+                df_filter_column.ix[test_indexes, self.output_column] = predicted_test_set
                 df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
             else:
                 df[self.output_column] = prediction
