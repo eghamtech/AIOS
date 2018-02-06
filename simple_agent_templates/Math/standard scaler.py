@@ -71,11 +71,16 @@ class cls_agent_{id}:
                 scaler = self.MinMaxScaler()
             elif i==3:
                 scaler = self.QuantileTransformer(n_quantiles=100)
+            
+            try:
+                self.df[output_column] = scaler.fit_transform(np_column)
+            except:
+                print ("Error applying Scaler" + str(i) + "("+self.col1+")" + " setting new column to 0")
+                self.df[output_column] = 0
                 
-            self.df[output_column] = scaler.fit_transform(np_column)
             self.df[[output_column]].to_csv(workdir+output_filename)
         
-            print ("Scaler" + str(i) + "("+self.col1+")")
+            print ("Scaler" + str(i) + "("+self.col1+")" + " saved to file")
             print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
             
             from sklearn.externals import joblib
@@ -99,9 +104,13 @@ class cls_agent_{id}:
             else:
                 #use loaded scaler
                 scaler = self.scalers[i-1]
+            
+            try:
+                df_add[output_column] = scaler.transform(np_column)
+            except:
+                print ("Error applying Scaler" + str(i) + "("+self.col1+")" + " setting new column to 0")
+                df_add[output_column] = 0
                 
-            df_add[output_column] = scaler.transform(np_column)
-        
         self.scalers_loaded = True
 
 
