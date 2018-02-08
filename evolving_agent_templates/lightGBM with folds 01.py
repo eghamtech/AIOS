@@ -14,19 +14,21 @@
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=ev_field
-#key=u_limit;  type=random_float;  from=0.01;  to=0.4;  step=0.001
-#key=u_limit_apply;  type=random_float;  from=0.01;  to=0.4;  step=0.001
-#key=l_limit;  type=random_float;  from=-0.4;  to=-0.01;  step=0.001
-#key=l_limit_apply;  type=random_float;  from=-0.4;  to=-0.01;  step=0.001
+#key=objective_regression; type=random_from_set;  set='regression_l2','regression_l1','huber','fair','poisson','quantile','mape','gamma','tweedie'
+#key=boosting_type; type=random_from_set;  set='gbdt','rf','dart','goss'
 #key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
 #key=sub_feature;  type=random_float;  from=0.2;  to=1;  step=0.01
 #key=bagging_fraction;  type=random_float;  from=0.2;  to=1;  step=0.01
 #key=bagging_freq;  type=random_int;  from=10;  to=100;  step=1
-#key=num_leaves;  type=random_int;  from=512;  to=4096;  step=5
+#key=num_leaves;  type=random_int;  from=16;  to=4096;  step=1
+#key=tree_learner; type=random_from_set;  set='serial','feature','data','voting'
 #key=min_data;  type=random_int;  from=100;  to=2000;  step=5
 #key=feature_fraction_seed;  type=random_int;  from=1;  to=10;  step=1
 #key=bagging_seed;  type=random_int;  from=1;  to=10;  step=1
 #key=boost_from_average;  type=random_from_set;  set=True,False
+#key=is_unbalance;  type=random_from_set;  set=True,False
+#key=lambda_l1;  type=random_float;  from=0;  to=1;  step=0.01
+#key=lambda_l2;  type=random_float;  from=0;  to=1;  step=0.01
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -39,7 +41,7 @@ class cls_ev_agent_{id}:
     warnings.filterwarnings("ignore")
 
     import pandas as pd
-    import xgboost as xgb
+    import lightgbm as lgb
     import numpy as np
     import math
     import os.path
@@ -50,7 +52,7 @@ class cls_ev_agent_{id}:
     result_id = {id}
     # create new field name based on "field_ev_prefix" with unique instance ID
     # and filename to save new field data
-    field_ev_prefix = "ev_field_"
+    field_ev_prefix = "ev_field_lgbm_"
     output_column = field_ev_prefix + str(result_id)
     output_filename = output_column + ".csv"
 
@@ -80,7 +82,7 @@ class cls_ev_agent_{id}:
         
         # if saved model for the target field already exists then load it from filesystem
         if self.os.path.isfile(workdir + self.output_column + ".model"):
-            self.predictor_stored = self.xgb.Booster()
+            self.predictor_stored = self.lgb.Booster()
             self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
         # create a list of columns to filter data set by
@@ -109,7 +111,7 @@ class cls_ev_agent_{id}:
         # this method can be used in Jupyter notebook to plot features of a particular model created by AIOS
         # copy whole DNA code as executed by AIOS into notebook with global Constants, initialise/run the class first
         #%matplotlib inline
-        #self.xgb.plot_importance(self.bst, max_num_features=n_top_features).figure.set_size_inches(graph_width,graph_height)
+        #self.lgb.plot_importance(self.bst, max_num_features=n_top_features).figure.set_size_inches(graph_width,graph_height)
 
     def my_log_loss(self, a, b):
         eps = 1e-9
@@ -238,13 +240,34 @@ class cls_ev_agent_{id}:
             predicted_valid_set = self.np.zeros(len(df_valid))
             predicted_test_set = self.np.zeros(len(df_test))
             
+        # prepare LGBM parameters    
+        params = {}
+        params['learning_rate'] = {learning_rate}       # shrinkage_rate
+        params['boosting_type'] = {boosting_type}
+        params['sub_feature'] = {sub_feature}           # feature_fraction (small values => use very different submodels)
+        params['bagging_fraction'] = {bagging_fraction} # sub_row
+        params['bagging_freq'] = {bagging_freq}
+        params['num_leaves'] = 	{num_leaves}            # num_leaf
+        params['tree_learner'] = {tree_learner}
+        params['min_data'] = {min_data}                 # min_data_in_leaf
+        params['verbose'] = 0
+        params['feature_fraction_seed'] = {feature_fraction_seed}
+        params['bagging_seed'] = {bagging_seed}
+        params['max_depth'] = -1
+        params['num_threads'] = 4
+        params['boost_from_average'] = {boost_from_average}
+        params['is_unbalance'] = {is_unbalance}
+        params['lambda_l1'] = {lambda_l1}
+        params['lambda_l2'] = {lambda_l2}
+
         if is_binary:
             print ("detected binary target: use LOGLOSS")
-            param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'binary:logistic', 'eval_metric':'logloss', 'nthread':4}
+            params['objective'] = 'binary'
+            params['metric'] = ['auc', 'binary_logloss']
         else:
             print ("detected regression target: use Logistic Regression")
-            #param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:linear', 'eval_metric':'mae', 'nthread':4}
-            param = {'max_depth':{max_depth}, 'eta':{eta}, 'colsample_bytree':{colsample_bytree}, 'subsample': {subsample}, 'objective':'reg:logistic', 'nthread':4}
+            params['objective'] = {objective_regression}
+            params['metric'] = ['auc', 'rmse']
 
         #############################################################
         #
@@ -290,12 +313,12 @@ class cls_ev_agent_{id}:
             y_test = x_test[self.target_col]
             x_test = x_test.drop(self.target_col, 1)
 
-            dtrain = self.xgb.DMatrix( x_train, label=y_train)    # convert DF to xgb.DMatrix as required by XGB
-            dtest = self.xgb.DMatrix( x_test)
+            dtrain = self.lgb.Dataset( x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
+            dtest = self.lgb.Dataset( x_test)
 
             num_round=100000
-            watchlist  = [(dtrain,'train'), (self.xgb.DMatrix( x_test, label=y_test), 'test')]
-            predictor = self.xgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
+            watchlist  = [(dtrain,'train'), (self.lgb.Dataset( x_test, label=y_test), 'test')]
+            predictor = self.lgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
             self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
             
             if mode==1 and fold==nfolds-1:
@@ -322,13 +345,13 @@ class cls_ev_agent_{id}:
             count_records_notnull += len(pred)
 
             # predict all examples in the original test set which may include erroneous examples previously removed
-            pred_all_test = predictor.predict(self.xgb.DMatrix(x_test_orig.drop(self.target_col, axis=1)))
+            pred_all_test = predictor.predict(self.lgb.Dataset(x_test_orig.drop(self.target_col, axis=1)))
             prediction = self.np.concatenate([prediction,pred_all_test])
 
             # predict validation and remainder sets examples
             if use_validation_set:
-                predicted_valid_set += predictor.predict(self.xgb.DMatrix(df_valid.drop(self.target_col, axis=1)))
-                predicted_test_set += predictor.predict(self.xgb.DMatrix(df_test.drop(self.target_col, axis=1)))
+                predicted_valid_set += predictor.predict(self.lgb.Dataset(df_valid.drop(self.target_col, axis=1)))
+                predicted_test_set += predictor.predict(self.lgb.Dataset(df_test.drop(self.target_col, axis=1)))
                 
         weighted_result = weighted_result/count_records_notnull
         print ("weighted_result:", weighted_result)
