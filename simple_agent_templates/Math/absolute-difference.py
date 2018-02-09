@@ -32,21 +32,26 @@ class cls_agent_{id}:
     output_column = field_prefix + str(result_id)
     output_filename = output_column + ".csv"
 
+    # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
+    # read the data for selected columns and merge into dataframe
+    self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
+    self.df = self.df.merge(self.pd.read_csv(workdir+self.file2)[[self.col2]], left_index=True, right_index=True)
+        
     def run_on(self, df_run):
         df_run[self.output_column] = abs(df_run[self.col1] - df_run[self.col2])
 
     def run(self, mode):
+        # this is main method called by AIOS to process data
         print ("enter run mode " + str(mode))
-        self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
-        self.df = self.df.merge(self.pd.read_csv(workdir+self.file2)[[self.col2]], left_index=True, right_index=True)
-        
+     
         self.run_on(self.df)
         
         self.df[[self.output_column]].to_csv(workdir+self.output_filename)
-        print (self.col1+"*"+self.col2)
+        print ("ABS(" + self.col1+" - "+self.col2+ ")")
         print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(len(self.df)))
     
     def apply(self, df_add):
+        # this method is called by AIOS when additional data is supplied and needs to be predicted on
         self.run_on(df_add)
 
 agent_{id} = cls_agent_{id}()
