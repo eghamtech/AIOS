@@ -13,7 +13,17 @@
 #key=dropout;  type=random_float;  from=0.02;  to=0.7;  step=0.02
 #key=use_validation_set;  type=random_from_set;  set=True
 #key=filter_column;  type=random_from_set;  set=Submission_Date_TS
-#key=validation_set_start_value;  type=random_from_set;  set=self.timestamp('2014-11-01')
+#key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
+#key=train_set_to;  type=random_from_set;  set=self.timestamp('2014-11-01')
+#key=valid_set_from;  type=random_from_set;  set=self.timestamp('2014-11-01')
+#key=valid_set_to;  type=random_from_set;  set=self.timestamp('2016-11-01')
+#key=filter_column_2;  type=random_from_set;  set=
+#key=train_set_from_2;  type=random_from_set;  set=
+#key=train_set_to_2;  type=random_from_set;  set=
+#key=valid_set_from_2;  type=random_from_set;  set=
+#key=valid_set_to_2;  type=random_from_set;  set=
+#key=ignore_columns_containing;  type=random_from_set;  set=ev_field
+#key=include_columns_containing;  type=random_from_set;  set=scaled_
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -71,11 +81,19 @@ class cls_ev_agent_{id}:
     target_col = target_definition.split("|")[0]
     target_file = target_definition.split("|")[1]
 
-    # obtain random selection of fields; number of fields to be selected specified in {data}:length gene for this instance
+    # obtain random selection of fields; number of fields to be selected specified in (data):length gene for this instance
     data_defs = {data}
     
+    # if filter columns are specified then training and validation sets will be selected based on filter criteria
+    # based on filter criteria training + validation sets will not necessarily constitute all data, the remainder will be called "test set"
     filter_column = "{filter_column}"
-    filter_filename = trainfile
+    filter_column_2 = "{filter_column_2}"
+    filter_filename = trainfile           # filter columns are in trainfile which must be specified in Constants
+    
+    # fields matching the specified string will not be used in the model
+    ignore_columns_containing = "{ignore_columns_containing}"
+    # include only fields matching string e.g., only properly scaled columns should be used with MLP
+    include_columns_containing = "{include_columns_containing}"
     
     with tf.device(s_tf_device):
         # Force TensorFlow to use single thread.
@@ -98,19 +116,25 @@ class cls_ev_agent_{id}:
         sess.run(init)
         K.set_session(sess)
     
-    def __init__(self):
-        # remove the target field for this instance from the data used for training
-        if self.target_definition in self.data_defs:
-            self.data_defs.remove(self.target_definition)
-        
-        with self.tf.device(self.s_tf_device):
-            if self.os.path.isfile(workdir + self.output_column + ".model"):
-                from keras.models import load_model
-                self.predictor_stored = load_model(workdir + self.output_column + ".model")
+    def is_set(self, s):
+        return len(s)>0 and s!="0"
     
+    def is_use_column(self, s):
+        # determine whether given column should be used or ignored
+        if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
+            return False
+        # ignore other columns containing specified parameter value
+        if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing)>=0:
+            return False
+        # include columns specified in parameter
+        if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing)>=0:
+            return True
+        # ignore all other columns
+        return False
+   
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
-    
+ 
     def my_log_loss(self, a, b):
         eps = 1e-9
         sum1 = 0.0
@@ -118,6 +142,24 @@ class cls_ev_agent_{id}:
             bx = min(max(b[k],eps), 1-eps)
             sum1 += 1.0 * a[k] * self.math.log(bx) + 1.0 * (1 - a[k]) * self.math.log(1 - bx)
         return -sum1/len(a)
+    
+    
+    def __init__(self):
+        # remove the target field for this instance from the data used for training
+        if self.target_definition in self.data_defs:
+            self.data_defs.remove(self.target_definition)
+        
+        with self.tf.device(self.s_tf_device):
+            # if saved model for the target field already exists then load it from filesystem
+            if self.os.path.isfile(workdir + self.output_column + ".model"):
+                from keras.models import load_model
+                self.predictor_stored = load_model(workdir + self.output_column + ".model")
+                
+        # create a list of columns to filter data set by
+        self.filter_columns = [self.filter_column]
+        if self.is_set(self.filter_column_2):
+            self.filter_columns.append(self.filter_column_2)
+    
     
     def apply(self, df_add):
         # this method is called by AIOS when additional data is supplied and needs to be predicted on
@@ -163,92 +205,93 @@ class cls_ev_agent_{id}:
             df_add[self.output_column] = pred
         
     def run(self, mode):
+        # this is main method called by AIOS with supplied DNA Genes to process data
         global trainfile
         from sklearn.metrics import roc_auc_score
         from sklearn.metrics import confusion_matrix
         from sklearn.metrics import classification_report
+        from sklearn.metrics import mean_squared_error
+        from math import sqrt
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
         
         use_validation_set = {use_validation_set}
         
+        # obtain indexes for train, validation and remainder sets, if validation set is required
         if use_validation_set:
-            validation_set_start_value = {validation_set_start_value}
-            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
-            use_indexes = df_filter_column[df_filter_column[self.filter_column]<{validation_set_start_value}].index
-            validation_set_indexes = df_filter_column[df_filter_column[self.filter_column]>=validation_set_start_value].index
-            print ("Length of train set:", len(use_indexes), ", length of validation set:", len(validation_set_indexes))
+            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = self.filter_columns)
+            if not self.is_set(self.filter_column_2):
+                # one filter column used
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
+                train_indexes = df_filter_column[condition1].index
+                test_indexes = df_filter_column[self.np.logical_not(condition1)].index
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={valid_set_from}, df_filter_column[self.filter_column]<{valid_set_to})
+                validation_set_indexes = df_filter_column[condition1].index
+            else:
+                # two filter columns specified
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
+                condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>={train_set_from_2}, df_filter_column[self.filter_column_2]<{train_set_to_2})
+                train_indexes = df_filter_column[self.np.logical_and(condition1, condition2)].index
+                test_indexes = df_filter_column[self.np.logical_not(self.np.logical_and(condition1, condition2))].index
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={valid_set_from}, df_filter_column[self.filter_column]<{valid_set_to})
+                condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>={valid_set_from_2}, df_filter_column[self.filter_column_2]<{valid_set_to_2})
+                validation_set_indexes = df_filter_column[self.np.logical_and(condition1, condition2)].index
+            
+            print ("Length of train set:", len(train_indexes))
+            print ("Length of test/remainder set:", len(test_indexes))
+            print ("Length of validation set:", len(validation_set_indexes))
             
         #############################################################
         #                   DATA PREPARATION
         #############################################################
-
-        # read data from the original data file loaded into Memory (specified in Constants as "trainfile")
-        # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
-        #main_data = self.pd.read_csv(workdir+trainfile)
-        # read data from CSV file containing the prediction target field selected for this instance
-        dftarget = self.pd.read_csv(workdir+self.target_file)[[self.target_col]]
-
-        # read each required field's data from a corresponding CSV file
-        # number of fields actually read specified in {fields_to_use} gene
+        # number of fields actually read specified in (fields_to_use) gene
         n_fields_to_use = {fields_to_use}
         
-        # assemble a list of column names given to the agent by AIOS in {data} DNA gene up-to {fields_to_use} gene
-        cols = [self.target_col]         # cols wil be a non-unique list of columns
-        columns_new = [self.target_col]  # columns_new will be a unique list of columns
+        # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
+        # read data from CSV file containing the prediction target field selected for this instance
+        df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]]
+
+        columns_new = [self.target_col]
+        columns = [self.target_col]
+        # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
         cols_count = 0
         for i in range(0,len(self.data_defs)):
-            cols_count+=1
-            if cols_count>n_fields_to_use:
-                break
-            # data_defs item contains two parts: column name and file name - extract column name only
-            col_name = self.data_defs[i].split("|")[0]
-            cols.append(col_name)
-            # some columns may appear multiple times in data_defs as inhereted from parents DNA
-            # assemble a list of columns assigning unique names to repeating columns
-            ncol_count = cols.count(col_name)
-            if ncol_count==1:
-                columns_new.append(col_name)
-            else:
-                columns_new.append(col_name+"_v"+str(ncol_count))
-                
-        # create dataframe with complete list of unique columns and a target column
-        df = self.pd.DataFrame(0.0, index=self.np.arange(len(dftarget)), columns=columns_new)
-        df[self.target_col] = dftarget[self.target_col]
-        
-        print ("linking dataframe...")
-        cols_count = 0
-        j=0
-        for i in range(0,len(self.data_defs)):
-            cols_count+=1
-            j+=1
-            if cols_count>n_fields_to_use:
-                break
             col_name = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
             
-            col_new_name = columns_new[i+1]  #+1 because 1st column is target
+            if self.is_use_column(col_name):
+                cols_count+=1
+                if cols_count>n_fields_to_use:
+                    break
+                # read each required field's data from a corresponding CSV file
+                df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
 
-            #if file_name==trainfile:
-            #    df[col_name] = main_data[col_name]
-            #else:
-            # read column from another CSV file and add to df
-            df[col_new_name] = self.pd.read_csv(workdir+file_name)[[col_name]]
-            df[col_new_name] = df[col_new_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
-            
-            if j>=100:
-                print(cols_count)
-                j = 0
+                # some columns may appear multiple times in data_defs as inhereted from parents DNA
+                # assemble a list of columns assigning unique names to repeating columns
+                columns.append(col_name)
+                ncol_count = columns.count(col_name)
+                if ncol_count==1:
+                    columns_new.append(col_name)
+                else:
+                    columns_new.append(col_name+"_v"+str(ncol_count))
 
+        # rename columns in df to unique names
+        df.columns = columns_new
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
+        print ("Columns used: ", columns_new)
         
         original_row_count = len(df)
         
         if use_validation_set:
-            df_valid = df[df.index.isin(use_indexes)==False]
+            # use previously calculated indexes to select train, validation and remainder sets
+            df_test = df[df.index.isin(test_indexes)]
+            df_test.reset_index(drop=True, inplace=True)
+            df_valid = df[df.index.isin(validation_set_indexes)]
             df_valid.reset_index(drop=True, inplace=True)
-            df = df[df.index.isin(use_indexes)]
+            df = df[df.index.isin(train_indexes)]
             df.reset_index(drop=True, inplace=True)
+            # initialise prediction columns for validation and test as they will be aggregate predictions from multiple folds
             predicted_valid_set = self.np.zeros(len(df_valid))
+            predicted_test_set = self.np.zeros(len(df_test))
             
         # analyse target column whether it is binary which may result in different loss function used
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
@@ -302,6 +345,7 @@ class cls_ev_agent_{id}:
             #############################################################
             #                   MAIN LOOP
             #############################################################
+            # divide training data into nfolds of size block
             block = int(len(df)/n_folds)
 
             prediction = []
@@ -320,30 +364,30 @@ class cls_ev_agent_{id}:
 
                 x_test = df[df.index.isin(range_predict)]
                 x_test.reset_index(drop=True, inplace=True)
-                x_test_orig = x_test.copy()
-                x_test = x_test[x_test[self.target_col].notnull()]
+                x_test_orig = x_test.copy()                                 # save original test set before removing null values
+                x_test = x_test[x_test[self.target_col].notnull()]          # remove examples that have no proper target label
                 x_test.reset_index(drop=True, inplace=True)
 
                 x_train = df[df.index.isin(range_predict)==False]
                 x_train.reset_index(drop=True, inplace=True)
-                x_train= x_train[x_train[self.target_col].notnull()]
+                x_train = x_train[x_train[self.target_col].notnull()]       # remove examples that have no proper target label
                 x_train.reset_index(drop=True, inplace=True)
 
                 print ("x_test rows count: " + str(len(x_test)))
                 print ("x_train rows count: " + str(len(x_train)))
 
-                y_train = self.np.array( x_train[self.target_col] )
+                y_train = self.np.array( x_train[self.target_col] )          # separate training fields and the target
                 x_train = self.np.array( x_train.drop(self.target_col, 1) )
 
                 y_test = self.np.array( x_test[self.target_col] )
                 x_test = self.np.array( x_test.drop(self.target_col, 1) )
 
                 mlp_history = mlp_model.fit( x_train, y_train,
-                    batch_size=n_batch_size,
-                    epochs=n_epochs,  
-                    verbose=0,
-                    validation_data=(x_test, y_test),
-                    callbacks=[early_stopper] )
+                                             batch_size=n_batch_size,
+                                             epochs=n_epochs,  
+                                             verbose=0,
+                                             validation_data=(x_test, y_test),
+                                             callbacks=[early_stopper] )
 
                 print(self.pd.DataFrame(mlp_history.history))
 
@@ -354,10 +398,6 @@ class cls_ev_agent_{id}:
                 if mode==1 and fold==n_folds-1:
                     mlp_model.save(workdir + self.output_column + ".model")
 
-                result = score[0]
-                weighted_result += result * len(x_test)
-                count_records_notnull += len(x_test)
-
                 if self.np.isnan(score[0]) or score[1] == 0:
                     print ('Test Loss is NaN or Accuracy = 0, no point to carry on with more folds')
                     weighted_result = 99999*count_records_notnull      
@@ -365,6 +405,7 @@ class cls_ev_agent_{id}:
                 
                 pred = mlp_model.predict(x_test, verbose=0)
                 if is_binary:
+                    result = score[0]
                     # show various metrics as per
                     # http://scikit-learn.org/stable/modules/model_evaluation.html#classification-report
                     result_roc_auc = roc_auc_score(y_test, pred)
@@ -373,16 +414,27 @@ class cls_ev_agent_{id}:
                     print ("ROC AUC score: ", result_roc_auc)
                     print ("Confusion Matrix:\n", result_cm)
                     print ("Classification Report:\n", result_cr)
+                else:
+                    result = mean_squared_error(y_test, pred)
+                    
+                weighted_result += result * len(x_test)
+                count_records_notnull += len(x_test)
                 
+                # predict all examples in the original test set which may include erroneous examples previously removed
                 pred_all_test = mlp_model.predict(self.np.array(x_test_orig.drop(self.target_col, axis=1)), verbose=0)
                 pred_all_test = [item for sublist in pred_all_test for item in sublist]
 
                 prediction = self.np.concatenate([prediction,pred_all_test])
                 
+                # predict validation and remainder sets examples
                 if use_validation_set:
                     pred1 = mlp_model.predict(self.np.array(df_valid.drop(self.target_col, axis=1)), verbose=0)
                     pred1 = [item for sublist in pred1 for item in sublist]
                     predicted_valid_set += self.np.array(pred1)
+                    
+                    pred2 = mlp_model.predict(self.np.array(df_test.drop(self.target_col, axis=1)), verbose=0)
+                    pred2 = [item for sublist in pred2 for item in sublist]
+                    predicted_test_set += self.np.array(pred2)
 
             weighted_result = weighted_result/count_records_notnull
             print ("weighted_result:", weighted_result)
@@ -392,8 +444,9 @@ class cls_ev_agent_{id}:
                 print()
                 print ("*************  VALIDATION SET RESULTS  *****************")
                 print ("Length of validation set:", len(predicted_valid_set))
-                predicted_valid_set = predicted_valid_set / n_folds
                 y_valid = df_valid[self.target_col]
+                predicted_valid_set = predicted_valid_set / n_folds
+                predicted_test_set = predicted_test_set / n_folds
                 
                 if is_binary:                 
                     try:
@@ -408,8 +461,10 @@ class cls_ev_agent_{id}:
                     except Exception as e:
                         print (e)
                 else:
-                    result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
-                    print ("MAE: ", result)
+                    #result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
+                    #print ("MAE: ", result)
+                    result = mean_squared_error(y_valid, predicted_valid_set)
+                    print ("Mean Squared Error: ", result)
             
             #############################################################
             #                   OUTPUT
@@ -417,8 +472,8 @@ class cls_ev_agent_{id}:
             if mode==1:
                 if use_validation_set:
                     df_filter_column[self.output_column] = float('nan')
-                    df_filter_column.ix[use_indexes, self.output_column] = prediction
-                    df_filter_column.ix[validation_set_indexes, self.output_column] = predicted_valid_set
+                    df_filter_column.ix[train_indexes, self.output_column] = prediction
+                    df_filter_column.ix[test_indexes, self.output_column] = predicted_test_set
                     df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
                 else:
                     df[self.output_column] = prediction
