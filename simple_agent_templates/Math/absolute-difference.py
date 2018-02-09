@@ -34,8 +34,8 @@ class cls_agent_{id}:
 
     # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
     # read the data for selected columns and merge into dataframe
-    self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
-    self.df = self.df.merge(self.pd.read_csv(workdir+self.file2)[[self.col2]], left_index=True, right_index=True)
+    df = pd.read_csv(workdir+file1)[[col1]]
+    df = df.merge(pd.read_csv(workdir+file2)[[col2]], left_index=True, right_index=True)
         
     def run_on(self, df_run):
         df_run[self.output_column] = abs(df_run[self.col1] - df_run[self.col2])
