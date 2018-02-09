@@ -153,7 +153,7 @@ class cls_ev_agent_{id}:
         # rename columns in df to unique names
         df.columns = columns_new
         # predict new data set in df
-        dtest = self.xgb.DMatrix(df)
+        dtest = self.lgb.Dataset(df)
         pred = self.predictor_stored.predict(dtest)
         df_add[self.output_column] = pred
 
