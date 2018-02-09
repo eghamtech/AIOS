@@ -153,8 +153,8 @@ class cls_ev_agent_{id}:
         # rename columns in df to unique names
         df.columns = columns_new
         # predict new data set in df
-        dtest = self.lgb.Dataset(df)
-        pred = self.predictor_stored.predict(dtest)
+        #dtest = self.lgb.Dataset(df)
+        pred = self.predictor_stored.predict(df)
         df_add[self.output_column] = pred
 
     def run(self, mode):
@@ -314,7 +314,7 @@ class cls_ev_agent_{id}:
             x_test = x_test.drop(self.target_col, 1)
 
             dtrain = self.lgb.Dataset( x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
-            dtest = self.lgb.Dataset( x_test)
+            #dtest = self.lgb.Dataset( x_test)
 
             num_round=100000
             watchlist  = [self.lgb.Dataset(x_test, label=y_test)]
@@ -324,7 +324,7 @@ class cls_ev_agent_{id}:
             if mode==1 and fold==nfolds-1:
                 predictor.save_model(workdir + self.output_column + ".model")
 
-            pred = predictor.predict(dtest)
+            pred = predictor.predict(x_test)
             if is_binary:
                 result = self.my_log_loss(y_test, pred)
                 # show various metrics as per
@@ -345,13 +345,14 @@ class cls_ev_agent_{id}:
             count_records_notnull += len(pred)
 
             # predict all examples in the original test set which may include erroneous examples previously removed
-            pred_all_test = predictor.predict(self.lgb.Dataset(x_test_orig.drop(self.target_col, axis=1)))
+            #pred_all_test = predictor.predict(self.lgb.Dataset(x_test_orig.drop(self.target_col, axis=1)))
+            pred_all_test = predictor.predict(x_test_orig.drop(self.target_col, axis=1))
             prediction = self.np.concatenate([prediction,pred_all_test])
 
             # predict validation and remainder sets examples
             if use_validation_set:
-                predicted_valid_set += predictor.predict(self.lgb.Dataset(df_valid.drop(self.target_col, axis=1)))
-                predicted_test_set += predictor.predict(self.lgb.Dataset(df_test.drop(self.target_col, axis=1)))
+                predicted_valid_set += predictor.predict(df_valid.drop(self.target_col, axis=1))
+                predicted_test_set += predictor.predict(df_test.drop(self.target_col, axis=1))
                 
         weighted_result = weighted_result/count_records_notnull
         print ("weighted_result:", weighted_result)
