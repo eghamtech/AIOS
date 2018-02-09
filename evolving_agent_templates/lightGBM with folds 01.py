@@ -318,7 +318,7 @@ class cls_ev_agent_{id}:
 
             num_round=100000
             watchlist  = [(dtrain,'train'), (self.lgb.Dataset( x_test, label=y_test), 'test')]
-            predictor = self.lgb.train( param, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
+            predictor = self.lgb.train( params, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
             self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
             
             if mode==1 and fold==nfolds-1:
