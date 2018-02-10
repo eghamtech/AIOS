@@ -163,42 +163,37 @@ class cls_ev_agent_{id}:
     
     def apply(self, df_add):
         # this method is called by AIOS when additional data is supplied and needs to be predicted on
-        cols = []
-        columns_new = []
-        cols_count = 0
-        # assemble a list of column names given to the agent by AIOS in {data} DNA gene up-to {fields_to_use} gene
-        for i in range(0,len(self.data_defs)):
-            cols_count+=1
-            if cols_count>{fields_to_use}:
-                break
-            # data_defs item contains two parts: column name and file name - extract column name only
-            col_name = self.data_defs[i].split("|")[0]
-            cols.append(col_name)
-            # some columns may appear multiple times in data_defs as inhereted from parents DNA
-            # assemble a list of columns assigning unique names to repeating columns
-            ncol_count = cols.count(col_name)
-            if ncol_count==1:
-                columns_new.append(col_name)
-            else:
-                columns_new.append(col_name+"_v"+str(ncol_count))
-        
-        # create dataframe with complete list of unique columns
-        df = self.pd.DataFrame(0.0, index=self.np.arange(len(df_add)), columns=columns_new)
-        
         columns_new = []
         columns = []
-        
-        # find each column in supplied new data df_add and copy it to df with unique column name
+        # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
         cols_count = 0
         for i in range(0,len(self.data_defs)):
-            cols_count+=1
-            if cols_count>{fields_to_use}:
-                break
-            col_name = cols[i]
-            col_new_name = columns_new[i]
-            df[col_new_name] = df_add[col_name]
-            df[col_new_name] = df[col_new_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
+            col_name = self.data_defs[i].split("|")[0]
+            file_name = self.data_defs[i].split("|")[1]
+            
+            if self.is_use_column(col_name):
+                cols_count+=1
+                if cols_count>{fields_to_use}:
+                    break
+                # assemble dataframe column by column
+                if cols_count==1:
+                    df = df_add[[col_name]]
+                else:
+                    df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
+                
+                df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
+                # some columns may appear multiple times in data_defs as inhereted from parents DNA
+                # assemble a list of columns assigning unique names to repeating columns
+                columns.append(col_name)
+                ncol_count = columns.count(col_name)
+                if ncol_count==1:
+                    columns_new.append(col_name)
+                else:
+                    columns_new.append(col_name+"_v"+str(ncol_count))
         
+        # rename columns in df to unique names
+        df.columns = columns_new      
+   
         # apply previously loaded model to new data and obtain predictions
         with self.tf.device(self.s_tf_device):
             pred = self.predictor_stored.predict(self.np.array(df), verbose=0)
@@ -264,7 +259,8 @@ class cls_ev_agent_{id}:
                     break
                 # read each required field's data from a corresponding CSV file
                 df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
-
+                
+                df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
                 columns.append(col_name)
