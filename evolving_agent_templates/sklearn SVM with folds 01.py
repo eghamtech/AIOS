@@ -242,18 +242,17 @@ class cls_ev_agent_{id}:
             predicted_test_set = self.np.zeros(len(df_test))
             
         # prepare SVM parameters    
-        params = {}
-        params['svm_C'] = {svm_C}     
-        params['svm_kernel'] = {svm_kernel}
-        params['kernel_poly_degree'] = {kernel_poly_degree}           
-        params['kernel_gamma'] = {kernel_gamma}
-        params['kernel_coef'] = {kernel_coef}
-        params['probability_output'] = 	{probability_output}   
-        params['shrinking'] = {shrinking}
-        
-        params['stopping_tolerance'] = {stopping_tolerance}
-        params['class_0_weight'] = {class_0_weight}
-        params['class_1_weight'] = {class_1_weight}
+        params={}
+        params['svm_C']={svm_C}     
+        params['svm_kernel']={svm_kernel}
+        params['kernel_poly_degree']={kernel_poly_degree}           
+        params['kernel_gamma']={kernel_gamma}
+        params['kernel_coef']={kernel_coef}
+        params['probability_output']={probability_output}   
+        params['shrinking']={shrinking}
+        params['stopping_tolerance']={stopping_tolerance}
+        params['class_0_weight']={class_0_weight}
+        params['class_1_weight']={class_1_weight}
 
         #############################################################
         #
