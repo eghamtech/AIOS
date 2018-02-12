@@ -1,22 +1,22 @@
 #start_of_genes_definitions
-#key=data;  type=random_array_of_fields;  length=400
-#key=fields_to_use;  type=random_int;  from=40;  to=400;  step=1
-#key=nfolds;  type=random_int;  from=10;  to=10;  step=1
+#key=data;  type=random_array_of_fields;  length=700
+#key=fields_to_use;  type=random_int;  from=40;  to=700;  step=1
+#key=nfolds;  type=random_int;  from=2;  to=4;  step=1
 #key=use_validation_set;  type=random_from_set;  set=True
 #key=filter_column;  type=random_from_set;  set=Submission_Date_TS
 #key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
-#key=train_set_to;  type=random_from_set;  set=self.timestamp('2014-11-01')
-#key=valid_set_from;  type=random_from_set;  set=self.timestamp('2014-11-01')
-#key=valid_set_to;  type=random_from_set;  set=self.timestamp('2016-11-01')
+#key=train_set_to;  type=random_from_set;  set=self.timestamp('2017-09-01')
+#key=valid_set_from;  type=random_from_set;  set=self.timestamp('2017-09-01')
+#key=valid_set_to;  type=random_from_set;  set=self.timestamp('2018-11-01')
 #key=filter_column_2;  type=random_from_set;  set=
 #key=train_set_from_2;  type=random_from_set;  set=
 #key=train_set_to_2;  type=random_from_set;  set=
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
-#key=ignore_columns_containing;  type=random_from_set;  set=ev_field
+#key=ignore_columns_containing;  type=random_from_set;  set=
 #key=include_columns_containing;  type=random_from_set;  set=scaled_
 #key=svm_C;  type=random_float;  from=0.01;  to=5.0;  step=0.01
-#key=svm_kernel; type=random_from_set;  set=‘linear’,‘poly’,‘rbf’,‘sigmoid’
+#key=svm_kernel; type=random_from_set;  set='linear','poly','rbf','sigmoid'
 #key=kernel_poly_degree;  type=random_int;  from=1;  to=7;  step=1
 #key=kernel_gamma;  type=random_float;  from=0.0;  to=0.5;  step=0.001
 #key=kernel_coef;  type=random_float;  from=0.0;  to=0.5;  step=0.001
