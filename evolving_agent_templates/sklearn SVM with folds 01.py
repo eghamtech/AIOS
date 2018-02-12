@@ -15,23 +15,16 @@
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=ev_field
 #key=include_columns_containing;  type=random_from_set;  set=scaled_
-
-
-#key=objective_regression; type=random_from_set;  set='regression_l2','regression_l1','huber','fair','poisson','quantile','mape','gamma','tweedie'
-#key=boosting_type; type=random_from_set;  set='gbdt','rf','dart','goss'
-#key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
-#key=sub_feature;  type=random_float;  from=0.2;  to=1;  step=0.01
-#key=bagging_fraction;  type=random_float;  from=0.2;  to=1;  step=0.01
-#key=bagging_freq;  type=random_int;  from=10;  to=100;  step=1
-#key=num_leaves;  type=random_int;  from=16;  to=4096;  step=1
-#key=tree_learner; type=random_from_set;  set='serial','feature','data','voting'
-#key=min_data;  type=random_int;  from=100;  to=2000;  step=5
-#key=feature_fraction_seed;  type=random_int;  from=1;  to=10;  step=1
-#key=bagging_seed;  type=random_int;  from=1;  to=10;  step=1
-#key=boost_from_average;  type=random_from_set;  set=True,False
-#key=is_unbalance;  type=random_from_set;  set=True,False
-#key=lambda_l1;  type=random_float;  from=0;  to=1;  step=0.01
-#key=lambda_l2;  type=random_float;  from=0;  to=1;  step=0.01
+#key=svm_C;  type=random_float;  from=0.01;  to=5.0;  step=0.01
+#key=svm_kernel; type=random_from_set;  set=‘linear’,‘poly’,‘rbf’,‘sigmoid’
+#key=kernel_poly_degree;  type=random_int;  from=1;  to=7;  step=1
+#key=kernel_gamma;  type=random_float;  from=0.0;  to=0.5;  step=0.001
+#key=kernel_coef;  type=random_float;  from=0.0;  to=0.5;  step=0.001
+#key=probability_output;  type=random_from_set;  set=True
+#key=shrinking;  type=random_from_set;  set=True,False
+#key=stopping_tolerance;  type=random_float;  from=0.001;  to=0.01;  step=0.001
+#key=class_0_weight;  type=random_float;  from=0.0;  to=1;  step=0.01
+#key=class_1_weight;  type=random_float;  from=0.0;  to=1;  step=0.01
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -235,6 +228,14 @@ class cls_ev_agent_{id}:
         # analyse target column whether it is binary which may result in different loss function used
         is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
 
+        if is_binary:
+            print ("detected binary target: use LOGLOSS")
+        else:
+            print ("detected regression target: this agent cannot be used for regression!")
+            weighted_result = 99999
+            print ("fitness="+str(weighted_result))
+            return
+        
         if use_validation_set:
             # use previously calculated indexes to select train, validation and remainder sets
             df_test = df[df.index.isin(test_indexes)]
@@ -247,34 +248,18 @@ class cls_ev_agent_{id}:
             predicted_valid_set = self.np.zeros(len(df_valid))
             predicted_test_set = self.np.zeros(len(df_test))
             
-        # prepare LGBM parameters    
+        # prepare SVM parameters    
         params = {}
-        params['learning_rate'] = {learning_rate}       # shrinkage_rate
-        params['boosting_type'] = {boosting_type}
-        params['sub_feature'] = {sub_feature}           # feature_fraction (small values => use very different submodels)
-        params['bagging_fraction'] = {bagging_fraction} # sub_row
-        params['bagging_freq'] = {bagging_freq}
-        params['num_leaves'] = 	{num_leaves}            # num_leaf
-        params['tree_learner'] = {tree_learner}
-        params['min_data'] = {min_data}                 # min_data_in_leaf
-        params['verbose'] = 0
-        params['feature_fraction_seed'] = {feature_fraction_seed}
-        params['bagging_seed'] = {bagging_seed}
-        params['max_depth'] = -1
-        params['num_threads'] = 4
-        params['boost_from_average'] = {boost_from_average}
-        params['is_unbalance'] = {is_unbalance}
-        params['lambda_l1'] = {lambda_l1}
-        params['lambda_l2'] = {lambda_l2}
-
-        if is_binary:
-            print ("detected binary target: use LOGLOSS")
-            params['objective'] = 'binary'
-            params['metric'] = ['auc', 'binary_logloss']
-        else:
-            print ("detected regression target: use Logistic Regression")
-            params['objective'] = {objective_regression}
-            params['metric'] = ['auc', 'rmse']
+        params['svm_C'] = {svm_C}     
+        params['svm_kernel'] = {svm_kernel}
+        params['kernel_poly_degree'] = {kernel_poly_degree}           
+        params['kernel_gamma'] = {kernel_gamma}
+        params['kernel_coef'] = {kernel_coef}
+        params['probability_output'] = 	{probability_output}           
+        params['shrinking'] = {shrinking}
+        params['stopping_tolerance'] = {stopping_tolerance}            
+        params['class_0_weight'] = {class_0_weight}
+        params['class_1_weight'] = {class_1_weight}
 
         #############################################################
         #
@@ -314,24 +299,26 @@ class cls_ev_agent_{id}:
             print ("x_test rows count: " + str(len(x_test)))
             print ("x_train rows count: " + str(len(x_train)))
 
-            y_train = x_train[self.target_col]                    # separate training fields and the target
-            x_train = x_train.drop(self.target_col, 1)
+            y_train = self.np.array( x_train[self.target_col] )          # separate training fields and the target
+            x_train = self.np.array( x_train.drop(self.target_col, 1) )
 
-            y_test = x_test[self.target_col]
-            x_test = x_test.drop(self.target_col, 1)
+            y_test = self.np.array( x_test[self.target_col] )
+            x_test = self.np.array( x_test.drop(self.target_col, 1) )
 
-            dtrain = self.lgb.Dataset( x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
-            #dtest = self.lgb.Dataset( x_test)
-
-            num_round=100000
-            watchlist  = [self.lgb.Dataset(x_test, label=y_test)]
-            predictor = self.lgb.train( params, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
-            self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
+            svm_model = svm.SVC(C=params['svm_C'], class_weight={0:params['class_0_weight'], 1:params['class_1_weight']}, 
+                                coef0=params['kernel_coef'], decision_function_shape='ovr', 
+                                degree=params['kernel_poly_degree'], gamma=params['kernel_gamma'], 
+                                kernel=params['svm_kernel'], max_iter=-1, probability=params['probability_output'], 
+                                random_state=None, shrinking=params['shrinking'],
+                                tol=params['stopping_tolerance'], 
+                                verbose=False)
+            
+            svm_model.fit( x_train, y_train )
+            pred = svm_model.predict_proba(x_test)
             
             if mode==1 and fold==nfolds-1:
                 predictor.save_model(workdir + self.output_column + ".model")
 
-            pred = predictor.predict(x_test)
             if is_binary:
                 result = self.my_log_loss(y_test, pred)
                 # show various metrics as per
@@ -352,14 +339,19 @@ class cls_ev_agent_{id}:
             count_records_notnull += len(pred)
 
             # predict all examples in the original test set which may include erroneous examples previously removed
-            #pred_all_test = predictor.predict(self.lgb.Dataset(x_test_orig.drop(self.target_col, axis=1)))
-            pred_all_test = predictor.predict(x_test_orig.drop(self.target_col, axis=1))
+            pred_all_test = svm_model.predict_proba(self.np.array(x_test_orig.drop(self.target_col, axis=1))
+            pred_all_test = [item for sublist in pred_all_test for item in sublist]
             prediction = self.np.concatenate([prediction,pred_all_test])
 
             # predict validation and remainder sets examples
             if use_validation_set:
-                predicted_valid_set += predictor.predict(df_valid.drop(self.target_col, axis=1))
-                predicted_test_set += predictor.predict(df_test.drop(self.target_col, axis=1))
+                 pred1 = svm_model.predict_proba(self.np.array(df_valid.drop(self.target_col, axis=1)), verbose=0)
+                 pred1 = [item for sublist in pred1 for item in sublist]
+                 predicted_valid_set += self.np.array(pred1)
+                    
+                 pred2 = svm_model.predict_proba(self.np.array(df_test.drop(self.target_col, axis=1)), verbose=0)
+                 pred2 = [item for sublist in pred2 for item in sublist]
+                 predicted_test_set += self.np.array(pred2)
                 
         weighted_result = weighted_result/count_records_notnull
         print ("weighted_result:", weighted_result)
