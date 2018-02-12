@@ -43,6 +43,7 @@ class cls_ev_agent_{id}:
     import dateutil
     import calendar
     from sklearn import svm
+    from sklearn.externals import joblib
 
     # obtain a unique ID for the current instance
     result_id = {id}
@@ -80,9 +81,8 @@ class cls_ev_agent_{id}:
         
         # if saved model for the target field already exists then load it from filesystem
         if self.os.path.isfile(workdir + self.output_column + ".model"):
-            self.predictor_stored = self.lgb.Booster()
-            self.predictor_stored.load_model(workdir + self.output_column + ".model")
-
+            self.predictor_stored = self.joblib.load(workdir + self.output_column + ".model")
+            
         # create a list of columns to filter data set by
         self.filter_columns = [self.filter_column]
         if self.is_set(self.filter_column_2):
@@ -153,9 +153,8 @@ class cls_ev_agent_{id}:
         # rename columns in df to unique names
         df.columns = columns_new
         # predict new data set in df
-        #dtest = self.lgb.Dataset(df)
-        pred = self.predictor_stored.predict(df)
-        df_add[self.output_column] = pred
+        pred = self.predictor_stored.predict_proba(self.np.array(df))
+        df_add[self.output_column] = pred[:,1]
 
     def run(self, mode):
         # this is main method called by AIOS with supplied DNA Genes to process data
@@ -315,9 +314,11 @@ class cls_ev_agent_{id}:
             
             svm_model.fit( x_train, y_train )
             pred = svm_model.predict_proba(x_test)
+            pred = pred[:,1]
+            print ("Support Vectors per class: ", svm_model.n_support_)
             
             if mode==1 and fold==nfolds-1:
-                predictor.save_model(workdir + self.output_column + ".model")
+                self.joblib.dump(svm_model, workdir + self.output_column + ".model")
 
             if is_binary:
                 result = self.my_log_loss(y_test, pred)
@@ -339,19 +340,24 @@ class cls_ev_agent_{id}:
             count_records_notnull += len(pred)
 
             # predict all examples in the original test set which may include erroneous examples previously removed
-            pred_all_test = svm_model.predict_proba(self.np.array(x_test_orig.drop(self.target_col, axis=1)))
-            pred_all_test = [item for sublist in pred_all_test for item in sublist]
+            pred_all_test = svm_model.predict_proba(self.np.array(x_test_orig.drop(self.target_col, axis=1)))                                                
+            #pred_all_test = [item for sublist in pred_all_test for item in sublist]
+            pred_all_test = pred_all_test[:,1]
             prediction = self.np.concatenate([prediction,pred_all_test])
 
             # predict validation and remainder sets examples
             if use_validation_set:
-                 pred1 = svm_model.predict_proba(self.np.array(df_valid.drop(self.target_col, axis=1)), verbose=0)
-                 pred1 = [item for sublist in pred1 for item in sublist]
-                 predicted_valid_set += self.np.array(pred1)
+                 pred1 = svm_model.predict_proba(self.np.array(df_valid.drop(self.target_col, axis=1)))
+                 #pred1 = [item for sublist in pred1 for item in sublist]
+                 #predicted_valid_set += self.np.array(pred1)
+                 predicted_valid_set = pred1[:,1]
+                 #print ("predicted_valid_set: ", predicted_valid_set)
                     
-                 pred2 = svm_model.predict_proba(self.np.array(df_test.drop(self.target_col, axis=1)), verbose=0)
-                 pred2 = [item for sublist in pred2 for item in sublist]
-                 predicted_test_set += self.np.array(pred2)
+                 pred2 = svm_model.predict_proba(self.np.array(df_test.drop(self.target_col, axis=1)))
+                 #pred2 = [item for sublist in pred2 for item in sublist]
+                 #predicted_test_set += self.np.array(pred2)
+                 predicted_test_set = pred2[:,1]
+                 #print ("predicted_test_set: ", predicted_test_set)
                 
         weighted_result = weighted_result/count_records_notnull
         print ("weighted_result:", weighted_result)
