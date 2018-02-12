@@ -248,9 +248,9 @@ class cls_ev_agent_{id}:
         params['kernel_poly_degree'] = {kernel_poly_degree}           
         params['kernel_gamma'] = {kernel_gamma}
         params['kernel_coef'] = {kernel_coef}
-        params['probability_output'] = 	{probability_output}           
+        params['probability_output'] = 	{probability_output}   
         params['shrinking'] = {shrinking}
-        params['stopping_tolerance'] = {stopping_tolerance}            
+        params['stopping_tolerance'] = {stopping_tolerance}
         params['class_0_weight'] = {class_0_weight}
         params['class_1_weight'] = {class_1_weight}
 
