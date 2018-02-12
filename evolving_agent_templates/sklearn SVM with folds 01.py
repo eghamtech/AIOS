@@ -106,12 +106,6 @@ class cls_ev_agent_{id}:
         
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
-    
-    #def plot_feature_importance(self, n_top_features=20, graph_width=10, graph_height=25):
-        # this method can be used in Jupyter notebook to plot features of a particular model created by AIOS
-        # copy whole DNA code as executed by AIOS into notebook with global Constants, initialise/run the class first
-        #%matplotlib inline
-        #self.lgb.plot_importance(self.bst, max_num_features=n_top_features).figure.set_size_inches(graph_width,graph_height)
 
     def my_log_loss(self, a, b):
         eps = 1e-9
