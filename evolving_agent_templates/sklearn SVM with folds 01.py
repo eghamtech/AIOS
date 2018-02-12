@@ -298,7 +298,7 @@ class cls_ev_agent_{id}:
             y_test = self.np.array( x_test[self.target_col] )
             x_test = self.np.array( x_test.drop(self.target_col, 1) )
 
-            svm_model = svm.SVC(C=params['svm_C'], class_weight={0:params['class_0_weight'], 1:params['class_1_weight']}, 
+            svm_model = self.svm.SVC(C=params['svm_C'], class_weight={0:params['class_0_weight'], 1:params['class_1_weight']}, 
                                 coef0=params['kernel_coef'], decision_function_shape='ovr', 
                                 degree=params['kernel_poly_degree'], gamma=params['kernel_gamma'], 
                                 kernel=params['svm_kernel'], max_iter=-1, probability=params['probability_output'], 
