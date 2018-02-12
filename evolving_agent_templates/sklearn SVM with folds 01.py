@@ -339,7 +339,7 @@ class cls_ev_agent_{id}:
             count_records_notnull += len(pred)
 
             # predict all examples in the original test set which may include erroneous examples previously removed
-            pred_all_test = svm_model.predict_proba(self.np.array(x_test_orig.drop(self.target_col, axis=1))
+            pred_all_test = svm_model.predict_proba(self.np.array(x_test_orig.drop(self.target_col, axis=1)))
             pred_all_test = [item for sublist in pred_all_test for item in sublist]
             prediction = self.np.concatenate([prediction,pred_all_test])
 
