@@ -18,7 +18,7 @@
 #key=svm_C;  type=random_float;  from=0.01;  to=5.0;  step=0.01
 #key=svm_kernel; type=random_from_set;  set='linear','poly','rbf','sigmoid'
 #key=kernel_poly_degree;  type=random_int;  from=1;  to=7;  step=1
-#key=kernel_gamma;  type=random_float;  from=0.0;  to=0.5;  step=0.001
+#key=kernel_gamma;  type=random_float;  from=0.0001;  to=0.5;  step=0.0001
 #key=kernel_coef;  type=random_float;  from=0.0;  to=0.5;  step=0.001
 #key=probability_output;  type=random_from_set;  set=True
 #key=shrinking;  type=random_from_set;  set=True,False
