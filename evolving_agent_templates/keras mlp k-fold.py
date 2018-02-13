@@ -272,8 +272,9 @@ class cls_ev_agent_{id}:
 
         # rename columns in df to unique names
         df.columns = columns_new
+        data_fields_count = len(df.columns)-1  # need this for building MLP model layers; df.columns includes the target column, hence need to do -1
         print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
-        print ("Columns used: ", columns_new)
+        #print ("Columns used: ", columns_new)
         
         original_row_count = len(df)
         
@@ -327,7 +328,7 @@ class cls_ev_agent_{id}:
             # add hidden layers 
             for i in range(n_layers):
                 if i == 0:
-                    mlp_model.add(Dense(n_neurons, activation=s_activation, input_dim=n_fields_to_use))
+                    mlp_model.add(Dense(n_neurons, activation=s_activation, input_dim=data_fields_count))
                 else:
                     mlp_model.add(Dense(n_neurons, activation=s_activation))
 
