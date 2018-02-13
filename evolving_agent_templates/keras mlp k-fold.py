@@ -181,7 +181,9 @@ class cls_ev_agent_{id}:
                 else:
                     df = df.merge(df_add[[col_name]], left_index=True, right_index=True)
                 
-                df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
+                # df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
+                # above doesn't work for duplicate columns in DF but all columns must be pre-scaled anyway without NaN
+                
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
                 columns.append(col_name)
@@ -260,7 +262,9 @@ class cls_ev_agent_{id}:
                 # read each required field's data from a corresponding CSV file
                 df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
                 
-                df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
+                # df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras 
+                # above doesn't work for duplicate columns in DF but all columns must be pre-scaled anyway without NaN
+                
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
                 columns.append(col_name)
