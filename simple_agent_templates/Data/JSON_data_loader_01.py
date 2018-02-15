@@ -70,8 +70,23 @@ class cls_agent_{id}:
             if item["data_type"]=='FREETEXT' or item["data_type"]=='LARGETEXT':
                 print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
                 self.char_cols.append(self.colmap[item["heading"]])
-                
         print ("char columns:", self.char_cols)
+        
+        print ("processing LOOKUP columns")
+        self.lookup_cols = []
+        for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
+            item = json_data["model_definition"]["layout"]["columns"][i]
+            if item["data_type"]=='LOOKUP':
+                print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"], "---", item["meta"]["lookup_id"], "---", item["meta"]["lookup_type"])
+                self.lookup_cols.append(self.colmap[item["heading"]])
+                dict_lookup = {}
+                lookup_id = str(item["meta"]["lookup_id"])
+                lookup_type = item["meta"]["lookup_type"]
+                for key in json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"].keys():
+                    dict_lookup[key] = json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"][key]["value"]
+                self.pd.DataFrame(list(dict_lookup.items()), columns=['key', 'value']).to_csv(workdir+'dict_'+self.colmap[item["heading"]]+'.csv', encoding='utf-8')    #save new column dict
+        print ("lookup columns:", self.lookup_cols)
+        
         
         print ("processing OUTCOME columns")
         self.target_cols = []
@@ -116,7 +131,7 @@ class cls_agent_{id}:
         nrow = len(self.df)
 
         for cname in self.df.columns:
-            if cname in self.char_cols:
+            if (cname in self.char_cols) or (cname in self.lookup_cols):
                 is_dict="Y"
             else:
                 is_dict="N"
