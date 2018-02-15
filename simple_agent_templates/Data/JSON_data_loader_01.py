@@ -42,11 +42,11 @@ class cls_agent_{id}:
         cols = self.df.columns
         new_cols = []
         for i in range(0, len(cols)):
-            str = cols[i]
+            str1 = cols[i]
             for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
-                str = str.replace(ch, "_")
-            new_cols.append(str)
-            self.colmap[cols[i]] = str
+                str1 = str1.replace(ch, "_")
+            new_cols.append(str1)
+            self.colmap[cols[i]] = str1
         self.df.columns = new_cols
         
         print ("processing DATETIME columns...")
