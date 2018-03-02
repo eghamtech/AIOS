@@ -17,7 +17,7 @@ class cls_agent_{id}:
     col1 = col_definition1.split("|")[0]
     file1 = col_definition1.split("|")[1]
     result_id = {id}
-    field_prefix = 'glv_'
+    field_prefix = 'glv_' + str(group_length) + '_' + col1 + '_'
     fldprefix = field_prefix + str(result_id)
     nwords = {word_count_max}
     group_length = {group_length}
