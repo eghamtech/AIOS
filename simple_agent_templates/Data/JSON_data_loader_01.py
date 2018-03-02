@@ -16,9 +16,9 @@ class cls_agent_{id}:
     import datetime
     import calendar
     import dateutil.parser
+    import re
     
     source_filename = "{source_filename_json}"
-    # target must be set on constants page
     newfilename = trainfile
     colmap = {}
     
@@ -43,8 +43,9 @@ class cls_agent_{id}:
         new_cols = []
         for i in range(0, len(cols)):
             str1 = cols[i]
-            for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
-                str1 = str1.replace(ch, "_")
+            #for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
+            #    str1 = str1.replace(ch, "_")
+            str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
             new_cols.append(str1)
             self.colmap[cols[i]] = str1
         self.df.columns = new_cols
