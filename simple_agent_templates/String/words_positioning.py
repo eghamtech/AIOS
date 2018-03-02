@@ -11,7 +11,7 @@ class cls_agent_{id}:
     col1 = col_definition1.split("|")[0]
     file1 = col_definition1.split("|")[1]
     result_id = {id}
-    field_prefix = 'wpos_'
+    field_prefix = 'wpos_' + col1 + '_'
 
     whats = ['why', 'how', 'what', 'where', 'when', 'which', 'who', 'whom']
 
