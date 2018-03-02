@@ -3,6 +3,16 @@
 #key=group_length;  type=constant;  value=enter_group_length
 #key=glove_host;  type=constant;  value=enter_glove_host
 #end_of_parameters
+
+# AICHOO OS Simple Agent 
+# Documentation about AI OS and how to create Simple Agents can be found on our WiKi
+# https://github.com/eghamtech/AIOS/wiki/Simple-Agents
+# https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
+#
+# this agent creates new columns as elements of GloVe vector by parsing text field into words including punctuation
+# it queries GloVe database on glove_host privided via AIOS API
+# it also maps original 300 elements vector to group_length and considers only word_count_max initial words
+
 if 'dicts' not in globals():
     dicts = {}
 
