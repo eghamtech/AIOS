@@ -61,7 +61,11 @@ class cls_agent_{id}:
     
     # splits string into words including punctuation
     def _tokenize(self, s):
-        return ' '.join(self.re.findall(r"[\w'`]+|[.,!?;]", s))
+        swords = ''
+        if type(s)==str:
+           swords = ' '.join(self.re.findall(r"[\w'`]+|[.,!?;]", s))
+        
+        return swords 
     
     # counts number of words in a string
     def _no_of_words(self,s):
@@ -80,10 +84,7 @@ class cls_agent_{id}:
         
         for index, row in self.dfx.iterrows():
             i+=1
-            if type(row[self.col1])==str:
-                sline1 = self._tokenize(row[self.col1])
-            else:
-                sline1 = ''
+            sline1 = self._tokenize(row[self.col1])
             
             #values = [0]*(self.nwords*300)
             r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
