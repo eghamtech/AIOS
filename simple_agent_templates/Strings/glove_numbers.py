@@ -10,7 +10,7 @@
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 #
 # this agent creates new columns as elements of GloVe vector by parsing text field into words including punctuation
-# it queries GloVe database on glove_host privided via AIOS API
+# it queries GloVe database on glove_host provided via AIOS API
 # it also maps original 300 elements vector to group_length and considers only word_count_max initial words
 
 if 'dicts' not in globals():
@@ -97,6 +97,12 @@ class cls_agent_{id}:
     def run(self, mode):
         print ("enter run mode " + str(mode))
         self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
+        
+        if len(self.df[self.col1].unique()) == 1:
+            print ("Selected column contains only 1 unique value - no point to do anything with it."
+            # register the same field as the source field, which does nothing but notifies AIOS of successful exit
+            print ("#add_field:"+self.col1+",N,"+self.col1+".csv,"+str(len(self.df)))   
+            return
         
         cols = []
         for i in range(0,self.numbers_count):
