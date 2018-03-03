@@ -99,7 +99,7 @@ class cls_agent_{id}:
         self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
         
         if len(self.df[self.col1].unique()) == 1:
-            print ("Selected column contains only 1 unique value - no point to do anything with it."
+            print ("Selected column contains only 1 unique value - no point to do anything with it.")
             # register the same field as the source field, which notifies AIOS of successful exit
             # and instructs to mark such field with use_for_models=False
             print ("#add_field:"+self.col1+",N,"+self.col1+".csv,"+str(len(self.df))+",N")   
