@@ -35,7 +35,28 @@ class cls_agent_{id}:
     numbers_count = nwords * int(300/group_length)
     error = 0
     max_words = 0
-
+    
+    def __init__(self):
+        global dicts
+        self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
+        
+        if self.col1 not in dicts:
+            self.dict1 = self.pd.read_csv(workdir+'dict_'+self.col1+'.csv', dtype={'value': object}).set_index('key')["value"].to_dict()
+        else:
+            self.dict1 = {v:k for k,v in dicts[self.col1].items()} # make key=number, value=string
+        
+        # if parameter word_count_max == 0 then use max_words found in the given field
+        if self.nwords == 0:
+            # map dict fields
+            dfx = self.pd.DataFrame()
+            dfx[self.col1] = self.df[self.col1].map(self.dict1)
+            # find size of longest in terms of words record
+            self.max_words = dfx[self.col1].apply(self._no_of_words).max()
+            self.nwords = self.max_words
+            self.numbers_count = self.nwords * int(300/self.group_length)
+            print("Longest record has " + str(self.max_words) + " words. Using it as GloVe size limit.")
+            
+        
     def _removeNonAscii(self, s): return "".join(i for i in s if ord(i)<128)
     
     # splits string into words including punctuation
@@ -48,11 +69,6 @@ class cls_agent_{id}:
         return len(_words.split())
     
     def run_on(self, df_run):
-        if self.col1 not in dicts:
-            self.dict1 = self.pd.read_csv(workdir+'dict_'+self.col1+'.csv', dtype={'value': object}).set_index('key')["value"].to_dict()
-        else:
-            self.dict1 = {v:k for k,v in dicts[self.col1].items()} # make key=number, value=string
-        
         self.dfx = self.pd.DataFrame()
         self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
         
@@ -104,7 +120,6 @@ class cls_agent_{id}:
     
     def run(self, mode):
         print ("enter run mode " + str(mode))
-        self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
         
         if len(self.df[self.col1].unique()) == 1:
             print ("Selected column contains only 1 unique value - no point to do anything with it.")
@@ -112,14 +127,6 @@ class cls_agent_{id}:
             # and instructs to mark such field with use_for_models=False
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
             return
-        
-        # find size of longest in terms of words record
-        self.max_words = self.df[self.col1].apply(self._no_of_words).max()
-        # if parameter word_count_max not specified (0) then use max_words found in the given field
-        if self.nwords == 0:
-            self.nwords = self.max_words
-            self.numbers_count = self.nwords * int(300/self.group_length)
-            print("Longest record has " + str(self.max_words) + " words. Using it as GloVe size limit.")
         
         cols = []
         # prepare dataframe with numbers_count new columns and init with 0.0 
