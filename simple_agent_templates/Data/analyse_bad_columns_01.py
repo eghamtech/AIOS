@@ -32,14 +32,16 @@ class cls_agent_{id}:
         
         if len(self.df[self.col1].unique()) == 1:
             print ("Selected column contains only 1 unique value - no point to do anything with it.")
-            # register the same field as the source field, which notifies AIOS of successful exit
+            # re-register the same field as the source field, which notifies AIOS of successful exit
             # and instructs to mark such field with use_for_models=False
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
         else:
+            # re-register the same field as the source field exactly as it was, so nothing really changes
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",Y")
 
         
     def apply(self, df_add):
+       # this method has nothing to do as this agent doesn't create its own fields
        return
 
 agent_{id} = cls_agent_{id}()
