@@ -100,8 +100,9 @@ class cls_agent_{id}:
         
         if len(self.df[self.col1].unique()) == 1:
             print ("Selected column contains only 1 unique value - no point to do anything with it."
-            # register the same field as the source field, which does nothing but notifies AIOS of successful exit
-            print ("#add_field:"+self.col1+",N,"+self.col1+".csv,"+str(len(self.df)))   
+            # register the same field as the source field, which notifies AIOS of successful exit
+            # and instructs to mark such field with use_for_models=False
+            print ("#add_field:"+self.col1+",N,"+self.col1+".csv,"+str(len(self.df))+",N")   
             return
         
         cols = []
