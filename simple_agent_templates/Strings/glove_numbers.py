@@ -1,6 +1,6 @@
 #start_of_parameters
-#key=word_count_max;  type=constant;  value=enter_word_count_max
-#key=group_length;  type=constant;  value=enter_group_length
+#key=word_count_max;  type=constant;  value=0
+#key=group_length;  type=constant;  value=300
 #key=glove_host;  type=constant;  value=enter_glove_host
 #end_of_parameters
 
@@ -12,6 +12,7 @@
 # this agent creates new columns as elements of GloVe vector by parsing text field into words including punctuation
 # it queries GloVe database on glove_host provided via AIOS API
 # it also maps original 300 elements vector to group_length and considers only word_count_max initial words
+# if parameter word_count_max not specified (0) then agent will analyse given field to find its maximum length
 
 if 'dicts' not in globals():
     dicts = {}
@@ -33,11 +34,18 @@ class cls_agent_{id}:
     group_length = {group_length}
     numbers_count = nwords * int(300/group_length)
     error = 0
+    max_words = 0
 
     def _removeNonAscii(self, s): return "".join(i for i in s if ord(i)<128)
     
+    # splits string into words including punctuation
     def _tokenize(self, s):
         return ' '.join(self.re.findall(r"[\w'`]+|[.,!?;]", s))
+    
+    # counts number of words in a string
+    def _no_of_words(self,s):
+        _words = self._tokenize(s)
+        return len(_words.split())
     
     def run_on(self, df_run):
         if self.col1 not in dicts:
@@ -105,13 +113,23 @@ class cls_agent_{id}:
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
             return
         
+        # find size of longest in terms of words record
+        self.max_words = self.df[self.col1].apply(self._no_of_words).max()
+        # if parameter word_count_max not specified (0) then use max_words found in the given field
+        if self.nwords == 0:
+            self.nwords = self.max_words
+            self.numbers_count = self.nwords * int(300/self.group_length)
+            print("Longest record has " + str(self.max_words) + " words. Using it as GloVe size limit.")
+        
         cols = []
+        # prepare dataframe with numbers_count new columns and init with 0.0 
         for i in range(0,self.numbers_count):
             fld = self.fldprefix + '_' + str(i)
             cols.append(fld)
         dfx2 = self.pd.DataFrame(0.0, index=self.np.arange(len(self.df)), columns=cols)
         
         print ("start adding columns")
+        # join original column with new columns
         self.df = self.df.join(dfx2)
         print ("ended adding columns")
         
@@ -122,6 +140,7 @@ class cls_agent_{id}:
         
         nrow = len(self.df)
         
+        # register and save new columns one by one
         for i in range(0,self.numbers_count):
             fld = self.fldprefix + '_' + str(i)
             fname = fld + '.csv'
