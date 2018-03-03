@@ -11,7 +11,7 @@
 #
 # this agent creates new columns as elements of GloVe vector by parsing text field into words including punctuation
 # it queries GloVe database on glove_host provided via AIOS API
-# it also maps original 300 elements vector to group_length and considers only word_count_max initial words
+# it also maps original 300 elements vector to vector size=300/group_length and considers only word_count_max initial words
 # if parameter word_count_max not specified (0) then agent will analyse given field to find its maximum length
 
 if 'dicts' not in globals():
