@@ -17,9 +17,8 @@ class cls_agent_{id}:
     from sklearn.preprocessing import Imputer
     from numpy import inf
 
-    # obtain random field of numerical type
+    # obtain random field
     # restrict selection to those that not already used and not created by the agent
-    # col_definition1 = "{random_field_numeric_distinct}"
     col_definition1 = "{random_field_distinct}"   # use all columns including index columns of dict fields
     # field definition received from the kernel contains two parts: name of the field and CSV filename that holds the actual data
     # load these two parts into variables
