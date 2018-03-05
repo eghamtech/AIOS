@@ -13,17 +13,15 @@ class cls_agent_{id}:
     
     import pandas as pd
 
-    # obtain random field of numerical type
+    # obtain random field
     # selection is restricted to those that not already used and not created by the agent
     # as well as avoiding permutation of the same two columns
-    # col_definition1 = "{random_field_numeric_distinct}"
     col_definition1 = "{random_field_distinct}"  # obtain any type of field
     # field definition received from the kernel contains two parts: name of the field and CSV filename that holds the actual data
     # load these two parts into variables
     col1 = col_definition1.split("|")[0]
     file1 = col_definition1.split("|")[1]
-    # obtain second random field of numerical type
-    # col_definition2 = "{random_field_numeric_distinct}"
+    # obtain second random field
     col_definition2 = "{random_field_distinct}"  # obtain any type of field
     col2 = col_definition2.split("|")[0]
     file2 = col_definition2.split("|")[1]
