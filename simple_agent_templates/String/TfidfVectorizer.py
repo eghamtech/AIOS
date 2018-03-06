@@ -1,5 +1,10 @@
 #no_permutation
 
+# AICHOO OS Simple Agent 
+# Documentation about AI OS and how to create Simple Agents can be found on our WiKi
+# https://github.com/eghamtech/AIOS/wiki/Simple-Agents
+# https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
+
 if 'dicts' not in globals():
     dicts = {}
 
@@ -22,7 +27,7 @@ class cls_agent_{id}:
     col1 = col_definition1.split("|")[0]
     file1 = col_definition1.split("|")[1]
     result_id = {id}
-    field_prefix = 'tfidf_'
+    field_prefix = 'tfidf_'+ col1 + '_'
 
     def func(self, s):
         return s[:1].lower() + s[1:] if s else ''
