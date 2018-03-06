@@ -80,6 +80,13 @@ class cls_agent_{id}:
         
     def run(self, mode):
         print ("enter run mode " + str(mode))
+        
+        if len(self.df[self.col1].unique()) == 1:
+            print ("Selected column contains only 1 unique value - no point to do anything with it.")
+            # register the same field as the source field, which notifies AIOS of successful exit
+            # and instructs to mark such field with use_for_models=False
+            print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
+            return
                 
         self.run_on(self.df)
         
