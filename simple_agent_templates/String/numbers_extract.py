@@ -9,7 +9,6 @@
 #
 # this agent extracts numerical values from a dict column and creates max_numbers_to_extract new columns
 
-
 if 'dicts' not in globals():
     dicts = {}
 
@@ -57,14 +56,18 @@ class cls_agent_{id}:
         else:
             self.dict1 = {v:k for k,v in dicts[self.col1].items()} # make key=number, value=string
             
-        self.dfx = self.pd.DataFrame()
-        self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
+        dfx = self.pd.DataFrame()
+        dfx[self.col1] = df_run[self.col1].map(self.dict1)
         
-        self.dfx = self.pd.DataFrame(self.dfx[self.col1].apply(self.text_to_numbers)) # find all numbers
-        self.dfx = self.dfx[self.col1].apply(self.expand_list)                        # bring all records (lists) to fixed size
-        self.dfx = self.pd.DataFrame(self.dfx.values.tolist())                        # extract lists into df columns
+        dfx = self.pd.DataFrame(dfx[self.col1].apply(self.text_to_numbers)) # find all numbers
+        dfx = dfx[self.col1].apply(self.expand_list)                        # bring all records (lists) to fixed size
+        dfx = self.pd.DataFrame(dfx.values.tolist(), columns=self.new_cols) # extract lists into df columns
         
+        # join original column with new columns
+        df_run = df_run.join(dfx)
+     
    
+
     def run(self, mode):
         print ("enter run mode " + str(mode))
         df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
@@ -74,28 +77,19 @@ class cls_agent_{id}:
             # register the same field as the source field, which notifies AIOS of successful exit
             # and instructs to mark such field with use_for_models=False
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
-            return
-        
-        # prepare dataframe with n_new_fields new columns and init with 0.0 
-        dfx2 = self.pd.DataFrame(0.0, index=self.np.arange(len(self.df)), columns=cols)
-        
-        print ("start adding columns")
-        # join original column with new columns
-        self.df = self.df.join(dfx2)
-        print ("ended adding columns")
+            return    
         
         self.run_on(df)
         
         nrow = len(df)
 
-        df[[self.fldprefix + '_y']].to_csv(workdir+self.fldprefix + '_y.csv')
-        print ("#add_field:"+self.fldprefix + '_y'+",N,"+self.fldprefix + '_y.csv'+","+str(nrow))
-        df[[self.fldprefix + '_m']].to_csv(workdir+self.fldprefix + '_m.csv')
-        print ("#add_field:"+self.fldprefix + '_m'+",N,"+self.fldprefix + '_m.csv'+","+str(nrow))
-        df[[self.fldprefix + '_d']].to_csv(workdir+self.fldprefix + '_d.csv')
-        print ("#add_field:"+self.fldprefix + '_d'+",N,"+self.fldprefix + '_d.csv'+","+str(nrow))
-        df[[self.fldprefix + '_ts']].to_csv(workdir+self.fldprefix + '_ts.csv')
-        print ("#add_field:"+self.fldprefix + '_ts'+",N,"+self.fldprefix + '_ts.csv'+","+str(nrow))
+        # register and save new columns one by one
+        for i in range(0,self.n_new_fields):
+            fld = self.fldprefix + '_' + str(i)
+            fname = fld + '.csv'
+            self.df[[fld]].to_csv(workdir+fname)
+            print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
+            
         
     def apply(self, df_add):
         self.run_on(df_add)
