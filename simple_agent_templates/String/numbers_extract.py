@@ -27,6 +27,15 @@ class cls_agent_{id}:
     field_prefix = 'num_' + col1 + '_'
     fldprefix = field_prefix + str(result_id)
     
+    n_new_fields = {max_numbers_to_extract}
+    new_cols = []
+    
+    def __init__(self):
+        # prepare list of n_new_fields new columns
+        for i in range(0,self.n_new_fields):
+            fld = self.fldprefix + '_' + str(i)
+            self.new_cols.append(fld)
+    
     def text_to_numbers(self, s):
        if type(s) == str:
           return self.re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", s)
@@ -51,9 +60,9 @@ class cls_agent_{id}:
         self.dfx = self.pd.DataFrame()
         self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
         
-        self.dfx = self.pd.DataFrame(self.dfx[self.col1].apply(self.text_to_numbers))
-        self.dfx = self.dfx[self.col1].apply(self.expand_list)
-        self.dfx = self.pd.DataFrame(self.dfx.values.tolist())
+        self.dfx = self.pd.DataFrame(self.dfx[self.col1].apply(self.text_to_numbers)) # find all numbers
+        self.dfx = self.dfx[self.col1].apply(self.expand_list)                        # bring all records (lists) to fixed size
+        self.dfx = self.pd.DataFrame(self.dfx.values.tolist())                        # extract lists into df columns
         
    
     def run(self, mode):
@@ -66,6 +75,14 @@ class cls_agent_{id}:
             # and instructs to mark such field with use_for_models=False
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
             return
+        
+        # prepare dataframe with n_new_fields new columns and init with 0.0 
+        dfx2 = self.pd.DataFrame(0.0, index=self.np.arange(len(self.df)), columns=cols)
+        
+        print ("start adding columns")
+        # join original column with new columns
+        self.df = self.df.join(dfx2)
+        print ("ended adding columns")
         
         self.run_on(df)
         
