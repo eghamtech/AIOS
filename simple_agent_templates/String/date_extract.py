@@ -99,7 +99,7 @@ class cls_agent_{id}:
 
     def run(self, mode):
         print ("enter run mode " + str(mode))
-        df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
+        self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
         
         if len(self.df[self.col1].unique()) == 1:
             print ("Selected column contains only 1 unique value - no point to do anything with it.")
@@ -108,17 +108,17 @@ class cls_agent_{id}:
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
             return    
         
-        self.run_on(df)
+        self.run_on(self.df)
         
-        nrow = len(df)
+        nrow = len(self.df)
 
-        df[[self.fldprefix + '_y']].to_csv(workdir+self.fldprefix + '_y.csv')
+        self.df[[self.fldprefix + '_y']].to_csv(workdir+self.fldprefix + '_y.csv')
         print ("#add_field:"+self.fldprefix + '_y'+",N,"+self.fldprefix + '_y.csv'+","+str(nrow))
-        df[[self.fldprefix + '_m']].to_csv(workdir+self.fldprefix + '_m.csv')
+        self.df[[self.fldprefix + '_m']].to_csv(workdir+self.fldprefix + '_m.csv')
         print ("#add_field:"+self.fldprefix + '_m'+",N,"+self.fldprefix + '_m.csv'+","+str(nrow))
-        df[[self.fldprefix + '_d']].to_csv(workdir+self.fldprefix + '_d.csv')
+        self.df[[self.fldprefix + '_d']].to_csv(workdir+self.fldprefix + '_d.csv')
         print ("#add_field:"+self.fldprefix + '_d'+",N,"+self.fldprefix + '_d.csv'+","+str(nrow))
-        df[[self.fldprefix + '_ts']].to_csv(workdir+self.fldprefix + '_ts.csv')
+        self.df[[self.fldprefix + '_ts']].to_csv(workdir+self.fldprefix + '_ts.csv')
         print ("#add_field:"+self.fldprefix + '_ts'+",N,"+self.fldprefix + '_ts.csv'+","+str(nrow))
         
     def apply(self, df_add):
