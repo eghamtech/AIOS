@@ -1,3 +1,11 @@
+# AICHOO OS Simple Agent 
+# Documentation about AI OS and how to create Simple Agents can be found on our WiKi
+# https://github.com/eghamtech/AIOS/wiki/Simple-Agents
+# https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
+#
+# this agent extracts names of months and numerical days from a dict column, attempts to recognise if this is a date 
+# and converts to 4 new fields: Y M D TS
+
 if 'dicts' not in globals():
     dicts = {}
 
@@ -65,7 +73,7 @@ class cls_agent_{id}:
             return -1
     
     def get_ts(self, row):
-        if row[0]>0 and row[1]>0 and row[1]>0:
+        if row[0]>0 and row[1]>0 and row[2]>0:
             try:
                 dt = self.datetime.datetime(year=int(row[0]), month=int(row[1]), day=int(row[2]))
                 return self.time.mktime(dt.timetuple())
@@ -92,6 +100,14 @@ class cls_agent_{id}:
     def run(self, mode):
         print ("enter run mode " + str(mode))
         df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
+        
+        if len(self.df[self.col1].unique()) == 1:
+            print ("Selected column contains only 1 unique value - no point to do anything with it.")
+            # register the same field as the source field, which notifies AIOS of successful exit
+            # and instructs to mark such field with use_for_models=False
+            print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
+            return    
+        
         self.run_on(df)
         
         nrow = len(df)
