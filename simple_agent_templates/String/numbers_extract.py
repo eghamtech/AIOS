@@ -70,7 +70,7 @@ class cls_agent_{id}:
 
     def run(self, mode):
         print ("enter run mode " + str(mode))
-        df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
+        self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
         
         if len(self.df[self.col1].unique()) == 1:
             print ("Selected column contains only 1 unique value - no point to do anything with it.")
@@ -79,9 +79,9 @@ class cls_agent_{id}:
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
             return    
         
-        self.run_on(df)
+        self.run_on(self.df)
         
-        nrow = len(df)
+        nrow = len(self.df)
 
         # register and save new columns one by one
         for i in range(0,self.n_new_fields):
