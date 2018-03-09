@@ -63,11 +63,11 @@ class cls_agent_{id}:
         dfx = dfx[self.col1].apply(self.expand_list)                        # bring all records (lists) to fixed size
         dfx = self.pd.DataFrame(dfx.values.tolist(), columns=self.new_cols) # extract lists into df columns
         
-        # join original column with new columns
+        # join the original column with its derivative new columns
         df_run = df_run.join(dfx)
+        return df_run
      
-   
-
+  
     def run(self, mode):
         print ("enter run mode " + str(mode))
         self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
@@ -79,7 +79,7 @@ class cls_agent_{id}:
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
             return    
         
-        self.run_on(self.df)
+        self.df = self.run_on(self.df)
         
         nrow = len(self.df)
 
