@@ -20,6 +20,8 @@ class cls_agent_{id}:
     import numpy as np
     
     data_defs = ["{field_source}","{field_filter}"]
+    filter_values_list = [{filter_values}]
+    new_value = {set_value}
     
     # obtain a unique ID for the current instance
     result_id = {id}
@@ -40,23 +42,26 @@ class cls_agent_{id}:
                 self.df = self.df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
         
         
-    
     def run(self, mode):
         print ("enter run mode " + str(mode))
         nrow = len(self.df)
         
-        if len(self.df[self.col1].unique()) == 1:
-            print ("Selected column contains only 1 unique value - no point to do anything with it.")
-            # re-register the same field as the source field, which notifies AIOS of successful exit
-            # and instructs to mark such field with use_for_models=False
-            print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
-        else:
-            # re-register the same field as the source field exactly as it was, so nothing really changes
-            print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",Y")
+        col_source = self.data_defs[0].split("|")[0]
+        col_filter = self.data_defs[1].split("|")[0]
+        
+        self.df[self.output_column] = self.df[col_source]
+        self.df.loc[self.np.isin(self.df[col_filter], self.filter_values_list), self.output_column] = self.new_value
+       
+        self.df[[self.output_column]].to_csv(workdir+self.output_filename)
+        print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(nrow)+",Y")
 
         
     def apply(self, df_add):
-       # this method has nothing to do as this agent doesn't create its own fields
-       return
+        col_source = self.data_defs[0].split("|")[0]
+        col_filter = self.data_defs[1].split("|")[0]
+        
+        df_add[self.output_column] = df_add[col_source]
+        df_add.loc[self.np.isin(df_add[col_filter], self.filter_values_list), self.output_column] = self.new_value
+       
 
 agent_{id} = cls_agent_{id}()
