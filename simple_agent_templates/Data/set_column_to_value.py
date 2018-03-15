@@ -29,7 +29,7 @@ class cls_agent_{id}:
     # create new field name based on "new_field_prefix" with unique instance ID
     # and filename to save new field data
     new_field_prefix = "filter_"
-    output_column = new_field_prefix + str(result_id)
+    output_column = new_field_prefix + "{field_source}_" + str(result_id)
     output_filename = output_column + ".csv"
     
     def __init__(self):
