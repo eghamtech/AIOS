@@ -10,7 +10,8 @@
 # https://github.com/eghamtech/AIOS/wiki/Simple-Agents
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 #
-# this agent 
+# this agent creates new column which is a copy of "field_source" but with some rows set to "set_value" 
+# where those rows in "field_filter" appear in "filter_values" 
 
 class cls_agent_{id}:
     import warnings
@@ -53,7 +54,7 @@ class cls_agent_{id}:
         self.df.loc[self.np.isin(self.df[col_filter], self.filter_values_list), self.output_column] = self.new_value
        
         self.df[[self.output_column]].to_csv(workdir+self.output_filename)
-        print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(nrow)+",Y")
+        print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(nrow)+",N")
 
         
     def apply(self, df_add):
