@@ -1,9 +1,16 @@
 #start_of_parameters
 #key=source_filename_json;  type=constant;  value=enter_source_filename_json
+#key=unique_id_column;  type=constant;  value=enter_unique_id_column
 #end_of_parameters
 
 # Processes JSON file which has "training_data" and "model_definition" objects according to below specification in Wiki:
 # https://github.com/eghamtech/AIOS/wiki/Input-data-JSON-format-01
+
+#multiple files support assumes that files named like this:
+#input_data.json -- main file, mandatory
+#input_data_1.json -- optional
+#input_data_2.json -- optional
+#etc...
 
 if 'dicts' not in globals():
     dicts = {}
@@ -19,6 +26,7 @@ class cls_agent_{id}:
     import re
     
     source_filename = "{source_filename_json}"
+    unique_id_column = "{unique_id_column}"
     newfilename = trainfile
     colmap = {}
     
@@ -29,84 +37,121 @@ class cls_agent_{id}:
         return dict(zip(a1, keys1))
     
     def __init__(self):
+        import os.path
         global dicts
         
         print ("loading json file to dataframe...")
         
+        jsons = []
+        
         with open(workdir + self.source_filename, encoding='utf-8') as f1:
             json_data = self.json.load(f1)
+        jsons = [json_data]
+        
+        filename, file_extension = os.path.splitext(workdir + self.source_filename)
+        inext = 1
+        fname = filename + "_" + str(inext) + file_extension
+        while os.path.isfile(fname):
+            print ("found next file: " + fname)
+            with open(fname, encoding='utf-8') as f1:
+                json_data = self.json.load(f1)
+            jsons.append(json_data)
+            inext += 1
+            fname = filename + "_" + str(inext) + file_extension
+        
         
         print ("creating dataframe...")
         
-        self.df = self.pd.DataFrame().from_dict(json_data["training_data"])
-        cols = self.df.columns
-        new_cols = []
-        for i in range(0, len(cols)):
-            str1 = cols[i]
-            #for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
-            #    str1 = str1.replace(ch, "_")
-            str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
-            new_cols.append(str1)
-            self.colmap[cols[i]] = str1
-        self.df.columns = new_cols
+        for idata in range(0, len(jsons)):
+            json_data = jsons[idata]
+            df_new = self.pd.DataFrame().from_dict(json_data["training_data"])
+            new_cols = []
+            for c in df_new.columns:
+                str1 = c
+                str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
+                new_cols.append(str1)
+                self.colmap[c] = str1
+            df_new.columns = new_cols
+            
+            if idata==0:
+                self.df = df_new
+            else:
+                self.df = self.df.append(df_new).reset_index()
         
+        if len(self.unique_id_column) > 0:
+            print ("use column", self.unique_id_column, "as unique id")
+            self.df = self.df.groupby(self.unique_id_column, as_index=False).last().reset_index()
+            
         print ("processing DATETIME columns...")
         self.date_cols = []
-        for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
-            item = json_data["model_definition"]["layout"]["columns"][i]
-            if item["data_type"]=='DATETIME':
-                self.date_cols.append(item["heading"])
-                print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
-                self.df[self.colmap[item["heading"]]+'_Y'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None else 0)
-                self.df[self.colmap[item["heading"]]+'_M'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None else 0)
-                self.df[self.colmap[item["heading"]]+'_D'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None else 0)
-                self.df[self.colmap[item["heading"]]+'_WD'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None else 0)
-                self.df[self.colmap[item["heading"]]+'_TS'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None else 0)
-                self.df = self.df.drop(self.colmap[item["heading"]], 1)
+        for json_data in jsons:
+            print("taking json")
+            for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
+                item = json_data["model_definition"]["layout"]["columns"][i]
+                if item["data_type"]=='DATETIME':
+                    if self.colmap[item["heading"]] not in self.date_cols:
+                        self.date_cols.append(self.colmap[item["heading"]])
+                        print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
+                        self.df[self.colmap[item["heading"]]+'_Y'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None else 0)
+                        self.df[self.colmap[item["heading"]]+'_M'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None else 0)
+                        self.df[self.colmap[item["heading"]]+'_D'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None else 0)
+                        self.df[self.colmap[item["heading"]]+'_WD'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None else 0)
+                        self.df[self.colmap[item["heading"]]+'_TS'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None else 0)
+                        self.df = self.df.drop(self.colmap[item["heading"]], 1)
         
         print ("processing FREETEXT/LARGETEXT columns")
         self.char_cols = [] #list(self.df.select_dtypes(include=['object']).columns)
-        for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
-            item = json_data["model_definition"]["layout"]["columns"][i]
-            if item["data_type"]=='FREETEXT' or item["data_type"]=='LARGETEXT':
-                print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
-                self.char_cols.append(self.colmap[item["heading"]])
+        for json_data in jsons:
+            print("taking json")
+            for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
+                item = json_data["model_definition"]["layout"]["columns"][i]
+                if item["data_type"]=='FREETEXT' or item["data_type"]=='LARGETEXT':
+                    if self.colmap[item["heading"]] not in self.char_cols:
+                        print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
+                        self.char_cols.append(self.colmap[item["heading"]])
         print ("char columns:", self.char_cols)
         
         print ("processing LOOKUP columns")
         self.lookup_cols = []
-        for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
-            item = json_data["model_definition"]["layout"]["columns"][i]
-            if item["data_type"]=='LOOKUP':
-                print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"], "---", item["meta"]["lookup_id"], "---", item["meta"]["lookup_type"])
-                self.lookup_cols.append(self.colmap[item["heading"]])
-                dict_lookup = {}
-                lookup_id = str(item["meta"]["lookup_id"])
-                lookup_type = item["meta"]["lookup_type"]
-                for key in json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"].keys():
-                    dict_lookup[key] = json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"][key]["value"]
-                self.pd.DataFrame(list(dict_lookup.items()), columns=['key', 'value']).to_csv(workdir+'dict_'+self.colmap[item["heading"]]+'.csv', encoding='utf-8')    #save new column dict
+        for json_data in jsons:
+            print("taking json")
+            for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
+                item = json_data["model_definition"]["layout"]["columns"][i]
+                if item["data_type"]=='LOOKUP':
+                    if self.colmap[item["heading"]] not in self.lookup_cols:
+                        print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"], "---", item["meta"]["lookup_id"], "---", item["meta"]["lookup_type"])
+                        self.lookup_cols.append(self.colmap[item["heading"]])
+                        dict_lookup = {}
+                        lookup_id = str(item["meta"]["lookup_id"])
+                        lookup_type = item["meta"]["lookup_type"]
+                        for key in json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"].keys():
+                            dict_lookup[key] = json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"][key]["value"]
+                        self.pd.DataFrame(list(dict_lookup.items()), columns=['key', 'value']).to_csv(workdir+'dict_'+self.colmap[item["heading"]]+'.csv', encoding='utf-8')    #save new column dict
         print ("lookup columns:", self.lookup_cols)
         
         
         print ("processing OUTCOME columns")
         self.target_cols = []
         self.use_for_models = []
-        for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
-            item = json_data["model_definition"]["layout"]["columns"][i]
-            if item["analysis"]=='outcome':
-                print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
-                self.target_cols.append(self.colmap[item["heading"]])
-                self.use_for_models.append(self.colmap[item["heading"]])
-                self.df[self.colmap[item["heading"]]] = self.df[self.colmap[item["heading"]]].astype(int)
-            elif item["analysis"]=='data':
-                self.use_for_models.append(self.colmap[item["heading"]])
-                if item["heading"] in self.date_cols:
-                    self.use_for_models.append(self.colmap[item["heading"]]+'_Y')
-                    self.use_for_models.append(self.colmap[item["heading"]]+'_M')
-                    self.use_for_models.append(self.colmap[item["heading"]]+'_D')
-                    self.use_for_models.append(self.colmap[item["heading"]]+'_WD')
-                    self.use_for_models.append(self.colmap[item["heading"]]+'_TS')
+        for json_data in jsons:
+            print("taking json")
+            for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
+                item = json_data["model_definition"]["layout"]["columns"][i]
+                if item["analysis"]=='outcome':
+                    if self.colmap[item["heading"]] not in self.target_cols:
+                        print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
+                        self.target_cols.append(self.colmap[item["heading"]])
+                        self.use_for_models.append(self.colmap[item["heading"]])
+                        self.df[self.colmap[item["heading"]]] = self.df[self.colmap[item["heading"]]].astype(int)
+                elif item["analysis"]=='data':
+                    if self.colmap[item["heading"]] not in self.use_for_models:
+                        self.use_for_models.append(self.colmap[item["heading"]])
+                        if self.colmap[item["heading"]] in self.date_cols:
+                            self.use_for_models.append(self.colmap[item["heading"]]+'_Y')
+                            self.use_for_models.append(self.colmap[item["heading"]]+'_M')
+                            self.use_for_models.append(self.colmap[item["heading"]]+'_D')
+                            self.use_for_models.append(self.colmap[item["heading"]]+'_WD')
+                            self.use_for_models.append(self.colmap[item["heading"]]+'_TS')
                 
         print ("target columns:", self.target_cols)
         
