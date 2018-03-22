@@ -92,11 +92,11 @@ class cls_agent_{id}:
                     if self.colmap[item["heading"]] not in self.date_cols:
                         self.date_cols.append(self.colmap[item["heading"]])
                         print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
-                        self.df[self.colmap[item["heading"]]+'_Y'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None else 0)
-                        self.df[self.colmap[item["heading"]]+'_M'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None else 0)
-                        self.df[self.colmap[item["heading"]]+'_D'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None else 0)
-                        self.df[self.colmap[item["heading"]]+'_WD'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None else 0)
-                        self.df[self.colmap[item["heading"]]+'_TS'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None else 0)
+                        self.df[self.colmap[item["heading"]]+'_Y'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
+                        self.df[self.colmap[item["heading"]]+'_M'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
+                        self.df[self.colmap[item["heading"]]+'_D'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
+                        self.df[self.colmap[item["heading"]]+'_WD'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
+                        self.df[self.colmap[item["heading"]]+'_TS'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
                         self.df = self.df.drop(self.colmap[item["heading"]], 1)
         
         print ("processing FREETEXT/LARGETEXT columns")
@@ -194,11 +194,11 @@ class cls_agent_{id}:
     def apply(self, df_add):
         global dicts
         for cname in self.date_cols:
-            df_add[cname+'_Y'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None else 0)
-            df_add[cname+'_M'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None else 0)
-            df_add[cname+'_D'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None else 0)
-            df_add[cname+'_WD'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None else 0)
-            df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None else 0)
+            df_add[cname+'_Y'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
+            df_add[cname+'_M'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
+            df_add[cname+'_D'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
+            df_add[cname+'_WD'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
+            df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
             df_add = df_add.drop(cname, 1)
         for index, row in df_add.iterrows():
             for cname in df_add.columns:
