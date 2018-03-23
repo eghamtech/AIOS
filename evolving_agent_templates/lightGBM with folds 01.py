@@ -82,8 +82,8 @@ class cls_ev_agent_{id}:
         
         # if saved model for the target field already exists then load it from filesystem
         if self.os.path.isfile(workdir + self.output_column + ".model"):
-            self.predictor_stored = self.lgb.Booster()
-            self.predictor_stored.load_model(workdir + self.output_column + ".model")
+            self.predictor_stored = self.lgb.Booster(model_file=workdir + self.output_column + ".model")
+            # self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
         # create a list of columns to filter data set by
         self.filter_columns = [self.filter_column]
