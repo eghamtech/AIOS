@@ -76,11 +76,11 @@ class cls_agent_{id}:
             if idata==0:
                 self.df = df_new
             else:
-                self.df = self.df.append(df_new).reset_index()
+                self.df = self.df.append(df_new).reset_index(drop=True)
         
         if len(self.unique_id_column) > 0:
             print ("use column", self.unique_id_column, "as unique id")
-            self.df = self.df.groupby(self.unique_id_column, as_index=False).last().reset_index()
+            self.df = self.df.groupby(self.unique_id_column, as_index=False).last().reset_index(drop=True)
             
         print ("processing DATETIME columns...")
         self.date_cols = []
@@ -199,14 +199,12 @@ class cls_agent_{id}:
             df_add[cname+'_D'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_WD'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
-            df_add = df_add.drop(cname, 1)
-        for index, row in df_add.iterrows():
-            for cname in df_add.columns:
-                if cname in self.char_cols:
-                    if not (row[cname] in dicts[cname]):
-                        dicts[cname][row[cname]] = 1+max(dicts[cname].values())
-                    df_add.at[index, cname] = dicts[cname][row[cname]]
-                else:
-                    df_add.at[index, cname] = row[cname]
+            df_add.drop(cname, axis=1, inplace=True)
+        for cname in df_add.columns:
+            if cname in self.char_cols:
+                df_add[cname] = df_add[cname].map(dicts[cname])
+        for creal, cshort in self.colmap.items():
+            if cshort not in df_add.columns:
+                df_add[cshort] = float('nan')
 
 agent_{id} = cls_agent_{id}()
