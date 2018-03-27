@@ -36,9 +36,10 @@ class cls_agent_{id}:
         with open(workdir + self.source_filename, encoding='utf-8') as f1:
             json_data = self.json.load(f1)
         
-        print ("creating dataframe...")
-        
+        print ("creating dataframe...")       
         self.df = self.pd.DataFrame().from_dict(json_data["training_data"])
+        
+        # rename all columns by removing non alfa-numeric symbols
         cols = self.df.columns
         new_cols = []
         for i in range(0, len(cols)):
@@ -46,31 +47,34 @@ class cls_agent_{id}:
             #for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
             #    str1 = str1.replace(ch, "_")
             str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
-            new_cols.append(str1)
-            self.colmap[cols[i]] = str1
-        self.df.columns = new_cols
+            new_cols.append(str1)                                # list of new columns
+            self.colmap[cols[i]] = str1                          # a map from old column names to new ones
+        self.df.columns = new_cols                               # assign new column names to the dataframe
         
         print ("processing DATETIME columns...")
         self.date_cols = []
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
             item = json_data["model_definition"]["layout"]["columns"][i]
             if item["data_type"]=='DATETIME':
-                self.date_cols.append(item["heading"])
-                print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
-                self.df[self.colmap[item["heading"]]+'_Y'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
-                self.df[self.colmap[item["heading"]]+'_M'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
-                self.df[self.colmap[item["heading"]]+'_D'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
-                self.df[self.colmap[item["heading"]]+'_WD'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
-                self.df[self.colmap[item["heading"]]+'_TS'] = self.df[self.colmap[item["heading"]]].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
-                self.df = self.df.drop(self.colmap[item["heading"]], 1)
+                new_col_name = self.colmap[item["heading"]]      # read column name and find new name for such column
+                if new_col_name not in self.date_cols:
+                    self.date_cols.append(new_col_name)
+                    print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
+                    self.df[new_col_name+'_Y'] = self.df[new_col_name].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
+                    self.df[new_col_name+'_M'] = self.df[new_col_name].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
+                    self.df[new_col_name+'_D'] = self.df[new_col_name].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
+                    self.df[new_col_name+'_WD'] = self.df[new_col_name].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
+                    self.df[new_col_name+'_TS'] = self.df[new_col_name].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
+                    self.df = self.df.drop(new_col_name, 1)
         
         print ("processing FREETEXT/LARGETEXT columns")
         self.char_cols = [] #list(self.df.select_dtypes(include=['object']).columns)
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
             item = json_data["model_definition"]["layout"]["columns"][i]
             if item["data_type"]=='FREETEXT' or item["data_type"]=='LARGETEXT':
-                print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
-                self.char_cols.append(self.colmap[item["heading"]])
+                if self.colmap[item["heading"]] not in self.char_cols:
+                    print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
+                    self.char_cols.append(self.colmap[item["heading"]])
         print ("char columns:", self.char_cols)
         
         print ("processing LOOKUP columns")
@@ -78,14 +82,15 @@ class cls_agent_{id}:
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
             item = json_data["model_definition"]["layout"]["columns"][i]
             if item["data_type"]=='LOOKUP':
-                print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"], "---", item["meta"]["lookup_id"], "---", item["meta"]["lookup_type"])
-                self.lookup_cols.append(self.colmap[item["heading"]])
-                dict_lookup = {}
-                lookup_id = str(item["meta"]["lookup_id"])
-                lookup_type = item["meta"]["lookup_type"]
-                for key in json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"].keys():
-                    dict_lookup[key] = json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"][key]["value"]
-                self.pd.DataFrame(list(dict_lookup.items()), columns=['key', 'value']).to_csv(workdir+'dict_'+self.colmap[item["heading"]]+'.csv', encoding='utf-8')    #save new column dict
+                if self.colmap[item["heading"]] not in self.lookup_cols:
+                    print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"], "---", item["meta"]["lookup_id"], "---", item["meta"]["lookup_type"])
+                    self.lookup_cols.append(self.colmap[item["heading"]])
+                    dict_lookup = {}
+                    lookup_id = str(item["meta"]["lookup_id"])
+                    lookup_type = item["meta"]["lookup_type"]
+                    for key in json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"].keys():
+                        dict_lookup[key] = json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"][key]["value"]
+                    self.pd.DataFrame(list(dict_lookup.items()), columns=['key', 'value']).to_csv(workdir+'dict_'+self.colmap[item["heading"]]+'.csv', encoding='utf-8')    #save new column dict
         print ("lookup columns:", self.lookup_cols)
         
         
@@ -101,7 +106,7 @@ class cls_agent_{id}:
                 self.df[self.colmap[item["heading"]]] = self.df[self.colmap[item["heading"]]].astype(int)
             elif item["analysis"]=='data':
                 self.use_for_models.append(self.colmap[item["heading"]])
-                if item["heading"] in self.date_cols:
+                if self.colmap[item["heading"]] in self.date_cols:
                     self.use_for_models.append(self.colmap[item["heading"]]+'_Y')
                     self.use_for_models.append(self.colmap[item["heading"]]+'_M')
                     self.use_for_models.append(self.colmap[item["heading"]]+'_D')
