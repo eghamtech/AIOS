@@ -87,7 +87,7 @@ class cls_agent_{id}:
         if self.col1 not in dicts:
             self.dict1 = self.pd.read_csv(workdir+'dict_'+self.col1+'.csv', dtype={'value': object}).set_index('key')["value"].to_dict()
         else:
-            self.dict1 = {v:k for k,v in dicts[self.col1].items()} # make key=number, value=string
+            self.dict1 = {v:k for k,v in dicts[self.col1].items()} # make key=number, value=string 
             
         self.dfx = self.pd.DataFrame()
         self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
