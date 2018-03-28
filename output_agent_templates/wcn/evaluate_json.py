@@ -26,6 +26,6 @@ for agent in agents:
     agent.apply(df_add)
     #print (df_add)
     if i==1:
-        df_add = df_add.apply(pd.to_numeric)
+        df_add = df_add.apply(pd.to_numeric, errors='coerse')
 
 print (','.join(str(x) for x in df_add["{return_column}"].values))
