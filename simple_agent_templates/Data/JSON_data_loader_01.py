@@ -153,6 +153,9 @@ class cls_agent_{id}:
     
     def apply(self, df_add):
         global dicts
+        for creal, cshort in self.colmap.items():
+            if cshort not in df_add.columns:
+                df_add[cshort] = float('nan')
         for cname in self.date_cols:
             df_add[cname+'_Y'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_M'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
@@ -163,8 +166,5 @@ class cls_agent_{id}:
         for cname in df_add.columns:
             if cname in self.char_cols:
                 df_add[cname] = df_add[cname].map(dicts[cname])
-        for creal, cshort in self.colmap.items():
-            if cshort not in df_add.columns:
-                df_add[cshort] = float('nan')
 
 agent_{id} = cls_agent_{id}()
