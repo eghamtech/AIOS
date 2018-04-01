@@ -1,8 +1,8 @@
 #start_of_genes_definitions
-#key=data;  type=random_array_of_fields;  length=400
-#key=fields_to_use;  type=random_int;  from=40;  to=400;  step=1
+#key=data;  type=random_array_of_fields;  length=13
+#key=fields_to_use;  type=random_int;  from=13;  to=13;  step=1
 #key=nfolds;  type=random_int;  from=10;  to=10;  step=1
-#key=use_validation_set;  type=random_from_set;  set=True
+#key=use_validation_set;  type=random_from_set;  set=False
 #key=filter_column;  type=random_from_set;  set=Submission_Date_TS
 #key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
 #key=train_set_to;  type=random_from_set;  set=self.timestamp('2014-11-01')
@@ -14,21 +14,22 @@
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=ev_field
-#key=objective_regression; type=random_from_set;  set='regression_l2','regression_l1','huber','fair','poisson','quantile','mape','gamma','tweedie'
-#key=boosting_type; type=random_from_set;  set='gbdt','rf','dart','goss'
-#key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
-#key=sub_feature;  type=random_float;  from=0.2;  to=1;  step=0.01
-#key=bagging_fraction;  type=random_float;  from=0.2;  to=1;  step=0.01
-#key=bagging_freq;  type=random_int;  from=10;  to=100;  step=1
-#key=num_leaves;  type=random_int;  from=16;  to=4096;  step=1
-#key=tree_learner; type=random_from_set;  set='serial','feature','data','voting'
-#key=min_data;  type=random_int;  from=100;  to=2000;  step=5
-#key=feature_fraction_seed;  type=random_int;  from=1;  to=10;  step=1
-#key=bagging_seed;  type=random_int;  from=1;  to=10;  step=1
-#key=boost_from_average;  type=random_from_set;  set=True,False
-#key=is_unbalance;  type=random_from_set;  set=True,False
-#key=lambda_l1;  type=random_float;  from=0;  to=1;  step=0.01
-#key=lambda_l2;  type=random_float;  from=0;  to=1;  step=0.01
+#key=objective_regression;  type=random_from_set;  set='regression_l1'
+#key=boosting_type;  type=random_from_set;  set='gbdt'
+#key=learning_rate;  type=random_float;  from=0.02;  to=0.02;  step=0.001
+#key=sub_feature;  type=random_float;  from=0.5;  to=0.5;  step=0.01
+#key=bagging_fraction;  type=random_float;  from=0.85;  to=0.85;  step=0.01
+#key=bagging_freq;  type=random_int;  from=40;  to=40;  step=1
+#key=num_leaves;  type=random_int;  from=50;  to=50;  step=1
+#key=tree_learner;  type=random_from_set;  set='serial'
+#key=min_data;  type=random_int;  from=50;  to=50;  step=5
+#key=feature_fraction_seed;  type=random_int;  from=2;  to=2;  step=1
+#key=bagging_seed;  type=random_int;  from=3;  to=3;  step=1
+#key=boost_from_average;  type=random_from_set;  set=False
+#key=is_unbalance;  type=random_from_set;  set=False
+#key=lambda_l1;  type=random_float;  from=0;  to=0;  step=0.01
+#key=lambda_l2;  type=random_float;  from=0;  to=0;  step=0.01
+#key=start_fold;  type=random_from_set;  set=9
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -194,7 +195,7 @@ class cls_ev_agent_{id}:
             print ("Length of validation set:", len(validation_set_indexes))
         
         # start from loading the target field
-        df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]]
+        df = self.pd.read_csv(workdir+self.target_file, usecols=[self.target_col])[[self.target_col]]
 
         columns_new = [self.target_col]
         columns = [self.target_col]
@@ -209,7 +210,7 @@ class cls_ev_agent_{id}:
                 if cols_count>{fields_to_use}:
                     break
 
-                df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
+                df = df.merge(self.pd.read_csv(workdir+file_name, usecols=[col_name])[[col_name]], left_index=True, right_index=True)
 
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
@@ -247,14 +248,14 @@ class cls_ev_agent_{id}:
         params['sub_feature'] = {sub_feature}           # feature_fraction (small values => use very different submodels)
         params['bagging_fraction'] = {bagging_fraction} # sub_row
         params['bagging_freq'] = {bagging_freq}
-        params['num_leaves'] = 	{num_leaves}            # num_leaf
+        params['num_leaves'] =     {num_leaves}            # num_leaf
         params['tree_learner'] = {tree_learner}
         params['min_data'] = {min_data}                 # min_data_in_leaf
-        params['verbose'] = 0
+        params['verbose'] = 1
         params['feature_fraction_seed'] = {feature_fraction_seed}
         params['bagging_seed'] = {bagging_seed}
-        params['max_depth'] = -1
-        params['num_threads'] = 4
+        params['max_depth'] = 6
+        params['num_threads'] = 48
         params['boost_from_average'] = {boost_from_average}
         params['is_unbalance'] = {is_unbalance}
         params['lambda_l1'] = {lambda_l1}
@@ -266,8 +267,8 @@ class cls_ev_agent_{id}:
             params['metric'] = ['auc', 'binary_logloss']
         else:
             print ("detected regression target: use Logistic Regression")
-            params['objective'] = {objective_regression}
-            params['metric'] = ['auc', 'rmse']
+            params['objective'] = 'regression'
+            params['metric'] = 'mae'
 
         #############################################################
         #
@@ -279,12 +280,12 @@ class cls_ev_agent_{id}:
         # divide training data into nfolds of size block
         block = int(len(df)/nfolds)
 
-        prediction = []
+        prediction = self.np.zeros(len(df))
 
         weighted_result = 0
         count_records_notnull = 0
 
-        for fold in range(0,nfolds):
+        for fold in range({start_fold},nfolds):
             print ("\nFOLD", fold, "\n")
             range_start = fold*block
             range_end = (fold+1)*block
@@ -318,7 +319,7 @@ class cls_ev_agent_{id}:
 
             num_round=100000
             watchlist  = [self.lgb.Dataset(x_test, label=y_test)]
-            predictor = self.lgb.train( params, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=10 )
+            predictor = self.lgb.train( params, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
             self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
             
             if mode==1 and fold==nfolds-1:
@@ -336,8 +337,8 @@ class cls_ev_agent_{id}:
                 print ("Confusion Matrix:\n", result_cm)
                 print ("Classification Report:\n", result_cr)
             else:
-                #result = sum(abs(y_test-pred))/len(y_test)
-                result = sqrt(mean_squared_error(y_test, pred))
+                result = sum(abs(y_test-pred))/len(y_test)
+                #result = sqrt(mean_squared_error(y_test, pred))
                 
             print ("result: ", result)
             
@@ -347,7 +348,8 @@ class cls_ev_agent_{id}:
             # predict all examples in the original test set which may include erroneous examples previously removed
             #pred_all_test = predictor.predict(self.lgb.Dataset(x_test_orig.drop(self.target_col, axis=1)))
             pred_all_test = predictor.predict(x_test_orig.drop(self.target_col, axis=1))
-            prediction = self.np.concatenate([prediction,pred_all_test])
+            #prediction = self.np.concatenate([prediction,pred_all_test])
+            prediction[range_start:range_end] = pred_all_test
 
             # predict validation and remainder sets examples
             if use_validation_set:
