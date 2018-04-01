@@ -14,22 +14,24 @@
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=ev_field
-#key=objective_regression;  type=random_from_set;  set='regression_l1'
-#key=boosting_type;  type=random_from_set;  set='gbdt'
-#key=learning_rate;  type=random_float;  from=0.02;  to=0.02;  step=0.001
-#key=sub_feature;  type=random_float;  from=0.5;  to=0.5;  step=0.01
-#key=bagging_fraction;  type=random_float;  from=0.85;  to=0.85;  step=0.01
-#key=bagging_freq;  type=random_int;  from=40;  to=40;  step=1
-#key=num_leaves;  type=random_int;  from=50;  to=50;  step=1
-#key=tree_learner;  type=random_from_set;  set='serial'
-#key=min_data;  type=random_int;  from=50;  to=50;  step=5
-#key=feature_fraction_seed;  type=random_int;  from=2;  to=2;  step=1
-#key=bagging_seed;  type=random_int;  from=3;  to=3;  step=1
-#key=boost_from_average;  type=random_from_set;  set=False
-#key=is_unbalance;  type=random_from_set;  set=False
-#key=lambda_l1;  type=random_float;  from=0;  to=0;  step=0.01
-#key=lambda_l2;  type=random_float;  from=0;  to=0;  step=0.01
-#key=start_fold;  type=random_from_set;  set=9
+#key=objective_regression;  type=random_from_set;  set='regression_l1','regression_l2','huber','fair','poisson','quantile','mape','gamma','tweedie'
+#key=boosting_type;  type=random_from_set;  set='gbdt','rf','dart','goss'
+#key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
+#key=sub_feature;  type=random_float;  from=0.2;  to=1;  step=0.01
+#key=bagging_fraction;  type=random_float;  from=0.2;  to=1;  step=0.01
+#key=bagging_freq;  type=random_int;  from=10;  to=100;  step=1
+#key=num_leaves;  type=random_int;  from=16;  to=4096;  step=1
+#key=tree_learner;  type=random_from_set;  set='serial','feature','data','voting'
+#key=min_data;  type=random_int;  from=100;  to=2000;  step=5
+#key=feature_fraction_seed;  type=random_int;  from=1;  to=10;  step=1
+#key=bagging_seed;  type=random_int;  from=1;  to=10;  step=1
+#key=boost_from_average;  type=random_from_set;  set=True,False
+#key=is_unbalance;  type=random_from_set;  set=True,False
+#key=lambda_l1;  type=random_float;  from=0;  to=1;  step=0.01
+#key=lambda_l2;  type=random_float;  from=0;  to=1;  step=0.01
+#key=start_fold;  type=random_from_set;  set=0
+#key=max_depth;  type=random_int;  from=-1;  to=10;  step=1
+#key=num_threads;  type=random_int;  from=4;  to=4;  step=1
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -254,8 +256,8 @@ class cls_ev_agent_{id}:
         params['verbose'] = 1
         params['feature_fraction_seed'] = {feature_fraction_seed}
         params['bagging_seed'] = {bagging_seed}
-        params['max_depth'] = 6
-        params['num_threads'] = 48
+        params['max_depth'] = {max_depth}
+        params['num_threads'] = {num_threads}
         params['boost_from_average'] = {boost_from_average}
         params['is_unbalance'] = {is_unbalance}
         params['lambda_l1'] = {lambda_l1}
