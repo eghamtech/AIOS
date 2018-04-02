@@ -127,7 +127,7 @@ class cls_ev_agent_{id}:
         return -sum1/len(a)
 
     def apply(self, df_add):
-        # this method is called by AIOS when additional data is supplied and needs to be predicted on
+        # this method is called by AIOS Output Module when additional data is supplied and needs to be predicted on
         columns_new = []
         columns = []
         # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
@@ -326,8 +326,8 @@ class cls_ev_agent_{id}:
             predictor = self.lgb.train( params, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
             self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
             
-            if mode==1 and fold==nfolds-1:
-                predictor.save_model(workdir + self.output_column + ".model")
+            #if mode==1 and fold==nfolds-1:
+            #    predictor.save_model(workdir + self.output_column + ".model")
 
             pred = predictor.predict(x_test)
             if is_binary:
@@ -405,7 +405,18 @@ class cls_ev_agent_{id}:
             else:
                 df[self.output_column] = prediction
                 df[[self.output_column]].to_csv(workdir+self.output_filename)
-
+            
+            # train predictor on all data to be saved as model for this field
+            x_train = df[df[self.target_col].notnull()]  # remove examples that have no proper target label
+            x_train.reset_index(drop=True, inplace=True)
+            y_train = x_train[self.target_col]                    # separate training fields and the target
+            x_train = x_train.drop(self.target_col, 1)
+            
+            dtrain = self.lgb.Dataset(x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
+            watchlist  = [dtrain]
+            predictor = self.lgb.train( params, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
+            predictor.save_model(workdir + self.output_column + ".model")
+            
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
         else:
             print ("fitness="+str(weighted_result))
