@@ -13,7 +13,7 @@
 # https://github.com/eghamtech/AIOS/wiki/Simple-Agents
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 #
-# this agent creates new column which is a copy of "field_source" but with some rows: 
+# this agent creates new column which is a derivative of "field_source" but with some rows: 
 # set to "set_value" where those rows in "field_filter" appear in "filter_values" 
 # set to "set_value_1" where those rows in "field_filter" appear in "filter_values_1"
 # set to "set_value_2" where those rows in "field_filter" are neither in "filter_values" nor in "filter_values_1"
