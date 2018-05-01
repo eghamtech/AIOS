@@ -59,7 +59,7 @@ class cls_agent_{id}:
         col_filter = self.data_defs[1].split("|")[0]
         
         # initialise all rows with default "new_value_2"
-        self.df[self.output_column] = new_value_2
+        self.df[self.output_column] = self.new_value_2
         
         # find all rows matching values in "filter_values_list" and set new column for such rows to "new_value"
         self.df.loc[self.np.isin(self.df[col_filter], self.filter_values_list), self.output_column] = self.new_value
@@ -74,7 +74,7 @@ class cls_agent_{id}:
         col_source = self.data_defs[0].split("|")[0]
         col_filter = self.data_defs[1].split("|")[0]
         
-        df_add[self.output_column] = new_value_2
+        df_add[self.output_column] = self.new_value_2
         df_add.loc[self.np.isin(df_add[col_filter], self.filter_values_list), self.output_column] = self.new_value
         df_add.loc[self.np.isin(df_add[col_filter], self.filter_values_list_1), self.output_column] = self.new_value_1
        
