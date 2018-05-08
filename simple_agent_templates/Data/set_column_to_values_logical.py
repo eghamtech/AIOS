@@ -26,10 +26,8 @@ class cls_agent_{id}:
     import numpy as np
     
     data_defs = ["{field_source}","{field_filter}"]
-    filter_values_list = [{filter_values}]
     new_value = {set_value}
-    
-    filter_values_list_1 = [{filter_values_1}]
+
     new_value_1 = {set_value_1}
     new_value_2 = {set_value_2}
     
