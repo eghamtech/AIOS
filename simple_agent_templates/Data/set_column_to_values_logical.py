@@ -53,8 +53,11 @@ class cls_agent_{id}:
         
         nrow = len(self.df)
         
-        col_source = self.data_defs[0].split("|")[0]
-        col_filter = self.data_defs[1].split("|")[0]
+        #col_source = self.data_defs[0].split("|")[0]
+        #col_filter = self.data_defs[1].split("|")[0]
+        # in case when both "field_source" and "field_filter" are the same, column names changed in df
+        col_source = self.df.columns[0]
+        col_filter = self.df.columns[1]
         
         # initialise all rows with default "new_value_2"
         self.df[self.output_column] = self.new_value_2
