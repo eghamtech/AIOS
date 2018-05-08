@@ -1,9 +1,9 @@
 #start_of_parameters
 #key=field_source;  type=constant;  value=enter_source_field_name_with_csv_file_name
 #key=field_filter;  type=constant;  value=enter_field_to_filter_by_with_csv_file_name
-#key=filter_values;  type=constant;  value=enter_values_to_filter_by
+#key=condition;  type=constant;  value=enter_condition e.g. ==0
 #key=set_value;  type=constant;  value=enter_value_to_set
-#key=filter_values_1;  type=constant;  value=enter_values_to_filter_by
+#key=condition_1;  type=constant;  value=enter_condition e.g. >=1
 #key=set_value_1;  type=constant;  value=enter_value_to_set
 #key=set_value_2;  type=constant;  value=enter_value_to_set
 #end_of_parameters
@@ -14,9 +14,9 @@
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 #
 # this agent creates new column which is a derivative of "field_source" but with some rows: 
-# set to "set_value" where those rows in "field_filter" appear in "filter_values" 
-# set to "set_value_1" where those rows in "field_filter" appear in "filter_values_1"
-# set to "set_value_2" where those rows in "field_filter" are neither in "filter_values" nor in "filter_values_1"
+# set to "set_value" where those rows in "field_filter" match "condition" 
+# set to "set_value_1" where those rows in "field_filter" match "condition_1"
+# set to "set_value_2" where those rows in "field_filter" match neither "condition" nor "condition_1"
 
 class cls_agent_{id}:
     import warnings
@@ -61,10 +61,10 @@ class cls_agent_{id}:
         # initialise all rows with default "new_value_2"
         self.df[self.output_column] = self.new_value_2
         
-        # find all rows matching values in "filter_values_list" and set new column for such rows to "new_value"
-        self.df.loc[self.np.isin(self.df[col_filter], self.filter_values_list), self.output_column] = self.new_value
-        # find all rows matching values in "filter_values_list_1" and set new column for such rows to "new_value_1"
-        self.df.loc[self.np.isin(self.df[col_filter], self.filter_values_list_1), self.output_column] = self.new_value_1
+        # find all rows matching "condition" and set new column for such rows to "new_value"
+        self.df.loc[self.df[col_filter]{condition}, self.output_column] = self.new_value
+        # find all rows matching "condition_1" and set new column for such rows to "new_value_1"
+        self.df.loc[self.df[col_filter]{condition_1}, self.output_column] = self.new_value_1
        
         self.df[[self.output_column]].to_csv(workdir+self.output_filename)
         print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(nrow)+",N")
@@ -75,8 +75,8 @@ class cls_agent_{id}:
         col_filter = self.data_defs[1].split("|")[0]
         
         df_add[self.output_column] = self.new_value_2
-        df_add.loc[self.np.isin(df_add[col_filter], self.filter_values_list), self.output_column] = self.new_value
-        df_add.loc[self.np.isin(df_add[col_filter], self.filter_values_list_1), self.output_column] = self.new_value_1
+        df_add.loc[df_add[col_filter]{condition}, self.output_column] = self.new_value
+        df_add.loc[df_add[col_filter]{condition_1}, self.output_column] = self.new_value_1
        
 
 agent_{id} = cls_agent_{id}()
