@@ -24,9 +24,9 @@ class cls_agent_{id}:
     import pandas as pd
     import re
     
-    source_filename = "{source_filename}"
-    source_primary_field = "{source_primary_field}"
-    primary_field = "{primary_field}"
+    source_filename = "{source_filename}"                  # file in workdir where additional data is
+    source_primary_field = "{source_primary_field}"        # name of the field which can be used to link to existing data
+    primary_field = "{primary_field}"                      # name of the link field in the existing data
     new_field_prefix = "{field_prefix}"
     target = "{target}"
    
@@ -47,10 +47,14 @@ class cls_agent_{id}:
         for c in self.df.columns:
               str1 = c
               str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
-              str1 = output_column + "_" + str1
+              str1 = self.output_column + "_" + str1
               new_cols.append(str1)
               self.colmap[c] = str1
-        df.columns = new_cols
+        self.df.columns = new_cols
+        
+        # create a copy of specified primary field to have the same name as primary field in AIOS Memory
+        # so dataframe can be joined on that field
+        self.df[self.primary_field] = self.df[self.colmap[self.source_primary_field]]
         
         self.char_cols = list(self.df.select_dtypes(include=['object']).columns)
         print ("source data loaded")
@@ -73,18 +77,19 @@ class cls_agent_{id}:
         col_name = self.primary_field.split("|")[0]
         file_name = self.primary_field.split("|")[1]
         df_primary = self.pd.read_csv(workdir+file_name, encoding='utf8')[[col_name]]
-        df_primary.merge
+        df_primary = self.pd.merge(df_primary, self.df, how='left', on=self.primary_field, sort=False)
+        df_primary.drop(self.primary_field, axis=1)              # remove primary field as it is a duplicate previously created
     
         for cname in self.char_cols:
             dict1 = dicts[cname]
-            self.df[cname] = self.df[cname].fillna('').map(dict1)
+            self.df_primary[cname] = self.df_primary[cname].fillna('').map(dict1)
             self.pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv', encoding='utf-8')    #save new column dict
         
-        self.df.to_csv(workdir+self.newfilename, index=False)
+        self.df_primary.to_csv(workdir+self.output_filename, index=False)
         
-        nrow = len(self.df)
+        nrow = len(self.df_primary)
 
-        for cname in self.df.columns:
+        for cname in self.df_primary.columns:
             if cname in self.char_cols:
                 is_dict="Y"
             else:
@@ -93,7 +98,7 @@ class cls_agent_{id}:
                 is_target="Y"
             else:
                 is_target="N"
-            print ("#add_field:"+cname+","+is_dict+","+self.newfilename+","+is_target+","+str(nrow))
+            print ("#add_field:"+cname+","+is_dict+","+self.output_filename+","+is_target+","+str(nrow))
     
     def apply(self, df_add):
         global dicts
