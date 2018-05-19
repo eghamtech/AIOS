@@ -13,6 +13,8 @@
 # it queries GloVe database on glove_host provided via AIOS API
 # it also maps original 300 elements vector to vector size=300/group_length and considers only word_count_max initial words
 # if parameter word_count_max not specified (0) then agent will analyse given field to find its maximum length
+#
+# this version is optimised for speed and memory usage
 
 if 'dicts' not in globals():
     dicts = {}
@@ -48,14 +50,19 @@ class cls_agent_{id}:
         # if parameter word_count_max == 0 then use max_words found in the given field
         if self.nwords == 0:
             # map dict fields
-            dfx = self.pd.DataFrame()
-            dfx[self.col1] = self.df[self.col1].map(self.dict1)
+            self.dfx = self.pd.DataFrame()
+            self.dfx[self.col1] = self.df[self.col1].map(self.dict1)
             # find size of longest in terms of words record
-            self.max_words = dfx[self.col1].apply(self._no_of_words).max()
+            self.max_words = self.dfx[self.col1].apply(self._no_of_words).max()
             self.nwords = self.max_words
             self.numbers_count = self.nwords * int(300/self.group_length)
             print("Longest record has " + str(self.max_words) + " words. Using it as GloVe size limit.")
             
+        self.cols = []
+        # prepare list of new columns
+        for i in range(0,self.numbers_count):
+            fld = self.fldprefix + '_' + str(i)
+            self.cols.append(fld)
         
     def _removeNonAscii(self, s): return "".join(i for i in s if ord(i)<128)
     
@@ -78,7 +85,8 @@ class cls_agent_{id}:
         
         block = int(len(df_run)/500)
         i = 0
-
+        self.df_np = []
+        
         import requests
         import json
         
@@ -86,7 +94,6 @@ class cls_agent_{id}:
             i+=1
             sline1 = self._tokenize(row[self.col1])
             
-            #values = [0]*(self.nwords*300)
             r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
             if r.status_code!=200:
                 print(r.reason)
@@ -95,7 +102,7 @@ class cls_agent_{id}:
                 break
             
             obj = json.loads(r.text)
-            values = [float(v) for v in obj['data'].split(',')]
+            values = [self.np.float32(v) for v in obj['data'].split(',')]
             if len(values)!=self.numbers_count:
                 print("wrong response length. got", len(values), ", must be", self.numbers_count, ", nwords", self.nwords, ", grp_length", self.group_length)
                 print("string:", sline1)
@@ -103,22 +110,18 @@ class cls_agent_{id}:
                 self.error = 1
                 break
             
-            #if index==0 and len(df_run)>1:
-            #    print('creating columns: ')
-            #    last = 0
-            cnt = len(values)
-            for j in range(0, cnt):
-                #if index==0 and len(df_run)>1:
-                #    last+=1
-                #    if last>=10:
-                #        print(str(j) + "/" + str(cnt) + "...")
-                #        last = 0
-                df_run.set_value(index, self.fldprefix + '_' + str(j), values[j])
+            if index == 0:
+                self.df_np = self.np.vstack((values,))
+            else:
+                self.df_np = self.np.vstack((self.df_np, values))
 
             if i>=block and block>=10:
                 i=0
                 print (index, sline1, values[0])
     
+        self.df_np = self.pd.DataFrame(self.df_np, columns = self.cols)
+        
+        
     def run(self, mode):
         print ("enter run mode " + str(mode))
         
@@ -129,36 +132,26 @@ class cls_agent_{id}:
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
             return
         
-        cols = []
-        # prepare dataframe with numbers_count new columns and init with 0.0 
-        for i in range(0,self.numbers_count):
-            fld = self.fldprefix + '_' + str(i)
-            cols.append(fld)
-        dfx2 = self.pd.DataFrame(0.0, index=self.np.arange(len(self.df)), columns=cols)
-        
-        print ("start adding columns")
-        # join original column with new columns
-        self.df = self.df.join(dfx2)
-        print ("ended adding columns")
-        
         self.run_on(self.df)
         
         if self.error==1:
             return
         
-        nrow = len(self.df)
+        nrow = len(self.df_np)
+        #self.df_np[self.col1] = self.df[self.col1]
         
         # register and save new columns one by one
         for i in range(0,self.numbers_count):
-            fld = self.fldprefix + '_' + str(i)
+            fld = self.cols[i]
             fname = fld + '.csv'
-            self.df[[fld]].to_csv(workdir+fname)
+            self.df_np[[fld]].to_csv(workdir+fname)
             print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
     def apply(self, df_add):
-        for i in range(0,self.numbers_count):
-            fld = self.fldprefix + '_' + str(i)
-            df_add[fld] = 0.0
         self.run_on(df_add)
+  
+        for i in range(0,self.numbers_count):
+            fld = self.cols[i]
+            df_add[fld] = self.df_np[fld]
     
 agent_{id} = cls_agent_{id}()
