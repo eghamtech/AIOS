@@ -25,6 +25,7 @@ class cls_agent_{id}:
     import pandas as pd
     import numpy as np
     import re
+    import os
 
     col_definition1 = "{random_dict}"
     col1 = col_definition1.split("|")[0]
@@ -63,6 +64,15 @@ class cls_agent_{id}:
         for i in range(0,self.numbers_count):
             fld = self.fldprefix + '_' + str(i)
             self.cols.append(fld)
+            
+        # if saved temp object exists then load it from filesystem to carry on from last good batch
+        if self.os.path.isfile(workdir + self.fldprefix + ".tmp"):
+            self.df_np = self.np.load(workdir + self.fldprefix + ".tmp")
+            self.index_start_from = len(self.df_np)
+            print ('df_np array loaded from temp file, continue conversion from row: ', self.index_start_from+1)
+        else:
+            self.df_np = []
+            self.index_start_from = 0
         
     def _removeNonAscii(self, s): return "".join(i for i in s if ord(i)<128)
     
@@ -85,12 +95,11 @@ class cls_agent_{id}:
         
         block = int(len(df_run)/500)
         i = 0
-        self.df_np = []
         
         import requests
         import json
         
-        for index, row in self.dfx.iterrows():
+        for index, row in self.dfx.iloc[self.index_start_from:].iterrows():
             i+=1
             sline1 = self._tokenize(row[self.col1])
             
@@ -118,6 +127,8 @@ class cls_agent_{id}:
             if i>=block and block>=10:
                 i=0
                 print (index, sline1, values[0])
+                self.df_np.dump(workdir + self.fldprefix + ".tmp")
+                print ('df_np array saved to temp file')
     
         self.df_np = self.pd.DataFrame(self.df_np, columns = self.cols)
         
@@ -147,6 +158,8 @@ class cls_agent_{id}:
             self.df_np[[fld]].to_csv(workdir+fname)
             print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
+        self.os.remove(workdir + self.fldprefix + ".tmp")
+        
     def apply(self, df_add):
         self.run_on(df_add)
   
