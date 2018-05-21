@@ -32,6 +32,7 @@ class cls_agent_{id}:
     file1 = col_definition1.split("|")[1]
     result_id = {id}
     field_prefix = 'glv_' + str({group_length}) + '_' + col1 + '_'
+    temp_file_name = field_prefix + '.tmp'
     fldprefix = field_prefix + str(result_id)
     nwords = {word_count_max}
     group_length = {group_length}
@@ -66,8 +67,8 @@ class cls_agent_{id}:
             self.cols.append(fld)
             
         # if saved temp object exists then load it from filesystem to carry on from last good batch
-        if self.os.path.isfile(workdir + self.fldprefix + ".tmp"):
-            self.df_np = self.np.load(workdir + self.fldprefix + ".tmp")
+        if self.os.path.isfile(workdir + self.temp_file_name):
+            self.df_np = self.np.load(workdir + self.temp_file_name)
             self.index_start_from = len(self.df_np)
             print ('df_np array loaded from temp file, continue conversion from row: ', self.index_start_from+1)
         else:
@@ -127,7 +128,7 @@ class cls_agent_{id}:
             if i>=block and block>=10:
                 i=0
                 print (index, sline1, values[0])
-                self.df_np.dump(workdir + self.fldprefix + ".tmp")
+                self.df_np.dump(workdir + self.temp_file_name)
                 print ('df_np array saved to temp file')
     
         self.df_np = self.pd.DataFrame(self.df_np, columns = self.cols)
@@ -158,7 +159,7 @@ class cls_agent_{id}:
             self.df_np[[fld]].to_csv(workdir+fname)
             print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
-        self.os.remove(workdir + self.fldprefix + ".tmp")
+        self.os.remove(workdir + self.temp_file_name)
         
     def apply(self, df_add):
         self.run_on(df_add)
