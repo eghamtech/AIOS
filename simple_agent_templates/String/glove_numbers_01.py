@@ -14,7 +14,7 @@
 # it also maps original 300 elements vector to vector size=300/group_length and considers only word_count_max initial words
 # if parameter word_count_max not specified (0) then agent will analyse given field to find its maximum length
 #
-# this version is optimised for speed and memory usage
+# this version is optimised for speed and memory usage and it saves temp file with results in case agent crashes
 
 if 'dicts' not in globals():
     dicts = {}
@@ -68,7 +68,8 @@ class cls_agent_{id}:
             
         # if saved temp object exists then load it from filesystem to carry on from last good batch
         if self.os.path.isfile(workdir + self.temp_file_name):
-            self.df_np = self.np.load(workdir + self.temp_file_name)
+            self.df_np = self.pd.read_pickle(workdir + self.temp_file_name, compression='bz2')
+            self.df_np = self.df_np.values.tolist()
             self.index_start_from = len(self.df_np)
             print ('df_np array loaded from temp file, continue conversion from row: ', self.index_start_from+1)
         else:
@@ -94,7 +95,7 @@ class cls_agent_{id}:
         self.dfx = self.pd.DataFrame()
         self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
         
-        block = int(len(df_run)/500)
+        block = int(len(df_run)/20)
         i = 0
         
         import requests
@@ -120,16 +121,13 @@ class cls_agent_{id}:
                 self.error = 1
                 break
             
-            if index == 0:
-                self.df_np = self.np.vstack((values,))
-            else:
-                self.df_np = self.np.vstack((self.df_np, values))
+            self.df_np.append(values)
 
             if i>=block and block>=10:
                 i=0
                 print (index, sline1, values[0])
-                self.df_np.dump(workdir + self.temp_file_name)
-                print ('df_np array saved to temp file')
+                self.pd.DataFrame(self.df_np).to_pickle(workdir + self.temp_file_name, compression='bz2')
+                print ('df_np array saved to temp file; length: ', len(self.df_np))
     
         self.df_np = self.pd.DataFrame(self.df_np, columns = self.cols)
         
