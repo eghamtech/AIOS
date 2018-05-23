@@ -1,6 +1,6 @@
 #start_of_parameters
 #key=pers_insights_username;  type=constant;  value=enter_pers_insights_username
-#key=pers_insights_password;  type=constant;  value=enter_pers_insights_password
+#key=pers_insights_password;  type=constant;  value=enter_pers_insights_password;  is_password=1
 #end_of_parameters
 
 import pandas as pd
