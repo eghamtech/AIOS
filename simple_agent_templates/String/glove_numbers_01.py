@@ -1,6 +1,6 @@
 #start_of_parameters
 #key=word_count_max;  type=constant;  value=0
-#key=group_length;  type=constant;  value=300
+#key=group_length;  type=constant;  value=1
 #key=glove_host;  type=constant;  value=enter_glove_host
 #end_of_parameters
 
