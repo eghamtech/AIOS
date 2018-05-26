@@ -126,7 +126,9 @@ class cls_agent_{id}:
             if i>=block and block>=10:
                 i=0
                 print (index, sline1, values[0])
-                self.pd.DataFrame(self.df_np).to_pickle(workdir + self.temp_file_name, compression='bz2')
+                df_np_df = self.pd.DataFrame(self.df_np)
+                df_np_df.to_pickle(workdir + self.temp_file_name, compression='bz2')
+                del df_np_df
                 print ('df_np array saved to temp file; length: ', len(self.df_np))
     
         self.df_np = self.pd.DataFrame(self.df_np, columns = self.cols)
