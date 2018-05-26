@@ -94,32 +94,33 @@ class cls_agent_{id}:
             i+=1
             sline1 = self._tokenize(row[self.col1])
             
-            # if parameter word_count_max == 0 then use number of words in the current line
-            if self.nwords == 0:
-                self.nwords = len(sline1.split())
-            
-            r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
-            if r.status_code!=200:
-                print(r.reason)
-                print("#error")
-                self.error = 1
-                break
-            
-            obj = json.loads(r.text)
-            values = [self.np.float32(v) for v in obj['data'].split(',')]
-            if len(values) != self.nwords*self.numbers_count:
-                print("wrong response length. got", len(values), ", must be", self.nwords*self.numbers_count, ", nwords", self.nwords, ", grp_length", self.group_length)
-                print("string:", sline1)
-                print("#error")
-                self.error = 1
-                break
-            
-            glove_array = self.np.array(values)                     # convert continous list of all words gloves to 1-D array
-            glove_array = glove_array.reshape((self.nwords, -1))    # convert 1-D array to NWords*GloveSize array
-            glove_array = glove_array.sum(axis=0)                   # simple sum of all words glove numbers
-            values = glove_array.tolist()                           # convert back to list for faster appending
-            
-            self.df_np.append(values)
+            if len(sline1.split()) > 0:
+                # if parameter word_count_max == 0 then use number of words in the current line
+                if self.nwords == 0:
+                    self.nwords = len(sline1.split())
+
+                r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
+                if r.status_code!=200:
+                    print(r.reason)
+                    print("#error")
+                    self.error = 1
+                    break
+
+                obj = json.loads(r.text)
+                values = [self.np.float32(v) for v in obj['data'].split(',')]
+                if len(values) != self.nwords*self.numbers_count:
+                    print("wrong response length. got", len(values), ", must be", self.nwords*self.numbers_count, ", nwords", self.nwords, ", grp_length", self.group_length)
+                    print("string:", sline1)
+                    print("#error")
+                    self.error = 1
+                    break
+
+                glove_array = self.np.array(values)                     # convert continous list of all words gloves to 1-D array
+                glove_array = glove_array.reshape((self.nwords, -1))    # convert 1-D array to NWords*GloveSize array
+                glove_array = glove_array.sum(axis=0)                   # simple sum of all words glove numbers
+                values = glove_array.tolist()                           # convert back to list for faster appending
+
+                self.df_np.append(values)
 
             if i>=block and block>=10:
                 i=0
