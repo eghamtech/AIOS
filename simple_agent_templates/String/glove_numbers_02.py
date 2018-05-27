@@ -119,8 +119,10 @@ class cls_agent_{id}:
                 glove_array = glove_array.reshape((self.nwords, -1))    # convert 1-D array to NWords*GloveSize array
                 glove_array = glove_array.sum(axis=0)                   # simple sum of all words glove numbers
                 values = glove_array.tolist()                           # convert back to list for faster appending
-
-                self.df_np.append(values)
+            else:
+                values = [0] * self.numbers_count
+               
+            self.df_np.append(values)
 
             if i>=block and block>=10:
                 i=0
