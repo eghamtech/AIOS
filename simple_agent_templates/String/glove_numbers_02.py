@@ -35,6 +35,7 @@ class cls_agent_{id}:
     field_prefix = 'glv_sum_' + str({group_length}) + '_' + col1 + '_'
     temp_file_name = field_prefix + '.tmp'
     fldprefix = field_prefix + str(result_id)
+    word_count_max = {word_count_max}
     nwords = {word_count_max}
     group_length = {group_length}
     numbers_count = int(300/group_length)
@@ -92,12 +93,14 @@ class cls_agent_{id}:
         
         for index, row in self.dfx.iloc[self.index_start_from:].iterrows():
             i+=1
-            sline1 = self._tokenize(row[self.col1])
+            sline1 = self._tokenize(row[self.col1])           
+            self.nwords = len(sline1.split())
             
-            if len(sline1.split()) > 0:
+            if self.nwords > 0:
                 # if parameter word_count_max == 0 then use number of words in the current line
-                if self.nwords == 0:
-                    self.nwords = len(sline1.split())
+                # otherwise use fixed number of words for every line
+                if self.word_count_max > 0:
+                    self.nwords = self.word_count_max
 
                 r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
                 if r.status_code!=200:
