@@ -104,13 +104,24 @@ class cls_agent_{id}:
         for index, row in self.dfx.iloc[self.index_start_from:].iterrows():
             i+=1
             sline1 = self._tokenize(row[self.col1])
-            
-            r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
-            if r.status_code!=200:
-                print(r.reason)
-                print("#error")
-                self.error = 1
-                break
+     
+            attempts = 0
+            not_successful = True
+            r = requests.Response()
+            while not_successful and attempts < 10:
+               try:
+                  r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
+                  r.raise_for_status()
+                  not_successful = False
+               except requests.exceptions.RequestException as e:
+                  attempts += 1
+                  print (e)
+                  if attempts < 10:
+                     print ('Error GloVe request at row: ', index, '; retry attempt: ', attempts)
+                  else:
+                     print ('Error GloVe request at row: ', index, '; FATAL no more attempts')
+                     self.error = 1
+                     return
             
             obj = json.loads(r.text)
             values = [self.np.float32(v) for v in obj['data'].split(',')]
@@ -119,7 +130,7 @@ class cls_agent_{id}:
                 print("string:", sline1)
                 print("#error")
                 self.error = 1
-                break
+                return
             
             self.df_np.append(values)
 
