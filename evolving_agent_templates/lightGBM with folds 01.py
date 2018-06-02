@@ -172,6 +172,7 @@ class cls_ev_agent_{id}:
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
         use_validation_set = {use_validation_set}
+        use_float32_dtype = {use_float32_dtype}
         
         # obtain indexes for train, validation and remainder sets, if validation set is required
         if use_validation_set:
