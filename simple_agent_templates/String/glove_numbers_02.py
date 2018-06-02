@@ -58,8 +58,8 @@ class cls_agent_{id}:
             
         # if saved temp object exists then load it from filesystem to carry on from last good batch
         if self.os.path.isfile(workdir + self.temp_file_name):
-            self.df_np = self.pd.read_pickle(workdir + self.temp_file_name, compression='bz2')
-            self.df_np = self.df_np.values.tolist()
+            self.df_np = self.pd.read_pickle(workdir + self.temp_file_name, compression='bz2') 
+            self.df_np = self.df_np.values.tolist()     # convert dataframe to list for faster appending of rows
             self.index_start_from = len(self.df_np)
             print ('df_np array loaded from temp file, continue conversion from row: ', self.index_start_from+1)
         else:
@@ -101,14 +101,25 @@ class cls_agent_{id}:
                 # otherwise use fixed number of words for every line
                 if self.word_count_max > 0:
                     self.nwords = self.word_count_max
-
-                r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
-                if r.status_code!=200:
-                    print(r.reason)
-                    print("#error")
-                    self.error = 1
-                    break
-
+                
+                attempts = 0
+                not_successful = True
+                r = requests.Response()
+                while not_successful and attempts < 10:
+                   try:
+                      r = requests.post("{glove_host}", verify=False, data={'action': 'glove_numbers', 'word_count_max': self.nwords, 'group_length': self.group_length, 'string': sline1})
+                      r.raise_for_status()
+                      not_successful = False
+                   except requests.exceptions.RequestException as e:
+                      attempts += 1
+                      print (e)
+                      if attempts < 10:
+                         print ('Error GloVe request at row: ', index, '; retry attempt: ', attempts)
+                      else:
+                         print ('Error GloVe request at row: ', index, '; FATAL no more attempts')
+                         self.error = 1
+                         return
+               
                 obj = json.loads(r.text)
                 values = [self.np.float32(v) for v in obj['data'].split(',')]
                 if len(values) != self.nwords*self.numbers_count:
@@ -116,7 +127,7 @@ class cls_agent_{id}:
                     print("string:", sline1)
                     print("#error")
                     self.error = 1
-                    break
+                    return
 
                 glove_array = self.np.array(values)                     # convert continous list of all words gloves to 1-D array
                 glove_array = glove_array.reshape((self.nwords, -1))    # convert 1-D array to NWords*GloveSize array
