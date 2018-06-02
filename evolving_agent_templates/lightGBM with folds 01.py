@@ -32,6 +32,7 @@
 #key=start_fold;  type=random_from_set;  set=0
 #key=max_depth;  type=random_int;  from=-1;  to=10;  step=1
 #key=num_threads;  type=random_int;  from=4;  to=4;  step=1
+#key=use_float32_dtype; type=random_from_set;  set=True
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -211,8 +212,12 @@ class cls_ev_agent_{id}:
                 cols_count+=1
                 if cols_count>{fields_to_use}:
                     break
-
-                df = df.merge(self.pd.read_csv(workdir+file_name, usecols=[col_name])[[col_name]], left_index=True, right_index=True)
+                
+                df_col = self.pd.read_csv(workdir+file_name, usecols=[col_name])[[col_name]]  # read column from csv file
+                if df_col[col_name].dtype == self.np.float64 and use_float32_dtype:           # downcast to save memory if needed
+                    df_col[col_name] = df_col[col_name].astype(self.np.float32)
+                    
+                df = df.merge(df_col, left_index=True, right_index=True)
 
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
