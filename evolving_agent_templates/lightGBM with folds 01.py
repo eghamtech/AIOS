@@ -224,7 +224,8 @@ class cls_ev_agent_{id}:
                     df_col[col_name] = df_col[col_name].astype(self.np.float32)
                     
                 df = df.merge(df_col, left_index=True, right_index=True)
-
+                
+                block_progress += 1
                 if (block_progress >= block):
                     block_progress = 0
                     print (str(datetime.now()), " data loaded: ", cols_count/self.fields_to_use*100, "%")
