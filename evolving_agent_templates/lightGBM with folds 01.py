@@ -69,6 +69,7 @@ class cls_ev_agent_{id}:
 
     # obtain random selection of fields; number of fields to be selected specified in data:length gene for this instance
     data_defs = {data}
+    fields_to_use = {fields_to_use}
     
     # if filter columns are specified then training and validation sets will be selected based on filter criteria
     # based on filter criteria training + validation sets will not necessarily constitute all data, the remainder will be called "test set"
@@ -137,7 +138,7 @@ class cls_ev_agent_{id}:
             
             if self.is_use_column(col_name):
                 cols_count+=1
-                if cols_count>{fields_to_use}:
+                if cols_count > self.fields_to_use:
                     break
                 # assemble dataframe column by column
                 if cols_count==1:
@@ -169,6 +170,7 @@ class cls_ev_agent_{id}:
         from sklearn.metrics import classification_report
         from sklearn.metrics import mean_squared_error
         from math import sqrt
+        from datetime import datetime
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
 
         use_validation_set = {use_validation_set}
@@ -205,13 +207,16 @@ class cls_ev_agent_{id}:
         columns = [self.target_col]
         # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
         cols_count = 0
+        block_progress = 0
+        block = int(self.fields_to_use/20)
+        
         for i in range(0,len(self.data_defs)):
             col_name = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
             
             if self.is_use_column(col_name):
                 cols_count+=1
-                if cols_count>{fields_to_use}:
+                if cols_count > self.fields_to_use:
                     break
                 
                 df_col = self.pd.read_csv(workdir+file_name, usecols=[col_name])[[col_name]]  # read column from csv file
@@ -220,6 +225,10 @@ class cls_ev_agent_{id}:
                     
                 df = df.merge(df_col, left_index=True, right_index=True)
 
+                if (block_progress >= block):
+                    block_progress = 0
+                    print (str(datetime.now()), " data loaded: ", cols_count/self.fields_to_use*100, "%")
+                    
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
                 columns.append(col_name)
@@ -231,7 +240,7 @@ class cls_ev_agent_{id}:
 
         # rename columns in df to unique names
         df.columns = columns_new
-        print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
+        print (str(datetime.now()), " data loaded", len(df), "rows; ", len(df.columns), "columns")
         original_row_count = len(df)
         
         # analyse target column whether it is binary which may result in different loss function used
