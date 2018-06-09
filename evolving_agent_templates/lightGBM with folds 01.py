@@ -206,6 +206,7 @@ class cls_ev_agent_{id}:
         columns_new = [self.target_col]
         columns = [self.target_col]
         # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
+        print (str(datetime.now()), " start loading data")
         cols_count = 0
         block_progress = 0
         block = int(self.fields_to_use/20)
@@ -228,7 +229,7 @@ class cls_ev_agent_{id}:
                 block_progress += 1
                 if (block_progress >= block):
                     block_progress = 0
-                    print (str(datetime.now()), " data loaded: ", cols_count/self.fields_to_use*100, "%")
+                    print (str(datetime.now()), " data loaded: ", round(cols_count/self.fields_to_use*100,2), "%")
                     
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
