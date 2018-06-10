@@ -14,6 +14,7 @@
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=ev_field
+#key=include_columns_containing;  type=random_from_set;  set=
 #key=objective_regression;  type=random_from_set;  set='regression_l1','regression_l2','huber','fair','poisson','quantile','mape','gamma','tweedie'
 #key=boosting_type;  type=random_from_set;  set='gbdt','rf','dart','goss'
 #key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
@@ -79,6 +80,8 @@ class cls_ev_agent_{id}:
     
     # fields matching the specified prefix will not be used in the model
     ignore_columns_containing = "{ignore_columns_containing}"
+    # include only fields matching string e.g., only properly scaled columns should be used with MLP
+    include_columns_containing = "{include_columns_containing}"
     
     def __init__(self):
         # remove the target field for this instance from the data used for training
@@ -102,12 +105,17 @@ class cls_ev_agent_{id}:
         # determine whether given column should be ignored
         if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
             return False 
-        if not self.is_set(self.ignore_columns_containing):
-            return True
-        # ignore other columns containing specified parameter value
-        if s.find(self.ignore_columns_containing)>=0:
+        # ignore other columns containing specified ignore parameter value
+        if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing)>=0:
             return False
-        return True
+        # include all columns if include parameter not specified
+        if not self.is_set(self.include_columns_containing):
+            return True
+        # include columns specified in parameter
+        if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing)>=0:
+            return True 
+        # ignore all other columns
+        return False
         
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
@@ -252,12 +260,12 @@ class cls_ev_agent_{id}:
             # use previously calculated indexes to select train, validation and remainder sets
             df_test = df[df.index.isin(test_indexes)]
             df_test.reset_index(drop=True, inplace=True)
-            df_valid = df[df.index.isin(validation_set_indexes)]
-            df_valid.reset_index(drop=True, inplace=True)
+            self.df_valid = df[df.index.isin(validation_set_indexes)]
+            self.df_valid.reset_index(drop=True, inplace=True)
             df = df[df.index.isin(train_indexes)]
             df.reset_index(drop=True, inplace=True)
             # initialise prediction columns for validation and test as they will be aggregate predictions from multiple folds
-            predicted_valid_set = self.np.zeros(len(df_valid))
+            predicted_valid_set = self.np.zeros(len(self.df_valid))
             predicted_test_set = self.np.zeros(len(df_test))
             
         # prepare LGBM parameters    
@@ -302,6 +310,7 @@ class cls_ev_agent_{id}:
         prediction = self.np.zeros(len(df))
 
         weighted_result = 0
+        weighted_auc = 0
         count_records_notnull = 0
 
         for fold in range({start_fold},nfolds):
@@ -333,12 +342,11 @@ class cls_ev_agent_{id}:
             y_test = x_test[self.target_col]
             x_test = x_test.drop(self.target_col, 1)
 
-            dtrain = self.lgb.Dataset( x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
-            #dtest = self.lgb.Dataset( x_test)
+            x_train = self.lgb.Dataset( x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
 
             num_round=100000
             watchlist  = [self.lgb.Dataset(x_test, label=y_test)]
-            predictor = self.lgb.train( params, dtrain, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
+            predictor = self.lgb.train( params, x_train, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
             self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
             
             if mode==1 and fold==nfolds-1:
@@ -362,6 +370,7 @@ class cls_ev_agent_{id}:
             print ("result: ", result)
             
             weighted_result += result * len(pred)
+            weighted_auc += result_roc_auc * len(pred)
             count_records_notnull += len(pred)
 
             # predict all examples in the original test set which may include erroneous examples previously removed
@@ -372,21 +381,30 @@ class cls_ev_agent_{id}:
 
             # predict validation and remainder sets examples
             if use_validation_set:
-                predicted_valid_set += predictor.predict(df_valid.drop(self.target_col, axis=1))
+                predicted_valid_set += predictor.predict(self.df_valid.drop(self.target_col, axis=1))
                 predicted_test_set += predictor.predict(df_test.drop(self.target_col, axis=1))
                 
         weighted_result = weighted_result/count_records_notnull
+        weighted_auc = weighted_auc/count_records_notnull
         print ("weighted_result:", weighted_result)
+        print ("weighted_auc:", weighted_auc)
 
         if use_validation_set:
             print()
             print()
             print ("*************  VALIDATION SET RESULTS  *****************")
             print ("Length of validation set:", len(predicted_valid_set))
-            y_valid = df_valid[self.target_col]
+            
             predicted_valid_set = predicted_valid_set / nfolds
             predicted_test_set = predicted_test_set / nfolds
             
+            # validation set may have missing labels (NAN), for metrics calc find subset with proper labels
+            self.df_valid['predicted_valid_set'] = predicted_valid_set
+            self.df_valid = self.df_valid[self.df_valid[self.target_col].notnull()]
+            self.df_valid.reset_index(drop=True, inplace=True)
+            y_valid = self.df_valid[self.target_col]
+            predicted_valid_set = self.df_valid['predicted_valid_set']
+                        
             if is_binary:                        
                 try:
                     result = self.my_log_loss(y_valid, predicted_valid_set)
@@ -406,9 +424,7 @@ class cls_ev_agent_{id}:
                 print ("Root Mean Squared Error: ", result)
                 
         #############################################################
-        #
         #                   OUTPUT
-        #
         #############################################################
 
         if mode==1:
@@ -423,6 +439,10 @@ class cls_ev_agent_{id}:
 
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
         else:
-            print ("fitness="+str(weighted_result))
+            print ("fitness="+str(weighted_result))               # main fitness metric
+            print ("out_result_1="+str(weighted_auc))             # ROC AUC in train/test CV
+            print ("out_result_2="+str(result))                   # main fitness on Validation
+            print ("out_result_3="+str(result_roc_auc))           # ROC AUC on Validation
+            
 
 ev_agent_{id} = cls_ev_agent_{id}()
