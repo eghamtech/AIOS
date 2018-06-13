@@ -24,7 +24,16 @@ class cls_agent_{id}:
     def __init__(self):
         global dicts
         self.df = self.pd.read_csv(workdir+self.source_filename, encoding='utf8')
-        #print (self.df)
+        
+        new_cols = []
+        for c in self.df.columns:
+              str1 = c
+              str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
+              str1 = self.output_column + "_" + str1
+              new_cols.append(str1)
+              self.colmap[c] = str1
+        self.df.columns = new_cols
+        
         self.char_cols = list(self.df.select_dtypes(include=['object']).columns)
         print ("source data loaded")
         print ("char columns:", self.char_cols)
