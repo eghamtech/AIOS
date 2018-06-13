@@ -16,6 +16,7 @@ class cls_agent_{id}:
     import warnings
     warnings.filterwarnings("ignore")
     import pandas as pd
+    import re
     
     source_filename = "{source_filename}"
     target = "{target}"
