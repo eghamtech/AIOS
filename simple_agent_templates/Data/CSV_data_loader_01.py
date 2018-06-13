@@ -32,7 +32,7 @@ class cls_agent_{id}:
               str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
               #str1 = self.output_column + "_" + str1
               new_cols.append(str1)
-              self.colmap[c] = str1
+              #self.colmap[c] = str1
         self.df.columns = new_cols
         
         self.char_cols = list(self.df.select_dtypes(include=['object']).columns)
