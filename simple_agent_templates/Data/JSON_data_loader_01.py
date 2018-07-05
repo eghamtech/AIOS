@@ -4,6 +4,7 @@
 
 # Processes JSON file which has "training_data" and "model_definition" objects according to below specification in Wiki:
 # https://github.com/eghamtech/AIOS/wiki/Input-data-JSON-format-01
+# latest version saves each column into separate file inline with other agents
 
 if 'dicts' not in globals():
     dicts = {}
@@ -20,6 +21,8 @@ class cls_agent_{id}:
     
     source_filename = "{source_filename_json}"
     newfilename = trainfile
+    # obtain a unique ID for the current instance
+    result_id = {id}
     colmap = {}
     
     def make_dict(self, col):
@@ -47,6 +50,7 @@ class cls_agent_{id}:
             #for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
             #    str1 = str1.replace(ch, "_")
             str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
+            str1 = str1 + "_" + str(result_id)
             new_cols.append(str1)                                # list of new columns
             self.colmap[cols[i]] = str1                          # a map from old column names to new ones
         self.df.columns = new_cols                               # assign new column names to the dataframe
@@ -128,11 +132,11 @@ class cls_agent_{id}:
         global dicts
         print ("enter run mode " + str(mode))
         for cname in self.char_cols:
-            dict1 = dicts[cname]
+            dict1 = dicts[cname]           # previously saved dictionary of lookup values for each text column
             self.df[cname] = self.df[cname].fillna('').map(dict1)
             self.pd.DataFrame(list(dict1.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv', encoding='utf-8')    #save new column dict
         
-        self.df.to_csv(workdir+self.newfilename, index=False)
+        # self.df.to_csv(workdir+self.newfilename, index=False)      # save all numeric columns into one csv file - deprecated
         
         nrow = len(self.df)
 
@@ -143,16 +147,26 @@ class cls_agent_{id}:
                 is_dict="N"
             if cname in self.target_cols:
                 is_target="Y"
+                is_use_for_models="N"
             else:
                 is_target="N"
             if cname in self.use_for_models:
                 is_use_for_models="Y"
             else:
                 is_use_for_models="N"
-            print ("#add_field:"+cname+","+is_dict+","+self.newfilename+","+is_target+","+str(nrow)+","+is_use_for_models)
+            
+            # save each column into separate file
+            output_column = cname
+            output_filename = output_column + ".csv"
+            self.df[[output_column]].to_csv(workdir+output_filename)
+            
+            # print ("#add_field:"+cname+","+is_dict+","+self.newfilename+","+is_target+","+str(nrow)+","+is_use_for_models)
+            print ("#add_field:"+output_column+","+is_dict+","+output_filename+","+is_target+","+str(nrow)+","+is_use_for_models)
+    
     
     def apply(self, df_add):
         global dicts
+        
         for creal, cshort in self.colmap.items():
             if cshort not in df_add.columns:
                 df_add[cshort] = float('nan')
