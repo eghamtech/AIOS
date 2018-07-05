@@ -167,9 +167,15 @@ class cls_agent_{id}:
     def apply(self, df_add):
         global dicts
         
+        # creal - original column name; cshort - converted column name
+        # check which of the fields originally processed by this class present in df_add and 
+        # create missing ones with NaN or rename as previously done
         for creal, cshort in self.colmap.items():
-            if cshort not in df_add.columns:
+            if creal not in df_add.columns:
                 df_add[cshort] = float('nan')
+            else:
+                df_add.rename(index=str, columns={creal: cshort}, inplace=True)
+                           
         for cname in self.date_cols:
             df_add[cname+'_Y'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_M'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
@@ -177,6 +183,7 @@ class cls_agent_{id}:
             df_add[cname+'_WD'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
             df_add.drop(cname, axis=1, inplace=True)
+            
         for cname in df_add.columns:
             if cname in self.char_cols:
                 df_add[cname] = df_add[cname].map(dicts[cname])
