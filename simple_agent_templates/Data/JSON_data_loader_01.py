@@ -106,7 +106,7 @@ class cls_agent_{id}:
             if item["analysis"]=='outcome':
                 print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
                 self.target_cols.append(self.colmap[item["heading"]])
-                self.use_for_models.append(self.colmap[item["heading"]])
+                # self.use_for_models.append(self.colmap[item["heading"]])
                 self.df[self.colmap[item["heading"]]] = self.df[self.colmap[item["heading"]]].astype(int)
             elif item["analysis"]=='data':
                 self.use_for_models.append(self.colmap[item["heading"]])
@@ -126,6 +126,7 @@ class cls_agent_{id}:
         for cname in self.char_cols:
             dicts[cname] = self.make_dict(self.df[cname].fillna(''))
             
+        
         print ("done")
         
     def run(self, mode):
