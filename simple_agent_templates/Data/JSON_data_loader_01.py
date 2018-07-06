@@ -17,7 +17,7 @@ class cls_agent_{id}:
     import datetime
     import calendar
     import dateutil.parser
-    import re
+    import re, bz2, pickle
     
     source_filename = "{source_filename_json}"
     newfilename = trainfile
