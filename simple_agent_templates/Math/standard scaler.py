@@ -15,7 +15,9 @@ class cls_agent_{id}:
     from sklearn.preprocessing import MinMaxScaler
     from sklearn.preprocessing import QuantileTransformer
     from sklearn.preprocessing import Imputer
+    from sklearn.externals import joblib
     from numpy import inf
+    import os.path
 
     # obtain random field
     # restrict selection to those that not already used and not created by the agent
@@ -27,29 +29,33 @@ class cls_agent_{id}:
 
     # obtain a unique ID for the current instance
     result_id = {id}
+    agent_name = 'agent_' + str(result_id)
     
     sfx = ["_ss_", "_mm_", "_qt_"]
-    scalers_loaded = False
     scalers = []
+    col_max_min = {}
     
-    # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
-    # read the data for selected column
-    df = pd.read_csv(workdir+file1)[[col1]]
-    # convert selected field to Numpy Array first and reshape as required by sklearn
-    np_base_column = np.array(df[col1]).reshape(-1, 1)
-    # find max and min values ignoring NaN and INF values
-    np_column_max = np.ma.masked_invalid(np_base_column).max()
-    np_column_min = np.ma.masked_invalid(np_base_column).min() 
-    # replace INF and -INF with above
-    np_base_column[np_base_column == inf] = np_column_max
-    np_base_column[np_base_column == -inf] = np_column_min
-
-    # replace NaN with mean values
-    imp = Imputer()
-    imp.fit(np_base_column)
-
+    def __init__(self):
+        # if saved model already exists then load it from filesystem
+        if self.os.path.isfile(workdir + self.agent_name + '_max_min.model'): 
+            self.col_max_min = self.joblib.load(workdir + self.agent_name + '_max_min.model')
+        
+        if self.os.path.isfile(workdir + self.agent_name + '_imputer.model'): 
+            self.imp = self.joblib.load(workdir + self.agent_name + '_imputer.model')
+            
+        for i in range(1,4):
+            output_column = "scaled_" + self.col1 + self.sfx[i-1] + str(self.result_id)
+            if self.os.path.isfile(workdir + output_column + '.model'):
+                scaler = joblib.load(workdir + output_column + '.model')
+                self.scalers.append(scaler)
+            
+            
     def run(self, mode):
-        print ("enter run mode " + str(mode))
+        from numpy import inf
+        print ("enter run mode " + str(mode))    
+        # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
+        # read the data for selected column
+        self.df = self.pd.read_csv(workdir+file1)[[col1]]
         nrow = len(self.df)
         
         if len(self.df[self.col1].unique()) == 1:
@@ -58,12 +64,26 @@ class cls_agent_{id}:
             # and instructs to mark such field with use_for_models=False
             print ("#add_field:"+self.col1+",N,"+self.file1+","+str(len(self.df))+",N")   
             return
-
-        #print( self.np.argwhere(self.np.isnan(self.np.array(df))) )
-        #print( self.np.argwhere(self.np.isinf(self.np.array(df))) )
+        
+        # convert selected field to Numpy Array first and reshape as required by sklearn
+        np_base_column = self.np.array(self.df[col1]).reshape(-1, 1)
+        # find max and min values ignoring NaN and INF values
+        np_column_max = self.np.ma.masked_invalid(np_base_column).max()
+        np_column_min = self.np.ma.masked_invalid(np_base_column).min() 
+        # replace INF and -INF with above
+        np_base_column[np_base_column == inf] = np_column_max
+        np_base_column[np_base_column == -inf] = np_column_min
+        self.col_max_min = {'min':np_column_min, 'max':np_column_max}
+        self.joblib.dump(self.col_max_min, workdir + self.agent_name + '_max_min.model')
 
         # replace NaN with mean values
-        np_column = self.imp.transform(self.np_base_column)
+        self.imp = self.Imputer()
+        self.imp.fit(np_base_column)
+        np_column = self.imp.transform(np_base_column)
+        self.joblib.dump(self.imp, workdir + self.agent_name + '_imputer.model')
+        
+        #print( self.np.argwhere(self.np.isnan(self.np.array(df))) )
+        #print( self.np.argwhere(self.np.isinf(self.np.array(df))) )
 
         for i in range(1,4):
             # create new field name with unique instance ID
@@ -88,36 +108,23 @@ class cls_agent_{id}:
         
             print ("Scaler" + str(i) + "("+self.col1+")" + " saved to file")
             print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
-            
-            from sklearn.externals import joblib
-            scaler_filename = output_column + "_model.save"
-            joblib.dump(scaler, workdir+scaler_filename)
+                    
+            scaler_filename = output_column + ".model"
+            self.joblib.dump(scaler, workdir+scaler_filename)
     
     def apply(self, df_add):
         np_column = self.np.array(df_add[self.col1]).reshape(-1, 1)
-        np_column[np_column == self.inf] = self.np_column_max
-        np_column[np_column == -self.inf] = self.np_column_min
+        np_column[np_column == self.inf] = self.col_max_min['max']
+        np_column[np_column == -self.inf] = self.col_max_min['min']
         np_column = self.imp.transform(np_column)
 
         for i in range(1,4):
-            output_column = "scaled_" + self.col1 + self.sfx[i-1] + str(self.result_id)
-            
-            if not self.scalers_loaded:
-                from sklearn.externals import joblib
-                scaler_filename = output_column + "_model.save"
-                scaler = joblib.load(workdir+scaler_filename)
-                self.scalers.append(scaler)
-            else:
-                #use loaded scaler
-                scaler = self.scalers[i-1]
-            
+            output_column = "scaled_" + self.col1 + self.sfx[i-1] + str(self.result_id)         
             try:
-                df_add[output_column] = scaler.transform(np_column)
+                df_add[output_column] = self.scalers[i-1].transform(np_column)
             except:
                 print ("Error applying Scaler" + str(i) + "("+self.col1+")" + " setting new column to 0")
                 df_add[output_column] = 0
-                
-        self.scalers_loaded = True
 
 
 agent_{id} = cls_agent_{id}()
