@@ -50,7 +50,7 @@ class cls_agent_{id}:
             #for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
             #    str1 = str1.replace(ch, "_")
             str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
-            str1 = str1 + "_" + str(result_id)
+            str1 = str1 + "_" + str(self.result_id)
             new_cols.append(str1)                                # list of new columns
             self.colmap[cols[i]] = str1                          # a map from old column names to new ones
         self.df.columns = new_cols                               # assign new column names to the dataframe
