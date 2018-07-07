@@ -71,6 +71,8 @@ class cls_ev_agent_{id}:
     # obtain random selection of fields; number of fields to be selected specified in data:length gene for this instance
     data_defs = {data}
     fields_to_use = {fields_to_use}
+    start_fold = {start_fold}
+    nfolds = {nfolds}
     
     # if filter columns are specified then training and validation sets will be selected based on filter criteria
     # based on filter criteria training + validation sets will not necessarily constitute all data, the remainder will be called "test set"
@@ -82,17 +84,19 @@ class cls_ev_agent_{id}:
     ignore_columns_containing = "{ignore_columns_containing}"
     # include only fields matching string e.g., only properly scaled columns should be used with MLP
     include_columns_containing = "{include_columns_containing}"
-    
+   
     def __init__(self):
         # remove the target field for this instance from the data used for training
         if self.target_definition in self.data_defs:
             self.data_defs.remove(self.target_definition)
         
-        # if saved model for the target field already exists then load it from filesystem
-        if self.os.path.isfile(workdir + self.output_column + ".model"):
-            self.predictor_stored = self.lgb.Booster(model_file=workdir + self.output_column + ".model")
-            # self.predictor_stored.load_model(workdir + self.output_column + ".model")
-
+        # if saved models for the target field already exist then load them from filesystem
+        self.predictors = []
+        for fold in range(self.start_fold, self.nfolds):
+            if self.os.path.isfile(workdir + self.output_column + "_fold" + str(fold) + ".model"):
+                predictor_stored = self.lgb.Booster(model_file=workdir + self.output_column + "_fold" + str(fold) + ".model")
+                self.predictors.append(predictor_stored)
+  
         # obtain columns definitions to filter data set by
         if self.is_set(self.filter_column):
             self.filter_filename = self.filter_column.split("|")[1]
@@ -170,9 +174,13 @@ class cls_ev_agent_{id}:
         
         # rename columns in df to unique names
         df.columns = columns_new
-        # predict new data set in df
-        #dtest = self.lgb.Dataset(df)
-        pred = self.predictor_stored.predict(df)
+        
+        # predict new data set in df applying model for each fold used for training
+        pred = self.np.zeros(len(df))
+        for fold in range(self.start_fold, self.nfolds):
+            pred += self.predictors[fold-self.start_fold].predict(df)
+        # average prediction over all folds    
+        pred = pred / (self.nfolds - self.start_fold)
         df_add[self.output_column] = pred
 
     def run(self, mode):
@@ -312,9 +320,8 @@ class cls_ev_agent_{id}:
         #
         #############################################################
 
-        nfolds = {nfolds}
         # divide training data into nfolds of size block
-        block = int(len(df)/nfolds)
+        block = int(len(df)/self.nfolds)
 
         prediction = self.np.zeros(len(df))
 
@@ -322,11 +329,11 @@ class cls_ev_agent_{id}:
         weighted_auc = 0
         count_records_notnull = 0
 
-        for fold in range({start_fold},nfolds):
+        for fold in range(self.start_fold, self.nfolds):
             print ("\nFOLD", fold, "\n")
             range_start = fold*block
             range_end = (fold+1)*block
-            if fold==nfolds-1:
+            if fold==self.nfolds-1:
                 range_end = len(df)
             range_predict = range(range_start, range_end)
             print ("range start", range_start, "; range end ", range_end)
@@ -358,8 +365,8 @@ class cls_ev_agent_{id}:
             predictor = self.lgb.train( params, x_train, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
             self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
             
-            if mode==1 and fold==nfolds-1:
-                predictor.save_model(workdir + self.output_column + ".model")
+            if mode==1:
+                predictor.save_model(workdir + self.output_column + "_fold" + str(fold) + ".model")
 
             pred = predictor.predict(x_test)
             if is_binary:
@@ -404,8 +411,8 @@ class cls_ev_agent_{id}:
             print ("*************  VALIDATION SET RESULTS  *****************")
             print ("Length of validation set:", len(predicted_valid_set))
             
-            predicted_valid_set = predicted_valid_set / nfolds
-            predicted_test_set = predicted_test_set / nfolds
+            predicted_valid_set = predicted_valid_set / (self.nfolds - self.start_fold)
+            predicted_test_set = predicted_test_set / (self.nfolds - self.start_fold)
             
             # validation set may have missing labels (NAN), for metrics calc find subset with proper labels
             self.df_valid['predicted_valid_set'] = predicted_valid_set
