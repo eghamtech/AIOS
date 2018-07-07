@@ -114,16 +114,19 @@ class cls_agent_{id}:
     
     def apply(self, df_add):
         np_column = self.np.array(df_add[self.col1]).reshape(-1, 1)
-        np_column[np_column == self.inf] = self.col_max_min['max']
-        np_column[np_column == -self.inf] = self.col_max_min['min']
-        np_column = self.imp.transform(np_column)
+        np_column[np_column == self.inf] = self.col_max_min.get('max',0)
+        np_column[np_column == -self.inf] = self.col_max_min.get('min',0)
+        try:
+            np_column = self.imp.transform(np_column)
+        except:
+            print ("Error applying Imputer("+self.col1+")" + " ignoring it")
 
         for i in range(1,4):
             output_column = "scaled_" + self.col1 + self.sfx[i-1] + str(self.result_id)         
             try:
                 df_add[output_column] = self.scalers[i-1].transform(np_column)
             except:
-                print ("Error applying Scaler" + str(i) + "("+self.col1+")" + " setting new column to 0")
+                print ("Error applying Scaler " + str(i) + " ("+self.col1+")" + " setting new column to 0")
                 df_add[output_column] = 0
 
 
