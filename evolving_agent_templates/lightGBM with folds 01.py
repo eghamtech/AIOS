@@ -76,7 +76,7 @@ class cls_ev_agent_{id}:
     # based on filter criteria training + validation sets will not necessarily constitute all data, the remainder will be called "test set"
     filter_column = "{filter_column}"
     filter_column_2 = "{filter_column_2}"
-    filter_filename = trainfile   # filter columns are in trainfile which must be specified in Constants
+    # filter_filename = trainfile   # filter columns are in trainfile which must be specified in Constants - deprecated
     
     # fields matching the specified prefix will not be used in the model
     ignore_columns_containing = "{ignore_columns_containing}"
@@ -93,10 +93,15 @@ class cls_ev_agent_{id}:
             self.predictor_stored = self.lgb.Booster(model_file=workdir + self.output_column + ".model")
             # self.predictor_stored.load_model(workdir + self.output_column + ".model")
 
-        # create a list of columns to filter data set by
-        self.filter_columns = [self.filter_column]
+        # obtain columns definitions to filter data set by
+        if self.is_set(self.filter_column):
+            filter_filename = filter_column.split("|")[1]
+            filter_column = filter_column.split("|")[0]
+      
         if self.is_set(self.filter_column_2):
-            self.filter_columns.append(self.filter_column_2)
+            filter_filename_2 = filter_column_2.split("|")[1]
+            filter_column_2 = filter_column_2.split("|")[0]
+
     
     def is_set(self, s):
         return len(s)>0 and s!="0"
@@ -186,7 +191,11 @@ class cls_ev_agent_{id}:
         
         # obtain indexes for train, validation and remainder sets, if validation set is required
         if use_validation_set:
-            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = self.filter_columns)
+            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
+            if self.is_set(self.filter_column_2):
+                df_t = self.pd.read_csv(workdir+self.filter_filename_2, usecols = [self.filter_column_2])
+                df_filter_column = df_filter_column.merge(df_t, left_index=True, right_index=True)
+                
             if not self.is_set(self.filter_column_2):
                 # one filter column used
                 condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
