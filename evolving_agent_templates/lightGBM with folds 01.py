@@ -95,12 +95,12 @@ class cls_ev_agent_{id}:
 
         # obtain columns definitions to filter data set by
         if self.is_set(self.filter_column):
-            filter_filename = filter_column.split("|")[1]
-            filter_column = filter_column.split("|")[0]
+            self.filter_filename = self.filter_column.split("|")[1]
+            self.filter_column = self.filter_column.split("|")[0]
       
         if self.is_set(self.filter_column_2):
-            filter_filename_2 = filter_column_2.split("|")[1]
-            filter_column_2 = filter_column_2.split("|")[0]
+            self.filter_filename_2 = self.filter_column_2.split("|")[1]
+            self.filter_column_2 = self.filter_column_2.split("|")[0]
 
     
     def is_set(self, s):
