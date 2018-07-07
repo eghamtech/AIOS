@@ -55,7 +55,7 @@ class cls_agent_{id}:
         print ("enter run mode " + str(mode))    
         # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
         # read the data for selected column
-        self.df = self.pd.read_csv(workdir+file1)[[col1]]
+        self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
         nrow = len(self.df)
         
         if len(self.df[self.col1].unique()) == 1:
@@ -66,7 +66,7 @@ class cls_agent_{id}:
             return
         
         # convert selected field to Numpy Array first and reshape as required by sklearn
-        np_base_column = self.np.array(self.df[col1]).reshape(-1, 1)
+        np_base_column = self.np.array(self.df[self.col1]).reshape(-1, 1)
         # find max and min values ignoring NaN and INF values
         np_column_max = self.np.ma.masked_invalid(np_base_column).max()
         np_column_min = self.np.ma.masked_invalid(np_base_column).min() 
@@ -101,12 +101,12 @@ class cls_agent_{id}:
             try:
                 self.df[output_column] = scaler.fit_transform(np_column)
             except:
-                print ("Error applying Scaler" + str(i) + "("+self.col1+")" + " setting new column to 0")
+                print ("Error applying Scaler " + str(i) + " ("+self.col1+")" + " setting new column to 0")
                 self.df[output_column] = 0
                 
             self.df[[output_column]].to_csv(workdir+output_filename)
         
-            print ("Scaler" + str(i) + "("+self.col1+")" + " saved to file")
+            print ("Scaler " + str(i) + " ("+self.col1+")" + " saved to file")
             print ("#add_field:"+output_column+",N,"+output_filename+","+str(nrow))
                     
             scaler_filename = output_column + ".model"
