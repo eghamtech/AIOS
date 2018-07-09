@@ -120,11 +120,11 @@ class cls_agent_{id}:
             else:
                 df_add.rename(index=str, columns={creal: cshort}, inplace=True)
                 
-        for index, row in df_add.iterrows():
+        for index, row in df_add.iterrows():                                     # iterate over each row in df_add
             for cname in df_add.columns:
                 if cname in self.char_cols:
-                    if not (row[cname] in dicts[cname]):
-                        dicts[cname][row[cname]] = 1+max(dicts[cname].values())
+                    if not (row[cname] in dicts[cname]):                         # if value in current row and column not in dictionary
+                        dicts[cname][row[cname]] = 1+max(dicts[cname].values())  # create new key in dictionary with max+1 value
                     df_add.at[index, cname] = dicts[cname][row[cname]]
                 #else:
                 #    df_add.at[index, cname] = row[cname]
