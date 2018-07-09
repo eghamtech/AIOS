@@ -253,8 +253,12 @@ class cls_agent_{id}:
             df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
             df_add.drop(cname, axis=1, inplace=True)
             
-        for cname in df_add.columns:
-            if (cname in self.char_cols) or (cname in self.lookup_cols):
-                df_add[cname] = df_add[cname].map(dicts[cname])
+        for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
+            for cname in df_add.columns:
+                if (cname in self.char_cols) or (cname in self.lookup_cols):
+                    # df_add[cname] = df_add[cname].map(dicts[cname])
+                    if not (row[cname] in dicts[cname]):                          # if value in current row and column not in dictionary
+                        dicts[cname][row[cname]] = 1+max(dicts[cname].values())   # create new key in dictionary with max+1 value
+                    df_add.at[index, cname] = dicts[cname][row[cname]]
 
 agent_{id} = cls_agent_{id}()
