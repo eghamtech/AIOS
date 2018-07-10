@@ -1,16 +1,7 @@
 #start_of_genes_definitions
-#key=fields_to_use;  type=random_int;  from=1000;  to=3000;  step=1
-#key=data;  type=random_array_of_fields;  length=3000
-#key=folds;  type=random_int;  from=10;  to=10;  step=1
-#key=optimizer;  type=random_from_set;  set='sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
-#key=activation;  type=random_from_set;  set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
-#key=activation_output;  type=random_from_set;  set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
-#key=layers;  type=random_int;  from=2;  to=10;  step=1
-#key=neurons;  type=random_int;  from=4;  to=256;  step=1
-#key=batch_size;  type=random_int;  from=5;  to=256;  step=1
-#key=epochs;  type=random_int;  from=5;  to=100;  step=1
-#key=early_stopping_min_delta; type=random_float;  from=0.01;  to=0.04;  step=0.01
-#key=dropout;  type=random_float;  from=0.02;  to=0.7;  step=0.02
+#key=data;  type=random_array_of_fields;  length=800
+#key=fields_to_use;  type=random_int;  from=200;  to=800;  step=1
+#key=nfolds;  type=random_int;  from=3;  to=3;  step=1
 #key=use_validation_set;  type=random_from_set;  set=True
 #key=filter_column;  type=random_from_set;  set=Submission_Date_TS
 #key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
@@ -24,6 +15,17 @@
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=ev_field
 #key=include_columns_containing;  type=random_from_set;  set=scaled_
+#key=optimizer;  type=random_from_set;  set='sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
+#key=activation;  type=random_from_set;  set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
+#key=activation_output;  type=random_from_set;  set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
+#key=layers;  type=random_int;  from=2;  to=10;  step=1
+#key=neurons;  type=random_int;  from=4;  to=256;  step=1
+#key=batch_size;  type=random_int;  from=5;  to=256;  step=1
+#key=epochs;  type=random_int;  from=5;  to=100;  step=1
+#key=early_stopping_min_delta; type=random_float;  from=0.01;  to=0.04;  step=0.01
+#key=dropout;  type=random_float;  from=0.02;  to=0.7;  step=0.02
+#key=num_threads;  type=random_int;  from=4;  to=4;  step=1
+#key=use_float32_dtype; type=random_from_set;  set=True
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -40,6 +42,7 @@ class cls_ev_agent_{id}:
     import random as rn
     import dateutil
     import calendar
+    import os.path
 
     # specify whether to run Keras/TensorFlow on CPU or GPU (and which GPU, if you have multiple)
     s_tf_device = '/cpu:0'
@@ -83,12 +86,16 @@ class cls_ev_agent_{id}:
 
     # obtain random selection of fields; number of fields to be selected specified in (data):length gene for this instance
     data_defs = {data}
+    fields_to_use = {fields_to_use}
+    start_fold = {start_fold}
+    nfolds = {nfolds}
+    num_threads = {num_threads}
     
     # if filter columns are specified then training and validation sets will be selected based on filter criteria
     # based on filter criteria training + validation sets will not necessarily constitute all data, the remainder will be called "test set"
     filter_column = "{filter_column}"
     filter_column_2 = "{filter_column_2}"
-    filter_filename = trainfile           # filter columns are in trainfile which must be specified in Constants
+    # filter_filename = trainfile           # filter columns are in trainfile which must be specified in Constants - deprecated
     
     # fields matching the specified string will not be used in the model
     ignore_columns_containing = "{ignore_columns_containing}"
@@ -100,7 +107,7 @@ class cls_ev_agent_{id}:
         # Multiple threads are a potential source of
         # non-reproducible results.
         # For further details, see: https://stackoverflow.com/questions/42022950/which-seeds-have-to-be-set-where-to-realize-100-reproducibility-of-training-res
-        session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1, log_device_placement=True, allow_soft_placement=True)
+        session_conf = tf.ConfigProto(intra_op_parallelism_threads=num_threads, inter_op_parallelism_threads=num_threads, log_device_placement=True, allow_soft_placement=True)
         # allocate only as much GPU memory as needed by runtime - otherwise all GPU memory is reserved and mutiple processes cannot use GPU 
         session_conf.gpu_options.allow_growth = True
 
@@ -126,6 +133,9 @@ class cls_ev_agent_{id}:
         # ignore other columns containing specified parameter value
         if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing)>=0:
             return False
+        # include all columns if include parameter not specified
+        if not self.is_set(self.include_columns_containing):
+            return True
         # include columns specified in parameter
         if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing)>=0:
             return True
@@ -150,15 +160,22 @@ class cls_ev_agent_{id}:
             self.data_defs.remove(self.target_definition)
         
         with self.tf.device(self.s_tf_device):
+            from keras.models import load_model
             # if saved model for the target field already exists then load it from filesystem
-            if self.os.path.isfile(workdir + self.output_column + ".model"):
-                from keras.models import load_model
-                self.predictor_stored = load_model(workdir + self.output_column + ".model")
+            self.predictors = []
+            for fold in range(self.start_fold, self.nfolds):
+                if self.os.path.isfile(workdir + self.output_column + "_fold" + str(fold) + ".model"):               
+                    predictor_stored = load_model(workdir + self.output_column + "_fold" + str(fold) + ".model")
+                    self.predictors.append(predictor_stored)
                 
-        # create a list of columns to filter data set by
-        self.filter_columns = [self.filter_column]
+        # obtain columns definitions to filter data set by
+        if self.is_set(self.filter_column):
+            self.filter_filename = self.filter_column.split("|")[1]
+            self.filter_column = self.filter_column.split("|")[0]
+      
         if self.is_set(self.filter_column_2):
-            self.filter_columns.append(self.filter_column_2)
+            self.filter_filename_2 = self.filter_column_2.split("|")[1]
+            self.filter_column_2 = self.filter_column_2.split("|")[0]
     
     
     def apply(self, df_add):
@@ -173,7 +190,7 @@ class cls_ev_agent_{id}:
             
             if self.is_use_column(col_name):
                 cols_count+=1
-                if cols_count>{fields_to_use}:
+                if cols_count > self.fields_to_use:
                     break
                 # assemble dataframe column by column
                 if cols_count==1:
@@ -197,25 +214,36 @@ class cls_ev_agent_{id}:
         df.columns = columns_new      
    
         # apply previously loaded model to new data and obtain predictions
+        # predict new data set in df applying model for each fold used for training
         with self.tf.device(self.s_tf_device):
-            pred = self.predictor_stored.predict(self.np.array(df), verbose=0)
+            pred = self.np.zeros(len(df))
+            for fold in range(self.start_fold, self.nfolds):
+                pred += self.predictors[fold-self.start_fold].predict(self.np.array(df), verbose=0)
+            # average prediction over all folds    
+            pred = pred / (self.nfolds - self.start_fold)
             df_add[self.output_column] = pred
         
     def run(self, mode):
         # this is main method called by AIOS with supplied DNA Genes to process data
-        global trainfile
+        # global trainfile
         from sklearn.metrics import roc_auc_score
         from sklearn.metrics import confusion_matrix
         from sklearn.metrics import classification_report
         from sklearn.metrics import mean_squared_error
         from math import sqrt
+        from datetime import datetime
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
         
         use_validation_set = {use_validation_set}
+        use_float32_dtype = {use_float32_dtype}
         
         # obtain indexes for train, validation and remainder sets, if validation set is required
         if use_validation_set:
-            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = self.filter_columns)
+            df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
+            if self.is_set(self.filter_column_2):
+                df_t = self.pd.read_csv(workdir+self.filter_filename_2, usecols = [self.filter_column_2])
+                df_filter_column = df_filter_column.merge(df_t, left_index=True, right_index=True)
+                
             if not self.is_set(self.filter_column_2):
                 # one filter column used
                 condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
@@ -240,31 +268,39 @@ class cls_ev_agent_{id}:
         #############################################################
         #                   DATA PREPARATION
         #############################################################
-        # number of fields actually read specified in (fields_to_use) gene
-        n_fields_to_use = {fields_to_use}
         
         # "workdir" must be specified in Constants - it is a global setting where all CSV files are stored on Jupyter server
         # read data from CSV file containing the prediction target field selected for this instance
-        df = self.pd.read_csv(workdir+self.target_file)[[self.target_col]]
+        df = self.pd.read_csv(workdir+self.target_file, usecols=[self.target_col])[[self.target_col]]
 
         columns_new = [self.target_col]
         columns = [self.target_col]
         # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
+        print (str(datetime.now()), " start loading data")
         cols_count = 0
+        block_progress = 0
+        block = int(self.fields_to_use/20)
+        
         for i in range(0,len(self.data_defs)):
             col_name = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
             
             if self.is_use_column(col_name):
                 cols_count+=1
-                if cols_count>n_fields_to_use:
+                if cols_count > self.fields_to_use:
                     break
-                # read each required field's data from a corresponding CSV file
-                df = df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
+   
+                df_col = self.pd.read_csv(workdir+file_name, usecols=[col_name])[[col_name]]  # read column from csv file
+                if df_col[col_name].dtype == self.np.float64 and use_float32_dtype:           # downcast to save memory if needed
+                    df_col[col_name] = df_col[col_name].astype(self.np.float32)
+                    
+                df = df.merge(df_col, left_index=True, right_index=True)
                 
-                # df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras 
-                # above doesn't work for duplicate columns in DF but all columns must be pre-scaled anyway without NaN
-                
+                block_progress += 1
+                if (block_progress >= block):
+                    block_progress = 0
+                    print (str(datetime.now()), " data loaded: ", round(cols_count/self.fields_to_use*100,2), "%")
+                    
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
                 columns.append(col_name)
@@ -273,11 +309,14 @@ class cls_ev_agent_{id}:
                     columns_new.append(col_name)
                 else:
                     columns_new.append(col_name+"_v"+str(ncol_count))
-
+                
+                # df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras 
+                # above doesn't work for duplicate columns in DF but all columns must be pre-scaled anyway without NaN
+               
         # rename columns in df to unique names
         df.columns = columns_new
         data_fields_count = len(df.columns)-1  # need this for building MLP model layers; df.columns includes the target column, hence need to do -1
-        print ("data loaded", len(df), "rows; ", len(df.columns), "columns")
+        print (str(datetime.now()), " data loaded", len(df), "rows; ", len(df.columns), "columns")
         #print ("Columns used: ", columns_new)
         
         original_row_count = len(df)
@@ -286,12 +325,12 @@ class cls_ev_agent_{id}:
             # use previously calculated indexes to select train, validation and remainder sets
             df_test = df[df.index.isin(test_indexes)]
             df_test.reset_index(drop=True, inplace=True)
-            df_valid = df[df.index.isin(validation_set_indexes)]
-            df_valid.reset_index(drop=True, inplace=True)
+            self.df_valid = df[df.index.isin(validation_set_indexes)]
+            self.df_valid.reset_index(drop=True, inplace=True)
             df = df[df.index.isin(train_indexes)]
             df.reset_index(drop=True, inplace=True)
             # initialise prediction columns for validation and test as they will be aggregate predictions from multiple folds
-            predicted_valid_set = self.np.zeros(len(df_valid))
+            predicted_valid_set = self.np.zeros(len(self.df_valid))
             predicted_test_set = self.np.zeros(len(df_test))
             
         # analyse target column whether it is binary which may result in different loss function used
@@ -307,7 +346,6 @@ class cls_ev_agent_{id}:
             s_metrics = 'mean_squared_error'
             n_classes = 1
 
-        n_folds = {folds}
         s_optimizer = {optimizer}
         s_activation = {activation}
         n_layers = {layers}
@@ -347,18 +385,19 @@ class cls_ev_agent_{id}:
             #                   MAIN LOOP
             #############################################################
             # divide training data into nfolds of size block
-            block = int(len(df)/n_folds)
+            block = int(len(df)/self.nfolds)
 
-            prediction = []
+            prediction = self.np.zeros(len(df))
 
             weighted_result = 0
+            weighted_auc = 0
             count_records_notnull = 0
 
-            for fold in range(0,n_folds):
+            for fold in range(self.start_fold, self.nfolds):
                 print ("\nFOLD", fold, "\n")
                 range_start = fold*block
                 range_end = (fold+1)*block
-                if fold==n_folds-1:
+                if fold==self.nfolds-1:
                     range_end = len(df)
                 range_predict = range(range_start, range_end)
                 print ("Fold to predict start", range_start, "; end ", range_end)
@@ -396,8 +435,8 @@ class cls_ev_agent_{id}:
                 print('Test fold loss:', score[0])
                 print('Test fold accuracy:', score[1])
 
-                if mode==1 and fold==n_folds-1:
-                    mlp_model.save(workdir + self.output_column + ".model")
+                if mode==1:
+                    mlp_model.save(workdir + self.output_column + "_fold" + str(fold) + ".model")
 
                 if self.np.isnan(score[0]) or score[1] == 0:
                     print ('Test Loss is NaN or Accuracy = 0, no point to carry on with more folds')
@@ -419,17 +458,19 @@ class cls_ev_agent_{id}:
                     result = mean_squared_error(y_test, pred)
                     
                 weighted_result += result * len(x_test)
+                weighted_auc += result_roc_auc * len(pred)
                 count_records_notnull += len(x_test)
                 
                 # predict all examples in the original test set which may include erroneous examples previously removed
                 pred_all_test = mlp_model.predict(self.np.array(x_test_orig.drop(self.target_col, axis=1)), verbose=0)
                 pred_all_test = [item for sublist in pred_all_test for item in sublist]
 
-                prediction = self.np.concatenate([prediction,pred_all_test])
+                # prediction = self.np.concatenate([prediction,pred_all_test])
+                prediction[range_start:range_end] = pred_all_test
                 
                 # predict validation and remainder sets examples
                 if use_validation_set:
-                    pred1 = mlp_model.predict(self.np.array(df_valid.drop(self.target_col, axis=1)), verbose=0)
+                    pred1 = mlp_model.predict(self.np.array(self.df_valid.drop(self.target_col, axis=1)), verbose=0)
                     pred1 = [item for sublist in pred1 for item in sublist]
                     predicted_valid_set += self.np.array(pred1)
                     
@@ -438,16 +479,24 @@ class cls_ev_agent_{id}:
                     predicted_test_set += self.np.array(pred2)
 
             weighted_result = weighted_result/count_records_notnull
+            weighted_auc = weighted_auc/count_records_notnull
             print ("weighted_result:", weighted_result)
+            print ("weighted_auc:", weighted_auc)
 
             if use_validation_set:
                 print()
                 print()
                 print ("*************  VALIDATION SET RESULTS  *****************")
                 print ("Length of validation set:", len(predicted_valid_set))
-                y_valid = df_valid[self.target_col]
-                predicted_valid_set = predicted_valid_set / n_folds
-                predicted_test_set = predicted_test_set / n_folds
+                predicted_valid_set = predicted_valid_set / (self.nfolds - self.start_fold)
+                predicted_test_set = predicted_test_set / (self.nfolds - self.start_fold)
+
+                # validation set may have missing labels (NAN), for metrics calc find subset with proper labels
+                self.df_valid['predicted_valid_set'] = predicted_valid_set
+                self.df_valid = self.df_valid[self.df_valid[self.target_col].notnull()]
+                self.df_valid.reset_index(drop=True, inplace=True)
+                y_valid = self.df_valid[self.target_col]
+                predicted_valid_set = self.df_valid['predicted_valid_set']
                 
                 if is_binary:                 
                     try:
@@ -482,7 +531,11 @@ class cls_ev_agent_{id}:
 
                 print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
             else:
-                print ("fitness="+str(weighted_result))
+                print ("fitness="+str(weighted_result))               # main fitness metric
+                print ("out_result_1="+str(weighted_auc))             # ROC AUC in train/test CV
+                print ("out_result_2="+str(result))                   # main fitness on Validation
+                print ("out_result_3="+str(result_roc_auc))           # ROC AUC on Validation
+
             
 ev_agent_{id} = cls_ev_agent_{id}()
 
