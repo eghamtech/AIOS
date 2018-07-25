@@ -46,7 +46,7 @@ class cls_agent_{id}:
         for i in range(1,4):
             output_column = "scaled_" + self.col1 + self.sfx[i-1] + str(self.result_id)
             if self.os.path.isfile(workdir + output_column + '.model'):
-                scaler = joblib.load(workdir + output_column + '.model')
+                scaler = self.joblib.load(workdir + output_column + '.model')
                 self.scalers.append(scaler)
             
             
