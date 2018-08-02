@@ -213,6 +213,10 @@ class cls_agent_{id}:
                 df_add[cshort] = float('nan')
             else:
                 df_add.rename(index=str, columns={creal: cshort}, inplace=True)
+                
+            if (cshort in self.char_cols): 
+                df_add[cshort].fillna('')
+                
         print ("JSON Loader: columns renamed")
         
         for cname in self.date_cols:
@@ -228,7 +232,7 @@ class cls_agent_{id}:
             for cname in df_add.columns:                                          # iterate over each column in df_add row
                 if (cname in self.char_cols):
                     cname_dict = dicts[cname]         
-                    cname_value = row[cname]
+                    cname_value = str(row[cname])
                     
                     if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
                         print ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
