@@ -226,15 +226,14 @@ class cls_agent_{id}:
         
         for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
             for cname in df_add.columns:                                          # iterate over each column in df_add row
-                if (cname in self.char_cols) or (cname in self.lookup_cols):
-                    cname_dict = self.reverse_dict_int_key(dicts[cname])          # reverse column dictionary as here need to map text to key
+                if (cname in self.char_cols):
+                    cname_dict = dicts[cname]         
                     cname_value = row[cname]
                     
                     if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
                         print ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
-                        print ("JSON Loader: column " + cname + "; dictionary: " + cname_dict)
                         new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
-                        dicts[cname][new_key] = cname_value                       # add key:text to original dictionary
+                        dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
                         df_add.at[index, cname] = new_key
                     else:    
                         df_add.at[index, cname] = cname_dict[cname_value]
