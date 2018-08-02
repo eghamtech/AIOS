@@ -33,6 +33,9 @@ class cls_agent_{id}:
         keys1 = range(1, len(a1)+1)
         return dict(zip(a1, keys1))
     
+    def reverse_dict_int_key(self, dt): 
+        return {v:int(k) for k,v in dt.items()}
+    
     def __init__(self):
         global dicts
         
@@ -210,7 +213,8 @@ class cls_agent_{id}:
                 df_add[cshort] = float('nan')
             else:
                 df_add.rename(index=str, columns={creal: cshort}, inplace=True)
-                           
+        print ("JSON Loader: columns renamed")
+        
         for cname in self.date_cols:
             df_add[cname+'_Y'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_M'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
@@ -218,13 +222,22 @@ class cls_agent_{id}:
             df_add[cname+'_WD'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
             df_add.drop(cname, axis=1, inplace=True)
-            
+        print ("JSON Loader: date columns processed")
+        
         for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
-            for cname in df_add.columns:
+            for cname in df_add.columns:                                          # iterate over each column in df_add row
                 if (cname in self.char_cols) or (cname in self.lookup_cols):
-                    # df_add[cname] = df_add[cname].map(dicts[cname])
-                    if not (row[cname] in dicts[cname]):                          # if value in current row and column not in dictionary
-                        dicts[cname][row[cname]] = 1+max(dicts[cname].values())   # create new key in dictionary with max+1 value
-                    df_add.at[index, cname] = dicts[cname][row[cname]]
-
+                    cname_dict = self.reverse_dict_int_key(dicts[cname])          # reverse column dictionary as here need to map text to key
+                    cname_value = row[cname]
+                    
+                    if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
+                        print ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
+                        print ("JSON Loader: column " + cname + "; dictionary: " + cname_dict)
+                        new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
+                        dicts[cname][new_key] = cname_value                       # add key:text to original dictionary
+                        df_add.at[index, cname] = new_key
+                    else:    
+                        df_add.at[index, cname] = cname_dict[cname_value]
+                    print ("JSON Loader: column " + cname + " mapped")
+                    
 agent_{id} = cls_agent_{id}()
