@@ -232,7 +232,7 @@ class cls_agent_{id}:
             for cname in df_add.columns:                                          # iterate over each column in df_add row
                 if (cname in self.char_cols):
                     cname_dict = dicts[cname]         
-                    cname_value = str(row[cname])
+                    cname_value = str(row[cname]) if row[cname] != None else ''
                     
                     if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
                         print ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
