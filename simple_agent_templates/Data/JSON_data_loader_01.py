@@ -36,6 +36,12 @@ class cls_agent_{id}:
     def reverse_dict_int_key(self, dt): 
         return {v:int(k) for k,v in dt.items()}
     
+    def printlog(self, mesg):
+        from datetime import datetime
+        global DEBUG
+        if DEBUG == 1:
+            print (str(datetime.now()), mesg)
+    
     def __init__(self):
         global dicts
         
@@ -215,9 +221,9 @@ class cls_agent_{id}:
                 df_add.rename(index=str, columns={creal: cshort}, inplace=True)
                 
             if (cshort in self.char_cols): 
-                df_add[cshort].fillna('')
+                df_add[cshort].fillna('', inplace=True)
                 
-        print ("JSON Loader: columns renamed")
+        self.printlog ("JSON Loader: columns renamed")
         
         for cname in self.date_cols:
             df_add[cname+'_Y'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
@@ -226,21 +232,23 @@ class cls_agent_{id}:
             df_add[cname+'_WD'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
             df_add.drop(cname, axis=1, inplace=True)
-        print ("JSON Loader: date columns processed")
+        self.printlog ("JSON Loader: date columns processed")
         
         for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
             for cname in df_add.columns:                                          # iterate over each column in df_add row
                 if (cname in self.char_cols):
                     cname_dict = dicts[cname]         
                     cname_value = str(row[cname]) if row[cname] != None else ''
+                    self.printlog ("JSON Loader: text column " + cname + "; value: " + cname_value)
                     
                     if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
-                        print ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
+                        self.printlog ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
                         new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
                         dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
                         df_add.at[index, cname] = new_key
                     else:    
                         df_add.at[index, cname] = cname_dict[cname_value]
-                    print ("JSON Loader: column " + cname + " mapped")
+                    
+                    self.printlog ("JSON Loader: column " + cname + "; value: " + cname_value + " mapped")
                     
 agent_{id} = cls_agent_{id}()
