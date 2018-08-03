@@ -216,6 +216,7 @@ class cls_agent_{id}:
         # create missing ones with NaN or rename as previously done
         for creal, cshort in self.colmap.items():
             if creal not in df_add.columns:
+                self.printlog ("JSON Loader: column <" + creal + "> missing! Created with NaN")
                 df_add[cshort] = float('nan')
             else:
                 df_add.rename(index=str, columns={creal: cshort}, inplace=True)
