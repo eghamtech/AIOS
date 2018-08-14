@@ -13,7 +13,7 @@
 #key=train_set_to_2;  type=random_from_set;  set=
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
-#key=ignore_columns_containing;  type=random_from_set;  set=ev_field
+#key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
 #key=include_columns_containing;  type=random_from_set;  set=
 #key=objective_regression;  type=random_from_set;  set='regression_l1','regression_l2','huber','fair','poisson','quantile','mape','gamma','tweedie'
 #key=boosting_type;  type=random_from_set;  set='gbdt','rf','dart','goss'
@@ -112,6 +112,8 @@ class cls_ev_agent_{id}:
 
     def is_use_column(self, s):
         # determine whether given column should be ignored
+        s = s.replace('%','')           # remove % used for pattern matching as now required to filter column by AIOS itself
+        
         if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
             return False 
         # ignore other columns containing specified ignore parameter value
