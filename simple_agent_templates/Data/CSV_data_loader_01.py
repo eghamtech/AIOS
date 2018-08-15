@@ -27,6 +27,12 @@ class cls_agent_{id}:
     colmap = {}
     char_cols = []
     
+    def printlog(self, mesg):
+        from datetime import datetime
+        global DEBUG
+        if DEBUG == 1:
+            print (str(datetime.now()), mesg)
+            
     def __init__(self):
         global dicts
         # if saved model for dictionaries already exists then load it from filesystem
@@ -116,17 +122,30 @@ class cls_agent_{id}:
         # create missing ones with NaN or rename as previously done
         for creal, cshort in self.colmap.items():
             if creal not in df_add.columns:
+                self.printlog ("CSV Loader: column <" + creal + "> missing! Created with NaN")
                 df_add[cshort] = float('nan')
             else:
                 df_add.rename(index=str, columns={creal: cshort}, inplace=True)
                 
-        for index, row in df_add.iterrows():                                     # iterate over each row in df_add
-            for cname in df_add.columns:
-                if cname in self.char_cols:
-                    if not (row[cname] in dicts[cname]):                         # if value in current row and column not in dictionary
-                        dicts[cname][row[cname]] = 1+max(dicts[cname].values())  # create new key in dictionary with max+1 value
-                    df_add.at[index, cname] = dicts[cname][row[cname]]
-                #else:
-                #    df_add.at[index, cname] = row[cname]
+            if (cshort in self.char_cols): 
+                df_add[cshort].fillna('', inplace=True)
+        self.printlog ("CSV Loader: columns renamed")
+                
+        for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
+            for cname in df_add.columns:                                          # iterate over each column in df_add row
+                if (cname in self.char_cols):
+                    cname_dict = dicts[cname]         
+                    cname_value = str(row[cname]) if row[cname] != None else ''
+                    self.printlog ("CSV Loader: text column " + cname + "; value: " + cname_value)
+                    
+                    if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
+                        self.printlog ("CSV Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
+                        new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
+                        dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
+                        df_add.at[index, cname] = new_key
+                    else:    
+                        df_add.at[index, cname] = cname_dict[cname_value]
+                    
+                    self.printlog ("CSV Loader: column " + cname + "; value: " + cname_value + " mapped")
 
 agent_{id} = cls_agent_{id}()
