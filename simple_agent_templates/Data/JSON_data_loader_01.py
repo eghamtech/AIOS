@@ -247,6 +247,12 @@ class cls_agent_{id}:
                         new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
                         dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
                         df_add.at[index, cname] = new_key
+                        
+                        # since global dictionary is modified it needs to be saved to avoid issues with future predictions
+                        # of columns with text not in dictionary
+                        sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
+                        self.pickle.dump(dicts, sfile) 
+                        sfile.close()
                     else:    
                         df_add.at[index, cname] = cname_dict[cname_value]
                     
