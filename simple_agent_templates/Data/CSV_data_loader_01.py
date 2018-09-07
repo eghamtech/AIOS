@@ -57,7 +57,7 @@ class cls_agent_{id}:
         print ("enter run mode " + str(mode))
         
         print (str(datetime.now()), " creating dataframe...")
-        self.df = self.pd.read_csv(workdir+self.source_filename, encoding='utf8')
+        self.df = self.pd.read_csv(workdir+self.source_filename, encoding='utf8', engine='python', error_bad_lines=False)
         
         new_cols = []
         self.colmap = {}
