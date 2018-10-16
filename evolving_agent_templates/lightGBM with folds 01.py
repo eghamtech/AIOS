@@ -192,7 +192,7 @@ class cls_ev_agent_{id}:
     def run(self, mode):
         # this is main method called by AIOS with supplied DNA Genes to process data
         global trainfile
-        from sklearn.metrics import roc_auc_score
+        from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
         from sklearn.metrics import confusion_matrix
         from sklearn.metrics import classification_report
         from sklearn.metrics import mean_squared_error
@@ -391,6 +391,17 @@ class cls_ev_agent_{id}:
                 print ("ROC AUC score: ", result_roc_auc)
                 print ("Confusion Matrix:\n", result_cm)
                 print ("Classification Report:\n", result_cr)
+            elif self.is_set(self.objective_multiclass):
+                result_prec_score = precision_score(y_test, pred, average=None)
+                result_acc_score = accuracy_score(y_test, pred)
+                result_cm = confusion_matrix(y_test, pred)
+                result_cr = classification_report(y_test, pred)
+                print ("Precision score: ", result_prec_score)
+                print ("Accuracy score: ", result_acc_score)
+                print ("Confusion Matrix:\n", result_cm)
+                print ("Classification Report:\n", result_cr)
+                result = 1 - result_prec_score
+                result_roc_auc = result_prec_score
             else:
                 result = sum(abs(y_test-pred))/len(y_test)
                 #result = sqrt(mean_squared_error(y_test, pred))
@@ -443,6 +454,20 @@ class cls_ev_agent_{id}:
                     print ("Confusion Matrix:\n", result_cm)
                     result_cr = classification_report(y_valid, (predicted_valid_set>0.5))
                     print ("Classification Report:\n", result_cr)
+                except Exception as e:
+                    print (e)
+            elif self.is_set(self.objective_multiclass):
+                try:
+                    result_prec_score = precision_score(y_valid, predicted_valid_set, average=None)
+                    result_acc_score = accuracy_score(y_valid, predicted_valid_set)
+                    result_cm = confusion_matrix(y_valid, predicted_valid_set)
+                    result_cr = classification_report(y_valid, predicted_valid_set)
+                    print ("Precision score: ", result_prec_score)
+                    print ("Accuracy score: ", result_acc_score)
+                    print ("Confusion Matrix:\n", result_cm)
+                    print ("Classification Report:\n", result_cr)
+                    result = 1 - result_prec_score
+                    result_roc_auc = result_prec_score
                 except Exception as e:
                     print (e)
             else:
