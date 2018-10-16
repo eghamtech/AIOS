@@ -15,6 +15,7 @@
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
 #key=include_columns_containing;  type=random_from_set;  set=
+#key=objective_multiclass;  type=random_from_set;  set='multiclass','multiclassova'
 #key=objective_regression;  type=random_from_set;  set='regression_l1','regression_l2','huber','fair','poisson','quantile','mape','gamma','tweedie'
 #key=boosting_type;  type=random_from_set;  set='gbdt','rf','dart','goss'
 #key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
@@ -84,6 +85,9 @@ class cls_ev_agent_{id}:
     ignore_columns_containing = "{ignore_columns_containing}"
     # include only fields matching string e.g., only properly scaled columns should be used with MLP
     include_columns_containing = "{include_columns_containing}"
+    
+    objective_multiclass = "{objective_multiclass}"
+    objective_regression = "{objective_regression}"
    
     def __init__(self):
         # remove the target field for this instance from the data used for training
@@ -273,7 +277,8 @@ class cls_ev_agent_{id}:
         original_row_count = len(df)
         
         # analyse target column whether it is binary which may result in different loss function used
-        is_binary = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
+        target_classes = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()
+        is_binary = target_classes==[0, 1]
 
         if use_validation_set:
             # use previously calculated indexes to select train, validation and remainder sets
@@ -308,13 +313,18 @@ class cls_ev_agent_{id}:
         params['lambda_l2'] = {lambda_l2}
 
         if is_binary:
-            print ("detected binary target: use LOGLOSS")
+            print ("detected binary target: use AUC/LOGLOSS")
             params['objective'] = 'binary'
             params['metric'] = ['auc', 'binary_logloss']
+        elif self.is_set(self.objective_multiclass):
+            print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(target_classes)) + " classes")
+            params['objective'] = self.objective_multiclass
+            params['num_class'] = len(target_classes)
+            params['metric'] = ['multi_logloss','multi_error']
         else:
-            print ("detected regression target: use Logistic Regression")
-            params['objective'] = 'regression'
-            params['metric'] = 'mae'
+            print ("detected regression target: use RMSE/MAE")
+            params['objective'] = self.objective_regression
+            params['metric'] = ['rmse','mae']
 
         #############################################################
         #
