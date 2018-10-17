@@ -319,7 +319,7 @@ class cls_ev_agent_{id}:
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(target_classes)) + " classes")
             params['objective'] = self.objective_multiclass
-            params['num_class'] = len(target_classes)
+            params['num_class'] = max(target_classes) + 1        # requires all int numbers from 0 to max to be classes
             params['metric'] = ['multi_logloss','multi_error']
         else:
             print ("detected regression target: use RMSE/MAE")
