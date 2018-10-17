@@ -121,13 +121,13 @@ class cls_ev_agent_{id}:
         if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
             return False 
         # ignore other columns containing specified ignore parameter value
-        if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing)>=0:
+        if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing.replace('%',''))>=0:
             return False
         # include all columns if include parameter not specified
         if not self.is_set(self.include_columns_containing):
             return True
         # include columns specified in parameter
-        if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing)>=0:
+        if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing.replace('%',''))>=0:
             return True 
         # ignore all other columns
         return False
