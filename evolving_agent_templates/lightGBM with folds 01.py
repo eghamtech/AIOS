@@ -86,8 +86,8 @@ class cls_ev_agent_{id}:
     # include only fields matching string e.g., only properly scaled columns should be used with MLP
     include_columns_containing = "{include_columns_containing}"
     
-    objective_multiclass = "{objective_multiclass}"
-    objective_regression = "{objective_regression}"
+    objective_multiclass = {objective_multiclass}
+    objective_regression = {objective_regression}
    
     def __init__(self):
         # remove the target field for this instance from the data used for training
