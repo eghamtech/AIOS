@@ -193,7 +193,7 @@ class cls_ev_agent_{id}:
         # this is main method called by AIOS with supplied DNA Genes to process data
         global trainfile
         from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
-        from sklearn.metrics import confusion_matrix
+        from sklearn.metrics import confusion_matrix, f1_score
         from sklearn.metrics import classification_report
         from sklearn.metrics import mean_squared_error
         from math import sqrt
@@ -392,16 +392,17 @@ class cls_ev_agent_{id}:
                 print ("Confusion Matrix:\n", result_cm)
                 print ("Classification Report:\n", result_cr)
             elif self.is_set(self.objective_multiclass):
-                result_prec_score = precision_score(y_test, pred, average=None)
-                result_acc_score = accuracy_score(y_test, pred)
-                result_cm = confusion_matrix(y_test, pred)
-                result_cr = classification_report(y_test, pred)
+                pred_classes = self.np.argmax(pred, axis=1)
+                result_prec_score = precision_score(y_test, pred_classes, average='weighted')
+                result_acc_score = accuracy_score(y_test, pred_classes)
+                result_cm = confusion_matrix(y_test, pred_classes)
+                result_cr = classification_report(y_test, pred_classes)
                 print ("Precision score: ", result_prec_score)
                 print ("Accuracy score: ", result_acc_score)
                 print ("Confusion Matrix:\n", result_cm)
                 print ("Classification Report:\n", result_cr)
-                result = 1 - result_prec_score
-                result_roc_auc = result_prec_score
+                result = predictor.best_score['valid_0']['multi_logloss']
+                result_roc_auc = f1_score(y_test, pred_classes, average='weighted')
             else:
                 result = sum(abs(y_test-pred))/len(y_test)
                 #result = sqrt(mean_squared_error(y_test, pred))
@@ -416,7 +417,11 @@ class cls_ev_agent_{id}:
             #pred_all_test = predictor.predict(self.lgb.Dataset(x_test_orig.drop(self.target_col, axis=1)))
             pred_all_test = predictor.predict(x_test_orig.drop(self.target_col, axis=1))
             #prediction = self.np.concatenate([prediction,pred_all_test])
-            prediction[range_start:range_end] = pred_all_test
+ 
+            if not is_binary and self.is_set(self.objective_multiclass):
+                prediction[range_start:range_end] = self.np.argmax(pred_all_test, axis=1)
+            else:
+                prediction[range_start:range_end] = pred_all_test
 
             # predict validation and remainder sets examples
             if use_validation_set:
@@ -436,6 +441,11 @@ class cls_ev_agent_{id}:
             
             predicted_valid_set = predicted_valid_set / (self.nfolds - self.start_fold)
             predicted_test_set = predicted_test_set / (self.nfolds - self.start_fold)
+            
+            # if multiclass convert list of lists into list of predicted labels
+            if not is_binary and self.is_set(self.objective_multiclass):             
+                predicted_valid_set = self.np.argmax(predicted_valid_set, axis=1)
+                predicted_test_set = self.np.argmax(predicted_test_set, axis=1)
             
             # validation set may have missing labels (NAN), for metrics calc find subset with proper labels
             self.df_valid['predicted_valid_set'] = predicted_valid_set
@@ -458,7 +468,7 @@ class cls_ev_agent_{id}:
                     print (e)
             elif self.is_set(self.objective_multiclass):
                 try:
-                    result_prec_score = precision_score(y_valid, predicted_valid_set, average=None)
+                    result_prec_score = precision_score(y_valid, predicted_valid_set, average='weighted')
                     result_acc_score = accuracy_score(y_valid, predicted_valid_set)
                     result_cm = confusion_matrix(y_valid, predicted_valid_set)
                     result_cr = classification_report(y_valid, predicted_valid_set)
@@ -467,7 +477,7 @@ class cls_ev_agent_{id}:
                     print ("Confusion Matrix:\n", result_cm)
                     print ("Classification Report:\n", result_cr)
                     result = 1 - result_prec_score
-                    result_roc_auc = result_prec_score
+                    result_roc_auc = f1_score(y_valid, predicted_valid_set, average='weighted')
                 except Exception as e:
                     print (e)
             else:
@@ -492,10 +502,11 @@ class cls_ev_agent_{id}:
 
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
         else:
-            print ("fitness="+str(weighted_result))               # main fitness metric
-            print ("out_result_1="+str(weighted_auc))             # ROC AUC in train/test CV
-            print ("out_result_2="+str(result))                   # main fitness on Validation
-            print ("out_result_3="+str(result_roc_auc))           # ROC AUC on Validation
+            print ("fitness="     +str(self.np.round(1-weighted_auc, decimals = 4)))           # main fitness metric
+            print ("out_result_1="+str(self.np.round(weighted_result, decimals = 4)))          # Log Loss in train/test CV
+            print ("out_result_2="+str(self.np.round(weighted_auc, decimals = 4)))             # ROC AUC in train/test CV
+            print ("out_result_3="+str(self.np.round(result, decimals = 4)))                   # main fitness on Validation
+            print ("out_result_4="+str(self.np.round(result_roc_auc, decimals = 4)))           # ROC AUC on Validation
             
-
+          
 ev_agent_{id} = cls_ev_agent_{id}()
