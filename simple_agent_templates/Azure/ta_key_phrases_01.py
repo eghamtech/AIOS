@@ -1,7 +1,8 @@
 #start_of_parameters
-#key=word_count_max;  type=constant;  value=0
-#key=group_length;  type=constant;  value=1
-#key=glove_host;  type=constant;  value=enter_glove_host
+#key=text_analytics_base_url;  type=constant;  value="https://uksouth.api.cognitive.microsoft.com/text/analytics/v2.0/"
+#key=azure_subscription_key;  type=constant;  value="key";  is_password=1
+#key=max_phrases;  type=constant;  value=20
+#key=azure_block_size;  type=constant;  value=50
 #end_of_parameters
 
 # AICHOO OS Simple Agent 
@@ -10,6 +11,8 @@
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 #
 # this agent creates new columns by hot-encoding key phrases obtained from Azure Text Analytics API
+# max_phrases limits how many most frequent phrases to encode
+# azure_block_size defines how many records sent to Azure at once
 
 if 'dicts' not in globals():
     dicts = {}
@@ -29,9 +32,9 @@ class cls_agent_{id}:
     temp_file_name = field_prefix + '.tmp'
     fldprefix = field_prefix + str(result_id)
     
-    max_phrases = 20
-    azure_subscription_key = "fcbbbd8a5afb4bf7b8bc24013bf1f2de"
-    text_analytics_base_url = "https://uksouth.api.cognitive.microsoft.com/text/analytics/v2.0/"
+    max_phrases = {max_phrases}
+    azure_subscription_key = {azure_subscription_key}
+    text_analytics_base_url = {text_analytics_base_url}
     azure_headers = {"Ocp-Apim-Subscription-Key": azure_subscription_key}    
     
     error = 0
@@ -113,7 +116,7 @@ class cls_agent_{id}:
             self.dfx = self.pd.DataFrame()
             self.dfx[self.col1] = df_run[self.col1].map(self.dict1)
     
-        azure_block = 10               # defines chunks of texts to be sent to Azure at once 
+        azure_block = {azure_block_size}               # defines chunks of texts to be sent to Azure at once 
         i = 0
        
         azure_docs = []
@@ -131,7 +134,7 @@ class cls_agent_{id}:
                 # first part is to identify languages for each record
                 r = self._requests_post(self.text_analytics_base_url + "languages", headers=self.azure_headers, json={'documents':azure_docs}, index=index)
                 self.langs = r.json()
-                #pprint(self.langs)
+                self.printlog(self.langs)
                 
                 for document in self.langs['documents']:
                     _id = int(document['id'])
@@ -152,11 +155,11 @@ class cls_agent_{id}:
                 for index, row in self.dfx.iloc[lblock_start:lblock_to].iterrows():
                     sline1 = row[self.col1]
                     azure_docs.append( {'id': str(index), 'language': row[self.fldprefix + '_lang'], 'text': sline1} )
-                #pprint(azure_docs)
+                self.printlog(azure_docs)
                     
                 r = self._requests_post(self.text_analytics_base_url + "keyPhrases", headers=self.azure_headers, json={'documents':azure_docs}, index=index)
                 self.phrases = r.json()
-                #pprint(self.phrases)
+                self.printlog(self.phrases)
                 
                 for document in self.phrases['documents']:
                     self.all_phrases.append(document)
@@ -249,7 +252,7 @@ class cls_agent_{id}:
           
         self.all_phrases = []
         self.index_from = 0
-        self.index_to = 61  # = len(self.df)
+        self.index_to = len(self.df)
         
         # if saved temp object exists then load it from filesystem to carry on from last good batch
         if self.os.path.isfile(workdir + self.temp_file_name):   
@@ -287,6 +290,9 @@ class cls_agent_{id}:
 
         
     def apply(self, df_add):
+        self.all_phrases = []
+        self.index_from = 0
+        self.index_to = len(df_add)
         self.run_on(df_add, mode=1)
   
     
