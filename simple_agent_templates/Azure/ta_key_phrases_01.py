@@ -1,6 +1,6 @@
 #start_of_parameters
-#key=text_analytics_base_url;  type=constant;  value="https://uksouth.api.cognitive.microsoft.com/text/analytics/v2.0/"
-#key=azure_subscription_key;  type=constant;  value="key";  is_password=1
+#key=text_analytics_base_url;  type=constant;  value=https://uksouth.api.cognitive.microsoft.com/text/analytics/v2.0/
+#key=azure_subscription_key;  type=constant;  value=key;  is_password=1
 #key=max_phrases;  type=constant;  value=20
 #key=azure_block_size;  type=constant;  value=50
 #end_of_parameters
@@ -33,8 +33,8 @@ class cls_agent_{id}:
     fldprefix = field_prefix + str(result_id)
     
     max_phrases = {max_phrases}
-    azure_subscription_key = {azure_subscription_key}
-    text_analytics_base_url = {text_analytics_base_url}
+    azure_subscription_key = "{azure_subscription_key}"
+    text_analytics_base_url = "{text_analytics_base_url}"
     azure_headers = {"Ocp-Apim-Subscription-Key": azure_subscription_key}    
     
     error = 0
