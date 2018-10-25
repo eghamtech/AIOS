@@ -87,7 +87,7 @@ class cls_agent_{id}:
         df_primary = self.pd.read_csv(workdir+file_name, encoding='utf8')[[col_name]]
         
         df_primary = self.pd.merge(df_primary, self.df, how='left', on=col_name, sort=False)
-        df_primary.drop(self.primary_field, axis=1, inplace=True)              # remove primary field as it is a duplicate previously created
+        df_primary.drop(col_name, axis=1, inplace=True)              # remove primary field as it is a duplicate previously created
         
         print (str(datetime.now()), " processing TEXT columns")
         self.char_cols = list(df_primary.select_dtypes(include=['object']).columns)
