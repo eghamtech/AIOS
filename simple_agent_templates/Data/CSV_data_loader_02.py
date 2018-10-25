@@ -9,7 +9,7 @@
 # This script will scan your CSV file for string columns, convert them to dictionaries
 # and create columns in AIOS Memory with data for each column in the 'source_filename' CSV file.
 # Provide correct 'source_filename' in the agent parameters.
-# Variables 'workdir' and 'trainfile' (target filename) must be setup in 'Constants' area of AIOS
+# Variable 'workdir' must be setup in 'Constants' area of AIOS
 # Parameter 'target' specifies column to be marked as the prediction target.
 #
 # this version of the loader will scan existing data and will append new columns from "source_filename"
@@ -32,11 +32,7 @@ class cls_agent_{id}:
    
     # obtain a unique ID for the current instance
     result_id = {id}
-    agent_name = 'csv_agent_' + str(result_id)
-    # create new field name based on "new_field_prefix" with unique instance ID
-    # and filename to save new field data
-    # output_column = new_field_prefix + "_" + str(result_id)
-    # output_filename = output_column + ".csv"
+    agent_name = 'csv_02_agent_' + str(result_id)
     
     colmap = {}
     char_cols = []
@@ -90,7 +86,7 @@ class cls_agent_{id}:
         df_primary = self.pd.read_csv(workdir+file_name, encoding='utf8')[[col_name]]
         
         df_primary = self.pd.merge(df_primary, self.df, how='left', on=self.primary_field, sort=False)
-        df_primary.drop(self.primary_field, axis=1)              # remove primary field as it is a duplicate previously created
+        df_primary.drop(self.primary_field, axis=1, inplace=True)              # remove primary field as it is a duplicate previously created
         
         print (str(datetime.now()), " processing TEXT columns")
         self.char_cols = list(df_primary.select_dtypes(include=['object']).columns)
