@@ -76,16 +76,17 @@ class cls_agent_{id}:
               new_cols.append(str1)                               # list of new columns
               self.colmap[c] = str1                               # a map from old column names to new ones
         self.df.columns = new_cols                                # assign new column names to the dataframe
+
+        col_name = self.primary_field.split("|")[0]
+        file_name = self.primary_field.split("|")[1]
         
         # create a copy of specified primary field to have the same name as primary field in AIOS Memory
         # so dataframe can be joined on that field
-        self.df[self.primary_field] = self.df[self.colmap[self.source_primary_field]]
+        self.df[col_name] = self.df[self.colmap[self.source_primary_field]]
         
-        col_name = self.primary_field.split("|")[0]
-        file_name = self.primary_field.split("|")[1]
         df_primary = self.pd.read_csv(workdir+file_name, encoding='utf8')[[col_name]]
         
-        df_primary = self.pd.merge(df_primary, self.df, how='left', on=self.primary_field, sort=False)
+        df_primary = self.pd.merge(df_primary, self.df, how='left', on=col_name, sort=False)
         df_primary.drop(self.primary_field, axis=1, inplace=True)              # remove primary field as it is a duplicate previously created
         
         print (str(datetime.now()), " processing TEXT columns")
