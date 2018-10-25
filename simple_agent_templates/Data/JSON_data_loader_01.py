@@ -250,9 +250,10 @@ class cls_agent_{id}:
                         
                         # since global dictionary is modified it needs to be saved to avoid issues with future predictions
                         # of columns with text not in dictionary
-                        sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
-                        self.pickle.dump(dicts, sfile) 
-                        sfile.close()
+                        # uncomment this functionality if needed (could be slow due to file ops during scoring)
+                        #sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
+                        #self.pickle.dump(dicts, sfile) 
+                        #sfile.close()
                     else:    
                         df_add.at[index, cname] = cname_dict[cname_value]
                     
