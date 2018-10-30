@@ -103,6 +103,12 @@ class cls_ev_agent_{id}:
                 self.predictors.append(predictor_stored)
                 print (str(datetime.now()), self.output_column + ' fold ' + str(fold) + ' predictor model loaded')
   
+        if self.os.path.isfile(workdir + self.output_column + '_params.model'):
+            rfile = self.bz2.BZ2File(workdir + self.output_column + '_params.model', 'r')
+            self.lgbm_params = self.pickle.load(rfile)
+            rfile.close()    
+            print (str(datetime.now()), self.output_column + ' lGBM parameters loaded')
+            
         # obtain columns definitions to filter data set by
         if self.is_set(self.filter_column):
             self.filter_filename = self.filter_column.split("|")[1]
@@ -185,11 +191,24 @@ class cls_ev_agent_{id}:
         
         # predict new data set in df applying model for each fold used for training
         pred = self.np.zeros(len(df))
+        if self.lgbm_params['objective'] == self.objective_multiclass:
+            # create a list of lists depending on number of classes used for training 
+            # as each prediction is a list of values against each class
+            pred = [self.np.zeros(self.lgbm_params['num_class']) for i in range(len(df))]
+            
+        # apply model from each fold created during training and sum their predictions
         for fold in range(self.start_fold, self.nfolds):
             pred += self.predictors[fold-self.start_fold].predict(df)
-        # average prediction over all folds    
-        pred = pred / (self.nfolds - self.start_fold)
+        
+        if self.lgbm_params['objective'] == self.objective_multiclass:
+            # select class with largest total value in case of multiclass
+            pred = self.np.argmax(pred, axis=1)
+        else:
+            # average prediction over all folds in case of binary or regression   
+            pred = pred / (self.nfolds - self.start_fold)
+        
         df_add[self.output_column] = pred
+        
 
     def run(self, mode):
         # this is main method called by AIOS with supplied DNA Genes to process data
@@ -281,18 +300,6 @@ class cls_ev_agent_{id}:
         # analyse target column whether it is binary which may result in different loss function used
         target_classes = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()
         is_binary = target_classes==[0, 1]
-
-        if use_validation_set:
-            # use previously calculated indexes to select train, validation and remainder sets
-            df_test = df[df.index.isin(test_indexes)]
-            df_test.reset_index(drop=True, inplace=True)
-            self.df_valid = df[df.index.isin(validation_set_indexes)]
-            self.df_valid.reset_index(drop=True, inplace=True)
-            df = df[df.index.isin(train_indexes)]
-            df.reset_index(drop=True, inplace=True)
-            # initialise prediction columns for validation and test as they will be aggregate predictions from multiple folds
-            predicted_valid_set = self.np.zeros(len(self.df_valid))
-            predicted_test_set = self.np.zeros(len(df_test))
             
         # prepare LGBM parameters    
         params = {}
@@ -328,6 +335,24 @@ class cls_ev_agent_{id}:
             params['objective'] = self.objective_regression
             params['metric'] = ['rmse','mae']
 
+        if use_validation_set:
+            # use previously calculated indexes to select train, validation and remainder sets
+            df_test = df[df.index.isin(test_indexes)]
+            df_test.reset_index(drop=True, inplace=True)
+            self.df_valid = df[df.index.isin(validation_set_indexes)]
+            self.df_valid.reset_index(drop=True, inplace=True)
+            df = df[df.index.isin(train_indexes)]
+            df.reset_index(drop=True, inplace=True)
+            
+            # initialise prediction columns for validation and test as they will be aggregate predictions from multiple folds
+            predicted_valid_set = self.np.zeros(len(self.df_valid))
+            predicted_test_set = self.np.zeros(len(df_test))
+            # Multi-class case: initialise prediction list of lists depending on number of classes 
+            # as each prediction is a list of values against each class
+            if params['objective'] == self.objective_multiclass:
+                predicted_valid_set = [self.np.zeros(params['num_class']) for i in range(len(self.df_valid))]
+                predicted_test_set =  [self.np.zeros(params['num_class']) for i in range(len(df_test))]
+                
         #############################################################
         #
         #                   MAIN LOOP
@@ -420,7 +445,7 @@ class cls_ev_agent_{id}:
             pred_all_test = predictor.predict(x_test_orig.drop(self.target_col, axis=1))
             #prediction = self.np.concatenate([prediction,pred_all_test])
  
-            if not is_binary and self.is_set(self.objective_multiclass):
+            if params['objective'] == self.objective_multiclass:
                 prediction[range_start:range_end] = self.np.argmax(pred_all_test, axis=1)
             else:
                 prediction[range_start:range_end] = pred_all_test
@@ -445,7 +470,7 @@ class cls_ev_agent_{id}:
             predicted_test_set = predicted_test_set / (self.nfolds - self.start_fold)
             
             # if multiclass convert list of lists into list of predicted labels
-            if not is_binary and self.is_set(self.objective_multiclass):             
+            if params['objective'] == self.objective_multiclass:             
                 predicted_valid_set = self.np.argmax(predicted_valid_set, axis=1)
                 predicted_test_set = self.np.argmax(predicted_test_set, axis=1)
             
@@ -468,7 +493,7 @@ class cls_ev_agent_{id}:
                     print ("Classification Report:\n", result_cr)
                 except Exception as e:
                     print (e)
-            elif self.is_set(self.objective_multiclass):
+            elif params['objective'] == self.objective_multiclass:
                 try:
                     result_prec_score = precision_score(y_valid, predicted_valid_set, average='weighted')
                     result_acc_score = accuracy_score(y_valid, predicted_valid_set)
