@@ -90,6 +90,7 @@ class cls_ev_agent_{id}:
     objective_regression = {objective_regression}
    
     def __init__(self):
+        from datetime import datetime
         # remove the target field for this instance from the data used for training
         if self.target_definition in self.data_defs:
             self.data_defs.remove(self.target_definition)
@@ -100,6 +101,7 @@ class cls_ev_agent_{id}:
             if self.os.path.isfile(workdir + self.output_column + "_fold" + str(fold) + ".model"):
                 predictor_stored = self.lgb.Booster(model_file=workdir + self.output_column + "_fold" + str(fold) + ".model")
                 self.predictors.append(predictor_stored)
+                print (str(datetime.now()), self.output_column + ' fold ' + str(fold) + ' predictor model loaded')
   
         # obtain columns definitions to filter data set by
         if self.is_set(self.filter_column):
