@@ -50,7 +50,7 @@ class cls_ev_agent_{id}:
     import lightgbm as lgb
     import numpy as np
     import math
-    import os.path
+    import os.path, bz2, pickle
     import dateutil
     import calendar
 
@@ -493,6 +493,11 @@ class cls_ev_agent_{id}:
         #############################################################
 
         if mode==1:
+            # save parameters used for training lGBM as needed during applying on new data
+            sfile = self.bz2.BZ2File(workdir + self.output_column + '_params.model', 'w')
+            self.pickle.dump(params, sfile) 
+            sfile.close()
+                        
             if use_validation_set:
                 df_filter_column[self.output_column] = float('nan')
                 df_filter_column.ix[train_indexes, self.output_column] = prediction
