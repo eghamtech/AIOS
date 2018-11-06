@@ -143,6 +143,21 @@ class cls_ev_agent_{id}:
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
     
+    def print_feature_importance(self, n_top_features=25, importance_type='gain', print_table = True, to_html = True ):
+        importance = self.bst.feature_importance(importance_type=importance_type)    
+        features = self.bst.feature_name()    
+        # join field names and their importance values
+        fi = self.pd.DataFrame( {'Feature': features, 'Importance': importance} )
+        
+        if print_table:
+            print ()
+            if to_html:
+                print (fi.sort_values(by=['Importance'], ascending=False).to_html(max_rows=n_top_features*2,max_cols=2))
+            else:
+                print (fi.sort_values(by=['Importance'], ascending=False))
+    
+        return fi
+    
     #def plot_feature_importance(self, n_top_features=20, graph_width=10, graph_height=25, importance_type='gain'):
         # this method can be used in Jupyter notebook to plot features of a particular model created by AIOS
         # copy whole DNA code as executed by AIOS into notebook with global Constants, initialise/run the class first
@@ -402,8 +417,10 @@ class cls_ev_agent_{id}:
             num_round=100000
             watchlist  = [self.lgb.Dataset(x_test, label=y_test)]
             predictor = self.lgb.train( params, x_train, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
-            self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
             
+            self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
+            self.print_feature_importance(n_top_features=25, importance_type='gain', print_table = True, to_html = True )
+                
             if mode==1:
                 predictor.save_model(workdir + self.output_column + "_fold" + str(fold) + ".model")
 
