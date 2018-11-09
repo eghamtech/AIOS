@@ -499,6 +499,9 @@ class cls_ev_agent_{id}:
             except Exception as e:
                 print ('FastText Supervised error: ', e)
                 print ("fitness="     +str(99999))
+                self.os.remove(workdir + self.output_column + "_fold" + str(fold) + ".model.bin")
+                self.os.remove(workdir + self.output_column + "_fold" + str(fold) + ".model.vec")            
+                self.os.remove(workdir + self.output_column + '_train.tmp')
                 return
 
             if is_binary:
