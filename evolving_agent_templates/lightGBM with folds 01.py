@@ -1,6 +1,7 @@
 #start_of_genes_definitions
 #key=data;  type=random_array_of_fields;  length=13
 #key=fields_to_use;  type=random_int;  from=13;  to=13;  step=1
+#key=field_ev_prefix;  type=random_from_set;  set=ev_field_lgbm_
 #key=nfolds;  type=random_int;  from=10;  to=10;  step=1
 #key=use_validation_set;  type=random_from_set;  set=False
 #key=filter_column;  type=random_from_set;  set=Submission_Date_TS
@@ -13,8 +14,9 @@
 #key=train_set_to_2;  type=random_from_set;  set=
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
-#key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
+#key=include_columns_type;  type=random_from_set;  set=
 #key=include_columns_containing;  type=random_from_set;  set=
+#key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
 #key=objective_multiclass;  type=random_from_set;  set='multiclass','multiclassova'
 #key=objective_regression;  type=random_from_set;  set='regression_l1','regression_l2','huber','fair','poisson','quantile','mape','gamma','tweedie'
 #key=boosting_type;  type=random_from_set;  set='gbdt','rf','dart','goss'
@@ -58,7 +60,7 @@ class cls_ev_agent_{id}:
     result_id = {id}
     # create new field name based on "field_ev_prefix" with unique instance ID
     # and filename to save new field data
-    field_ev_prefix = "ev_field_lgbm_"
+    field_ev_prefix = "{field_ev_prefix}"
     output_column = field_ev_prefix + str(result_id)
     output_filename = output_column + ".csv"
 
@@ -123,23 +125,26 @@ class cls_ev_agent_{id}:
         return len(s)>0 and s!="0"
 
     def is_use_column(self, s):
+        # AIOS Kernel now selects columns using agent parameters
+            
         # determine whether given column should be ignored
-        s = s.replace('%','')           # remove % used for pattern matching as now required to filter column by AIOS itself
+#         s = s.replace('%','')           # remove % used for pattern matching as now required to filter column by AIOS itself
         
-        if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
-            return False 
-        # ignore other columns containing specified ignore parameter value
-        if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing.replace('%',''))>=0:
-            return False
-        # include all columns if include parameter not specified
-        if not self.is_set(self.include_columns_containing):
-            return True
-        # include columns specified in parameter
-        if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing.replace('%',''))>=0:
-            return True 
-        # ignore all other columns
-        return False
-        
+         if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
+             return False 
+#         # ignore other columns containing specified ignore parameter value
+#         if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing.replace('%',''))>=0:
+#             return False
+#         # include all columns if include parameter not specified
+#         if not self.is_set(self.include_columns_containing):
+#             return True
+#         # include columns specified in parameter
+#         if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing.replace('%',''))>=0:
+#             return True 
+#         # ignore all other columns
+#         return False
+        return True
+
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
     
@@ -227,7 +232,6 @@ class cls_ev_agent_{id}:
 
     def run(self, mode):
         # this is main method called by AIOS with supplied DNA Genes to process data
-        global trainfile
         from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
         from sklearn.metrics import confusion_matrix, f1_score
         from sklearn.metrics import classification_report
@@ -238,6 +242,26 @@ class cls_ev_agent_{id}:
 
         use_validation_set = {use_validation_set}
         use_float32_dtype = {use_float32_dtype}
+        
+        # prepare LGBM parameters    
+        params = {}
+        params['learning_rate'] = {learning_rate}       # shrinkage_rate
+        params['boosting_type'] = {boosting_type}
+        params['sub_feature'] = {sub_feature}           # feature_fraction (small values => use very different submodels)
+        params['bagging_fraction'] = {bagging_fraction} # sub_row
+        params['bagging_freq'] = {bagging_freq}
+        params['num_leaves'] =     {num_leaves}            # num_leaf
+        params['tree_learner'] = {tree_learner}
+        params['min_data'] = {min_data}                 # min_data_in_leaf
+        params['verbose'] = 1
+        params['feature_fraction_seed'] = {feature_fraction_seed}
+        params['bagging_seed'] = {bagging_seed}
+        params['max_depth'] = {max_depth}
+        params['num_threads'] = {num_threads}
+        params['boost_from_average'] = {boost_from_average}
+        params['is_unbalance'] = {is_unbalance}
+        params['lambda_l1'] = {lambda_l1}
+        params['lambda_l2'] = {lambda_l2}
         
         # obtain indexes for train, validation and remainder sets, if validation set is required
         if use_validation_set:
@@ -315,27 +339,7 @@ class cls_ev_agent_{id}:
         # analyse target column whether it is binary which may result in different loss function used
         target_classes = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()
         is_binary = target_classes==[0, 1]
-            
-        # prepare LGBM parameters    
-        params = {}
-        params['learning_rate'] = {learning_rate}       # shrinkage_rate
-        params['boosting_type'] = {boosting_type}
-        params['sub_feature'] = {sub_feature}           # feature_fraction (small values => use very different submodels)
-        params['bagging_fraction'] = {bagging_fraction} # sub_row
-        params['bagging_freq'] = {bagging_freq}
-        params['num_leaves'] =     {num_leaves}            # num_leaf
-        params['tree_learner'] = {tree_learner}
-        params['min_data'] = {min_data}                 # min_data_in_leaf
-        params['verbose'] = 1
-        params['feature_fraction_seed'] = {feature_fraction_seed}
-        params['bagging_seed'] = {bagging_seed}
-        params['max_depth'] = {max_depth}
-        params['num_threads'] = {num_threads}
-        params['boost_from_average'] = {boost_from_average}
-        params['is_unbalance'] = {is_unbalance}
-        params['lambda_l1'] = {lambda_l1}
-        params['lambda_l2'] = {lambda_l2}
-
+         
         if is_binary:
             print ("detected binary target: use AUC/LOGLOSS")
             params['objective'] = 'binary'
@@ -384,7 +388,8 @@ class cls_ev_agent_{id}:
         count_records_notnull = 0
 
         for fold in range(self.start_fold, self.nfolds):
-            print ("\nFOLD", fold, "\n")
+            print ()
+            print (str(datetime.now())," FOLD", fold)
             range_start = fold*block
             range_end = (fold+1)*block
             if fold==self.nfolds-1:
