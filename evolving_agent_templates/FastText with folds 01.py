@@ -284,19 +284,19 @@ class cls_ev_agent_{id}:
                 
             if not self.is_set(self.filter_column_2):
                 # one filter column used
-                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>=0, df_filter_column[self.filter_column]<360000)
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
                 train_indexes = df_filter_column[condition1].index
                 test_indexes = df_filter_column[self.np.logical_not(condition1)].index
-                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>=360000, df_filter_column[self.filter_column]<404290)
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={valid_set_from}, df_filter_column[self.filter_column]<{valid_set_to})
                 validation_set_indexes = df_filter_column[condition1].index
             else:
                 # two filter columns specified
-                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>=0, df_filter_column[self.filter_column]<360000)
-                condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>=0, df_filter_column[self.filter_column_2]<0)
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={train_set_from}, df_filter_column[self.filter_column]<{train_set_to})
+                condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>={train_set_from_2}, df_filter_column[self.filter_column_2]<{train_set_to_2})
                 train_indexes = df_filter_column[self.np.logical_and(condition1, condition2)].index
                 test_indexes = df_filter_column[self.np.logical_not(self.np.logical_and(condition1, condition2))].index
-                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>=360000, df_filter_column[self.filter_column]<404290)
-                condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>=0, df_filter_column[self.filter_column_2]<0)
+                condition1 = self.np.logical_and(df_filter_column[self.filter_column]>={valid_set_from}, df_filter_column[self.filter_column]<{valid_set_to})
+                condition2 = self.np.logical_and(df_filter_column[self.filter_column_2]>={valid_set_from_2}, df_filter_column[self.filter_column_2]<{valid_set_to_2})
                 validation_set_indexes = df_filter_column[self.np.logical_and(condition1, condition2)].index
             
             print ("Length of train set:", len(train_indexes))
