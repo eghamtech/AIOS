@@ -1,7 +1,8 @@
 #start_of_genes_definitions
 #key=data;  type=random_array_of_fields;  length=13
 #key=fields_to_use;  type=random_int;  from=13;  to=13;  step=1
-#key=nfolds;  type=random_int;  from=10;  to=10;  step=1
+#key=field_ev_prefix;  type=random_from_set;  set=ev_field_fasttext_
+#key=nfolds;  type=random_int;  from=3;  to=3;  step=1
 #key=use_validation_set;  type=random_from_set;  set=False
 #key=filter_column;  type=random_from_set;  set=field|field.csv
 #key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
@@ -64,7 +65,7 @@ class cls_ev_agent_{id}:
     result_id = {id}
     # create new field name based on "field_ev_prefix" with unique instance ID
     # and filename to save new field data
-    field_ev_prefix = "ev_field_fasttext_"
+    field_ev_prefix = "{field_ev_prefix}"
     output_column = field_ev_prefix + str(result_id)
     output_filename = output_column + ".csv"
 
