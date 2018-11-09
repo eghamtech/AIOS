@@ -39,6 +39,7 @@
 #key=qout; type=random_from_set;  set=False
 #key=start_fold;  type=random_from_set;  set=0
 #key=num_threads;  type=random_int;  from=1;  to=1;  step=1
+#key=clean_text;  type=random_int;  from=0;  to=1;  step=1
 #key=use_float32_dtype; type=random_from_set;  set=True
 #end_of_genes_definitions
 
@@ -159,6 +160,24 @@ class cls_ev_agent_{id}:
             sum1 += 1.0 * a[k] * self.math.log(bx) + 1.0 * (1 - a[k]) * self.math.log(1 - bx)
         return -sum1/len(a)
     
+    def clean_text_v1(self, string):
+        import re
+        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)     
+        string = re.sub(r"\'s", " 's", string) 
+        string = re.sub(r"\'ve", " \'ve", string) 
+        string = re.sub(r"n\'t", " n\'t", string) 
+        string = re.sub(r"\'re", " \'re", string) 
+        string = re.sub(r"\'d", " \'d", string) 
+        string = re.sub(r"\'ll", " \'ll", string) 
+        string = re.sub(r",", " , ", string) 
+        string = re.sub(r"!", " ! ", string) 
+        string = re.sub(r"\(", " ( ", string) 
+        string = re.sub(r"\)", " ) ", string) 
+        string = re.sub(r"\?", " ? ", string) 
+        string = re.sub(r"\s{2,}", " ", string)       
+        return  string.strip().lower()
+    
+    
     def ft_predict_proba(self, xt, k, params):
         try:
             xt = xt.to_string(header=False, index=False, index_names=False).split('\n')
@@ -210,6 +229,9 @@ class cls_ev_agent_{id}:
                 if self.os.path.isfile(dict_file_name):
                     dict1 = self.pd.read_csv(dict_file_name, dtype={'value': object}).set_index('key')["value"].to_dict()  # load dictionary
                     df_col[col_name] = df_col[col_name].map(dict1)                                                         # map and replace
+                                   
+                    if self.lgbm_params['clean_text'] == 1:
+                        df_col[col_name] = df_col[col_name].astype(str).apply(self.clean_text_v1)    
                 else:
                     if df_col[col_name].dtype == self.np.float64 and use_float32_dtype:                                    # downcast to save memory if needed
                         df_col[col_name] = df_col[col_name].astype(self.np.float32)
@@ -276,6 +298,31 @@ class cls_ev_agent_{id}:
         use_validation_set = {use_validation_set}
         use_float32_dtype = {use_float32_dtype}
         
+        # prepare all parameters   
+        # https://fasttext.cc/docs/en/options.html
+        params = {}
+        params['learning_rate'] = {learning_rate}    
+        params['lr_update_rate'] = {lr_update_rate}
+        params['size_of_word_vectors'] = {size_of_word_vectors}
+        params['size_of_context_window'] = {size_of_context_window}
+        params['epoch'] = {epoch}
+        params['negatives_sampled'] = {negatives_sampled}
+        params['word_ngrams'] = {word_ngrams}                       # max length of word ngram [1]
+        params['loss_function'] = {loss_function}
+        params['bucket'] = {bucket}                                 # number of buckets [2000000]
+        params['cutoff'] = {cutoff}
+        params['dsub'] = {dsub}
+        params['min_char_ngrams'] = {min_char_ngrams}               # min length of char ngram [3]
+        params['max_char_ngrams'] = {max_char_ngrams}               # max length of char ngram [6]
+        params['min_word_occurences'] = {min_word_occurences}       # minimal number of word occurrences [5]
+        params['min_count_label'] = {min_count_label}               # minimal number of label occurrences [0]
+        params['qnorm'] = {qnorm}
+        params['qout'] = {qout}
+        params['verbose'] = 2
+        params['num_threads'] = {num_threads}
+        params['sampling_threshold'] = {sampling_threshold}
+        params['clean_text'] = {clean_text}
+        
         # obtain indexes for train, validation and remainder sets, if validation set is required
         if use_validation_set:
             df_filter_column = self.pd.read_csv(workdir+self.filter_filename, usecols = [self.filter_column])
@@ -331,6 +378,9 @@ class cls_ev_agent_{id}:
                 if self.os.path.isfile(dict_file_name):
                     dict1 = self.pd.read_csv(dict_file_name, dtype={'value': object}).set_index('key')["value"].to_dict()  # load dictionary
                     df_col[col_name] = df_col[col_name].map(dict1)                                                         # map and replace
+                                                   
+                    if params['clean_text'] == 1:
+                        df_col[col_name] = df_col[col_name].astype(str).apply(self.clean_text_v1)
                 else:
                     if df_col[col_name].dtype == self.np.float64 and use_float32_dtype:                                    # downcast to save memory if needed
                         df_col[col_name] = df_col[col_name].astype(self.np.float32)
@@ -360,30 +410,6 @@ class cls_ev_agent_{id}:
         target_classes = df[df[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()
         is_binary = target_classes==[0, 1]
             
-        # prepare FT parameters   
-        # https://fasttext.cc/docs/en/options.html
-        params = {}
-        params['learning_rate'] = {learning_rate}    
-        params['lr_update_rate'] = {lr_update_rate}
-        params['size_of_word_vectors'] = {size_of_word_vectors}
-        params['size_of_context_window'] = {size_of_context_window}
-        params['epoch'] = {epoch}
-        params['negatives_sampled'] = {negatives_sampled}
-        params['word_ngrams'] = {word_ngrams}                       # max length of word ngram [1]
-        params['loss_function'] = {loss_function}
-        params['bucket'] = {bucket}                                 # number of buckets [2000000]
-        params['cutoff'] = {cutoff}
-        params['dsub'] = {dsub}
-        params['min_char_ngrams'] = {min_char_ngrams}               # min length of char ngram [3]
-        params['max_char_ngrams'] = {max_char_ngrams}               # max length of char ngram [6]
-        params['min_word_occurences'] = {min_word_occurences}       # minimal number of word occurrences [5]
-        params['min_count_label'] = {min_count_label}               # minimal number of label occurrences [0]
-        params['qnorm'] = {qnorm}
-        params['qout'] = {qout}
-        params['verbose'] = 2
-        params['num_threads'] = {num_threads}
-        params['sampling_threshold'] = {sampling_threshold}
-
         if is_binary:
             print ("detected binary target: use AUC/LOGLOSS")
             params['objective'] = 'binary'
