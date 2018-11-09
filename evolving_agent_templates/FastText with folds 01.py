@@ -132,23 +132,27 @@ class cls_ev_agent_{id}:
         return len(s)>0 and s!="0"
 
     def is_use_column(self, s):
+        # AIOS Kernel now select columns using agent parameters
+        
         # determine whether given column should be ignored
-        s = s.replace('%','')           # remove % used for pattern matching as now required to filter column by AIOS itself
+        # s = s.replace('%','')           # remove % used for pattern matching as now required to filter column by AIOS itself
         
         if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
             return False 
-        # ignore other columns containing specified ignore parameter value
-        if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing.replace('%',''))>=0:
-            return False
-        # include all columns if include parameter not specified
-        if not self.is_set(self.include_columns_containing):
-            return True
-        # include columns specified in parameter
-        if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing.replace('%',''))>=0:
-            return True 
-        # ignore all other columns
-        return False
         
+        # ignore other columns containing specified ignore parameter value
+#         if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing.replace('%',''))>=0:
+#             return False
+#         # include all columns if include parameter not specified
+#         if not self.is_set(self.include_columns_containing):
+#             return True
+#         # include columns specified in parameter
+#         if self.is_set(self.include_columns_containing) and s.find(self.include_columns_containing.replace('%',''))>=0:
+#             return True 
+#         # ignore all other columns
+#         return False
+        return True
+
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
 
