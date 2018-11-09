@@ -14,8 +14,9 @@
 #key=train_set_to_2;  type=random_from_set;  set=
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
-#key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
+#key=include_columns_type;  type=random_from_set;  set=is_dict_only
 #key=include_columns_containing;  type=random_from_set;  set=
+#key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
 #key=objective_multiclass;  type=random_from_set;  set='multiclass'
 #key=objective_regression;  type=random_from_set;  set='regression_l1'
 #key=loss_function;  type=random_from_set;  set='softmax','ns','hs'
