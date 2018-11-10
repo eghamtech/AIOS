@@ -20,7 +20,7 @@
 #key=objective_multiclass;  type=random_from_set;  set='multiclass'
 #key=objective_regression;  type=random_from_set;  set='regression_l1'
 #key=loss_function;  type=random_from_set;  set='softmax','ns','hs'
-#key=learning_rate;  type=random_float;  from=0.001;  to=0.5;  step=0.001
+#key=learning_rate;  type=random_float;  from=0.001;  to=1.5;  step=0.001
 #key=sampling_threshold;  type=random_float;  from=0.00005;  to=0.0002;  step=0.00001
 #key=lr_update_rate;  type=random_int;  from=10;  to=300;  step=1
 #key=size_of_word_vectors;  type=random_int;  from=5;  to=150;  step=1
