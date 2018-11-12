@@ -37,6 +37,7 @@
 #key=max_depth;  type=random_int;  from=-1;  to=10;  step=1
 #key=num_threads;  type=random_int;  from=4;  to=4;  step=1
 #key=use_float32_dtype; type=random_from_set;  set=True
+#key=print_to_html; type=random_from_set;  set=True
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -90,6 +91,8 @@ class cls_ev_agent_{id}:
     
     objective_multiclass = {objective_multiclass}
     objective_regression = {objective_regression}
+    
+    print_to_html = {print_to_html}
    
     def __init__(self):
         from datetime import datetime
@@ -424,7 +427,12 @@ class cls_ev_agent_{id}:
             predictor = self.lgb.train( params, x_train, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )
             
             self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
-            self.print_feature_importance(n_top_features=25, importance_type='gain', print_table = True, to_html = True )
+            
+            fi = self.print_feature_importance(n_top_features=25, importance_type='gain', print_table = True, to_html = self.print_to_html)
+            if fold == self.start_fold:
+                self.fi_total = fi
+            else:
+                self.fi_total = self.pd.merge(self.fi_total, fi, how='outer', on='Feature', sort=False)
                 
             if mode==1:
                 predictor.save_model(workdir + self.output_column + "_fold" + str(fold) + ".model")
@@ -482,6 +490,15 @@ class cls_ev_agent_{id}:
         print ("weighted_result:", weighted_result)
         print ("weighted_auc:", weighted_auc)
 
+        print ()                                 # combine feature importance results from all folds into one table
+        fi_cols = [col for col in self.fi_total.columns if 'Importance' in col] 
+        self.fi_total['Importance_AVG'] = self.fi_total[fi_cols].sum(axis=1)/(self.nfolds - self.start_fold)  
+        print ('FEATURE Importance Overall:')
+        if self.print_to_html:
+            print (self.fi_total.sort_values(by=['Importance_AVG'], ascending=False).to_html(max_rows=50,max_cols=50))         
+        else:
+            print (self.fi_total.sort_values(by=['Importance_AVG'], ascending=False))
+            
         if use_validation_set:
             print()
             print()
