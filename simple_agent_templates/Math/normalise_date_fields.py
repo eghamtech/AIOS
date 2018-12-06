@@ -39,7 +39,7 @@ class cls_agent_{id}:
     import numpy as np
     
     data_defs = {fields_source}
-    data_map = {map_name}
+    data_map  = {map_name}
     
     # obtain a unique ID for the current instance
     result_id = {id}
@@ -47,18 +47,19 @@ class cls_agent_{id}:
     # and filename to save new field data
     new_field_prefix = {new_field_prefix} + str(result_id) + '_'
 
+    def cond_diff(self, m, s):      
+        res = m-s if m > 0 else self.data_map[0]
+        return res
+        
     def run_on(self, df_run):      
         subtrahend_col_name = self.data_defs[0].split("|")[0]
         subtrahend_col_name_mapped = subtrahend_col_name + '_mapped'
-        if data_map == dummy_map:
-            subtrahend_col_name_mapped = subtrahend_col_name
-        else:
-            df_run[subtrahend_col_name_mapped] = df_run[subtrahend_col_name].map(self.data_map)
+        df_run[subtrahend_col_name_mapped] = df_run[subtrahend_col_name].map(self.data_map)
         
         for i in range(1,len(self.data_defs)):
             minuend_col = self.data_defs[i].split("|")[0]
             col_res = self.new_field_prefix + minuend_col 
-            df_run[col_res] = df_run[minuend_col] - df_run[subtrahend_col_name_mapped]
+            df_run[col_res] = df_run.apply(lambda row: self.cond_diff(row[minuend_col], row[subtrahend_col_name_mapped]), axis=1) 
               
         
     def run(self, mode):
