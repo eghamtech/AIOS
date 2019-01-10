@@ -32,18 +32,20 @@ class cls_agent_{id}:
     # create new field name based on "new_field_prefix" with unique instance ID
     # and filename to save new field data
     new_field_prefix = "{new_field_prefix}"
-    output_column    = new_field_prefix + data_defs[0].split("|")[0] + "_" + str(result_id)
-    output_filename  = output_column + ".csv"
-    
+   
     def is_set(self, s):
         return len(s)>0 and s!="0"
     
     def __init__(self):
         self.data_defs = []
+        
         if self.is_set("{field_source}") and self.is_set("{field_filter}"):
             self.data_defs = ["{field_source}","{field_filter}"]
         elif self.is_set("{field_source}"):
             self.data_defs = ["{field_source}"]
+            
+        self.output_column    = self.new_field_prefix + self.data_defs[0].split("|")[0] + "_" + str(self.result_id)
+        self.output_filename  = self.output_column + ".csv"
 
                    
     def run(self, mode):
