@@ -3,7 +3,7 @@
 #key=field_filter;  type=constant;  value=enter_field_to_filter_by_with_csv_file_name
 #key=filter_values;  type=constant;  value=enter_values_to_filter_by
 #key=set_value;  type=constant;  value=enter_value_to_set
-#key=new_field_prefix;  type=constant;  value="filter_"
+#key=new_field_prefix;  type=constant;  value=filter_
 #end_of_parameters
 
 # AICHOO OS Simple Agent 
@@ -25,7 +25,7 @@ class cls_agent_{id}:
     
     # data_defs          = ["{field_source}","{field_filter}"]
     filter_values_list = [{filter_values}]
-    new_value          = {set_value}
+    new_value          = "{set_value}"
     
     # obtain a unique ID for the current instance
     result_id = {id}
