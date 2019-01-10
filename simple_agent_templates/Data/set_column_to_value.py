@@ -23,7 +23,7 @@ class cls_agent_{id}:
     import numpy as np
     import os.path
     
-    data_defs          = ["{field_source}","{field_filter}"]
+    # data_defs          = ["{field_source}","{field_filter}"]
     filter_values_list = [{filter_values}]
     new_value          = {set_value}
     
@@ -35,9 +35,17 @@ class cls_agent_{id}:
     output_column    = new_field_prefix + data_defs[0].split("|")[0] + "_" + str(result_id)
     output_filename  = output_column + ".csv"
     
+    def is_set(self, s):
+        return len(s)>0 and s!="0"
+    
     def __init__(self):
-        return
-                
+        self.data_defs = []
+        if self.is_set("{field_source}") and self.is_set("{field_filter}"):
+            self.data_defs = ["{field_source}","{field_filter}"]
+        elif self.is_set("{field_source}"):
+            self.data_defs = ["{field_source}"]
+
+                   
     def run(self, mode):
         print ("enter run mode " + str(mode))
         cols_dicts = {}
