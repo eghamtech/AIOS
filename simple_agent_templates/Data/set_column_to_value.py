@@ -64,7 +64,7 @@ class cls_agent_{id}:
             # load dictionary if it exists
             if self.os.path.isfile(workdir + 'dict_' + file_name):
                 dict_temp = self.pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
-                cols_dicts[col_name]      = dict_temp
+                cols_dicts[col_name]      = {v:k for k,v in dict_temp.items()}
                 self.df["dict_"+col_name] = self.df[col_name].map(dict_temp)
                 
         nrow = len(self.df)
