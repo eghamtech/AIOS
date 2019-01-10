@@ -25,13 +25,13 @@ class cls_agent_{id}:
     
     # data_defs          = ["{field_source}","{field_filter}"]
     filter_values_list = [{filter_values}]
-    new_value          = "{set_value}"
+    new_value          = {set_value}
     
     # obtain a unique ID for the current instance
     result_id = {id}
     # create new field name based on "new_field_prefix" with unique instance ID
     # and filename to save new field data
-    new_field_prefix = {new_field_prefix}
+    new_field_prefix = "{new_field_prefix}"
     output_column    = new_field_prefix + data_defs[0].split("|")[0] + "_" + str(result_id)
     output_filename  = output_column + ".csv"
     
