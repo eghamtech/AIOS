@@ -22,6 +22,7 @@
 #key=include_columns_type;  type=random_from_set;  set=
 #key=include_columns_containing;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
+#key=objective_multiclass;  type=random_from_set;  set='multiclass','multiclassova'
 #key=objective_regression;  type=random_from_set;  set='regression_l1','regression_l2','huber','fair','poisson','quantile','mape','gamma','tweedie'
 #key=boosting_type;  type=random_from_set;  set='gbdt','rf','dart'
 #key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
@@ -97,6 +98,9 @@ class cls_ev_agent_{id}:
     ignore_columns_containing  = "{ignore_columns_containing}"
     # include only fields matching string e.g., only properly scaled columns should be used with MLP
     include_columns_containing = "{include_columns_containing}"
+    
+    objective_multiclass = {objective_multiclass}
+    objective_regression = {objective_regression}
     
     # defines whether to use Lperc/Uperc from train summary or validation summary
     use_thresholds_train = {use_thresholds_train}
@@ -296,25 +300,39 @@ class cls_ev_agent_{id}:
  
         # predict new data set in df applying model for each fold used for training
         pred = self.np.zeros(len(df))
+        if self.dicts_agent['params']['objective'] == self.objective_multiclass:
+            # create a list of lists depending on number of classes used for training 
+            # as each prediction is a list of values against each class
+            pred = [self.np.zeros(self.dicts_agent['params']['num_class']) for i in range(len(df))]
         
         if self.dicts_agent['params']['random_folds'] == False:
             for fold in range(self.start_fold, self.nfolds):
                 pred += self.predictors[fold-self.start_fold].predict(df)
-            # average prediction over all folds    
-            pred = pred / (self.nfolds - self.start_fold)
+            
+            if self.dicts_agent['params']['objective'] == self.objective_multiclass:
+                # select class with largest total value in case of multiclass
+                pred = self.np.argmax(pred, axis=1)
+            else:
+                # average prediction over all folds in case of binary or regression   
+                pred = pred / (self.nfolds - self.start_fold)
         else:
             for fold in range(0, len(self.predictors)):
                 pred += self.predictors[fold].predict(df)
-            # average prediction over all folds    
-            pred = pred / len(self.predictors)
+             
+            if self.dicts_agent['params']['objective'] == self.objective_multiclass:
+                # select class with largest total value in case of multiclass
+                pred = self.np.argmax(pred, axis=1)
+            else:
+                # average prediction over all folds in case of binary or regression    
+                pred = pred / len(self.predictors)
             
         df_add[self.output_column] = pred
 
         
     def run(self, mode):
         # this is main method called by AIOS with supplied DNA Genes to process data
-        from sklearn.metrics import roc_auc_score
-        from sklearn.metrics import confusion_matrix
+        from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
+        from sklearn.metrics import confusion_matrix, f1_score
         from sklearn.metrics import classification_report
         from sklearn.metrics import mean_squared_error
         from sklearn.model_selection import StratifiedShuffleSplit
@@ -378,7 +396,24 @@ class cls_ev_agent_{id}:
         original_row_count = len(df_all)
 
         # analyse target column whether it is binary which may result in different loss function used
-        is_binary = df_all[df_all[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()==[0, 1]
+        target_classes = df_all[df_all[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()
+        is_binary = target_classes==[0, 1]
+        
+        if is_binary:
+            print ("detected binary target: use AUC/LOGLOSS")
+            params['objective'] = 'binary'
+            params['metric']    = ['auc', 'binary_logloss']
+        elif self.is_set(self.objective_multiclass):
+            print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(target_classes)) + " classes")
+            params['objective'] = self.objective_multiclass
+            params['num_class'] = max(target_classes) + 1        # requires all int numbers from 0 to max to be classes
+            params['metric']    = ['multi_logloss','multi_error']
+        else:
+            print ("detected regression target: use RMSE/MAE")
+            params['objective'] = self.objective_regression
+            params['metric']    = ['rmse','mae']
+        
+        self.dicts_agent['params'] = params
             
         train_sets_ix                = []
         valid_sets_ix                = []
@@ -447,7 +482,11 @@ class cls_ev_agent_{id}:
                 df_valid  = df[df.index.isin(valid_sets_ix[valid_fold])]
                 df_valid.reset_index(drop=True, inplace=True)
                 # initialise prediction column for validation as it will be aggregate prediction from multiple folds
-                predicted_valid_set = self.np.zeros(len(df_valid))
+                predicted_valid_set = self.np.zeros(len(df_valid))                
+                # Multi-class case: initialise prediction list of lists depending on number of classes 
+                # as each prediction is a list of values against each class
+                if params['objective'] == self.objective_multiclass:
+                    predicted_valid_set = [self.np.zeros(params['num_class']) for i in range(len(df_valid))]
 
             df            = df[df.index.isin(train_sets_ix[valid_fold])]
             df.reset_index(drop=True, inplace=True)
@@ -456,17 +495,11 @@ class cls_ev_agent_{id}:
             prediction = self.np.zeros(len(df))
             # initialise prediction column for remainder set as it will be aggregate prediction from multiple folds   
             predicted_test_set  = self.np.zeros(len(df_test))
-
-            if is_binary:
-                print ("detected binary target: use LOGLOSS")
-                params['objective'] = 'binary'
-                params['metric']    = ['auc', 'binary_logloss']
-            else:
-                print ("detected regression target: use Logistic Regression")
-                params['objective'] = 'regression'
-                params['metric']    = 'mae'
-
-            self.dicts_agent['params'] = params
+            # Multi-class case: initialise prediction list of lists depending on number of classes 
+            # as each prediction is a list of values against each class
+            if params['objective'] == self.objective_multiclass:
+                prediction         = [self.np.zeros(params['num_class']) for i in range(len(df))]
+                predicted_test_set = [self.np.zeros(params['num_class']) for i in range(len(df_test))]           
 
             #############################################################
             #                   MAIN LOOP
@@ -539,6 +572,19 @@ class cls_ev_agent_{id}:
                             result_cr = classification_report(y_test, (pred>0.5))                      
                             print ("Confusion Matrix:\n", result_cm)
                             print ("Classification Report:\n", result_cr)
+                    elif self.is_set(self.objective_multiclass):
+                        pred_classes = self.np.argmax(pred, axis=1)
+                        result_prec_score = precision_score(y_test, pred_classes, average='weighted')
+                        result_acc_score  = accuracy_score(y_test, pred_classes)
+                        result_cm = confusion_matrix(y_test, pred_classes)
+                        result_cr = classification_report(y_test, pred_classes)
+                        if self.print_tables:
+                            print ("Precision score: ", result_prec_score)
+                            print ("Accuracy score: ", result_acc_score)
+                            print ("Confusion Matrix:\n", result_cm)
+                            print ("Classification Report:\n", result_cr)
+                        result = predictor.best_score['valid_0']['multi_logloss']
+                        result_roc_auc = f1_score(y_test, pred_classes, average='weighted')
                     else:
                         result = sum(abs(y_test-pred))/len(y_test)
                         #result = sqrt(mean_squared_error(y_test, pred))
@@ -553,11 +599,14 @@ class cls_ev_agent_{id}:
                     #pred_all_test = predictor.predict(self.lgb.Dataset(x_test_orig.drop(self.target_col, axis=1)))
                     pred_all_test = predictor.predict(x_test_orig.drop(self.target_col, axis=1))
                     #prediction = self.np.concatenate([prediction,pred_all_test])
-                    prediction[range_start:range_end] = pred_all_test
+                    if params['objective'] == self.objective_multiclass:
+                        prediction[range_start:range_end] = self.np.argmax(pred_all_test, axis=1)
+                    else:
+                        prediction[range_start:range_end] = pred_all_test
 
                     # predict validation and remainder sets examples
                     if self.use_validation_set:
-                        predicted_valid_set += predictor.predict(self.df_valid.drop(self.target_col, axis=1))
+                        predicted_valid_set += predictor.predict(df_valid.drop(self.target_col, axis=1))
                         predicted_test_set  += predictor.predict(df_test.drop(self.target_col, axis=1))
 
                 predicted_valid_set = predicted_valid_set / (self.nfolds - self.start_fold)
