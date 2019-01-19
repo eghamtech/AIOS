@@ -662,6 +662,23 @@ class cls_ev_agent_{id}:
                             result_cr      = classification_report(y_test, (pred>0.5))                           
                             print ("Confusion Matrix:\n", result_cm)
                             print ("Classification Report:\n", result_cr)
+                    elif params['objective'] == self.objective_multiclass:
+                        try:
+                            pred_classes = self.np.argmax(pred, axis=1)
+                            result_prec_score = precision_score(y_test, pred_classes, average='weighted')
+                            result_acc_score  = accuracy_score(y_test, pred_classes)
+                            result_cm = confusion_matrix(y_test, pred_classes)
+                            result_cr = classification_report(y_test, pred_classes)
+                            if self.print_tables:
+                                print ("Precision score: ", result_prec_score)
+                                print ("Accuracy score: ",  result_acc_score)
+                                print ("Confusion Matrix:\n",      result_cm)
+                                print ("Classification Report:\n", result_cr)
+                                
+                            result = predictor.best_score['valid_0']['multi_logloss']
+                            result_roc_auc = f1_score(y_test, pred_classes, average='weighted')
+                        except Exception as e:
+                            print (e)          
                     else:
                         result = sum(abs(y_test-pred))/len(y_test)
                         #result = sqrt(mean_squared_error(y_test, pred))
