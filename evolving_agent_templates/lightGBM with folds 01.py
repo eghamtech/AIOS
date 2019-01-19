@@ -716,6 +716,10 @@ class cls_ev_agent_{id}:
             print ("\nweighted_result:", weighted_result)
             print ("weighted_auc:",      weighted_auc)
 
+            # if multiclass convert list of lists into list of predicted labels
+            if params['objective'] == self.objective_multiclass:             
+                predicted_valid_set = self.np.argmax(predicted_valid_set, axis=1)
+                predicted_test_set  = self.np.argmax(predicted_test_set, axis=1)
 
             if self.use_validation_set:
                 print()
@@ -748,6 +752,23 @@ class cls_ev_agent_{id}:
                     except Exception as e:
                         print (e)
                         return             # no point to carry on with more folds
+                elif params['objective'] == self.objective_multiclass:
+                    try:
+                        result_prec_score = precision_score(y_valid, predicted_valid_set, average='weighted')
+                        result_acc_score  = accuracy_score(y_valid, predicted_valid_set)
+                        result_cm = confusion_matrix(y_valid, predicted_valid_set)
+                        result_cr = classification_report(y_valid, predicted_valid_set)
+                        
+                        if self.print_tables:
+                            print ("Precision score: ", result_prec_score)
+                            print ("Accuracy score: ", result_acc_score)
+                            print ("Confusion Matrix:\n", result_cm)
+                            print ("Classification Report:\n", result_cr)
+                            
+                        result = 1 - result_prec_score
+                        result_roc_auc = f1_score(y_valid, predicted_valid_set, average='weighted')
+                    except Exception as e:
+                        print (e)          
                 else:
                     #result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
                     #print ("MAE: ", result)
@@ -764,7 +785,7 @@ class cls_ev_agent_{id}:
                 
         # combine feature importance results from all folds into one table
         fi_cols = [col for col in self.fi_total.columns if 'Importance' in col] 
-        self.fi_total['Importance_AVG'] = self.np.round(self.fi_total[fi_cols].sum(axis=1)/fold_all, decimals=2)  
+        self.fi_total['Importance_AVG']      = self.np.round(self.fi_total[fi_cols].sum(axis=1)/fold_all, decimals=2)  
         self.fi_total['Importance_AVG_perc'] = self.np.round(100 * self.fi_total['Importance_AVG'] / self.fi_total['Importance_AVG'].sum(axis=0), decimals=2)
 
         print ('\nFEATURE Importance Overall:')
@@ -799,15 +820,20 @@ class cls_ev_agent_{id}:
                 
                 x_test = df_all.drop(self.target_col, axis=1)
                 prediction = self.np.zeros(len(x_test))
+                if params['objective'] == self.objective_multiclass:
+                    prediction = [self.np.zeros(params['num_class']) for i in range(len(x_test))]
                 
                 for fold in range(0, len(predictors)):
                     # predict entire data set
                     prediction += predictors[fold].predict(x_test)
                     predictors[fold].save_model(workdir + self.output_column + "_fold" + str(fold) + ".model")
 
-                df_filter_column[self.output_column] = prediction / len(predictors)
-            
-            
+                # if multiclass convert list of lists into list of predicted labels
+                if params['objective'] == self.objective_multiclass:             
+                    df_filter_column[self.output_column] = self.np.argmax(prediction, axis=1)
+                else:
+                    df_filter_column[self.output_column] = prediction / len(predictors)
+                    
             df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
             
