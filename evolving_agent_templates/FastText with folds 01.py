@@ -155,8 +155,7 @@ class cls_ev_agent_{id}:
 
             for fold in range(from_fold, to_fold):
                 if self.os.path.isfile(workdir + self.output_column + "_fold" + str(fold) + ".model"):
-                    # predictor_stored = ft.FastText(workdir + self.output_column + "_fold" + str(fold) + ".model.bin")
-                    predictor_stored = self.joblib.load(workdir + self.output_column + "_fold" + str(fold) + ".model")
+                    predictor_stored = ft.FastText(workdir + self.output_column + "_fold" + str(fold) + ".model")
                     self.predictors.append(predictor_stored)
                     print (str(datetime.now()), self.output_column + ' fold ' + str(fold) + ' predictor model loaded')    
                       
