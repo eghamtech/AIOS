@@ -732,7 +732,7 @@ class cls_ev_agent_{id}:
                     self.os.remove(workdir + self.output_column + "_fold" + str(fold) + ".model.vec")
                     if mode==1:
                         self.os.rename(workdir + self.output_column + "_fold" + str(fold) + ".model.bin", workdir + self.output_column + "_fold" + str(fold) + ".model")
-                    else
+                    else:
                         self.os.remove(workdir + self.output_column + "_fold" + str(fold) + ".model.bin")
                       
             else:
