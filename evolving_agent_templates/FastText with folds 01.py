@@ -283,19 +283,14 @@ class cls_ev_agent_{id}:
         columns     = [self.target_col]
         # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
         print (str(datetime.now()), " start loading data")
-        cols_count     = 0
         block_progress = 0
         block          = int(self.fields_to_use/20)
 
-        for i in range(0,len(self.data_defs)):
+        for i in range(0,self.fields_to_use):
             col_name  = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
 
             if self.is_use_column(col_name):
-                cols_count+=1
-                if cols_count > self.fields_to_use:
-                    break
-
                 df_col = self.pd.read_csv(workdir+file_name, usecols=[col_name])[[col_name]]       # read column from csv file
                 
                 # if column has associated dictionary csv then it's a text column, replace column with actual text
@@ -315,7 +310,7 @@ class cls_ev_agent_{id}:
                 block_progress += 1
                 if (block_progress >= block):
                     block_progress = 0
-                    print (str(datetime.now()), " data loaded: ", round(cols_count/self.fields_to_use*100,0), "%")
+                    print (str(datetime.now()), " data loaded: ", round((i+1)/self.fields_to_use*100,0), "%")
 
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
@@ -473,7 +468,7 @@ class cls_ev_agent_{id}:
         remainder_set_indexes  = df_filter_column[self.np.logical_not(filter_condition_train)].index.tolist()   # remainder which is not in train
         
         # load specified in data_defs colums of data up-to fields_to_use quantity
-        df_all = self.load_columns(map_dict=self.map_dict, clean_text=params['clean_text'])
+        df_all = self.load_columns(map_dict=self.map_dict)
         original_row_count = len(df_all)
         
         # analyse target column whether it is binary which may result in different loss function used
