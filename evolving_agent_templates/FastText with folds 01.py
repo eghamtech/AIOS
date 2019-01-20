@@ -335,36 +335,36 @@ class cls_ev_agent_{id}:
     def apply(self, df_add):
         # this method is called by AIOS when additional data is supplied and needs to be predicted on
         # df_add shouldn't contain columns with text values - only numeric
+        global dicts
         # by this stage all text fields should have been converted to dictionary values by previous agents that created such fields in AIOS
-        # since this agent works with text fields, actual text values will be loaded from dictionary files
+        # since this agent works with text fields, actual text values will be obtained from the global dicts variable
         columns_new = []
         columns     = []
         # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
-        cols_count = 0
-        for i in range(0,len(self.data_defs)):
+        for i in range(0,self.fields_to_use):
             col_name  = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
             
-            if self.is_use_column(col_name):
-                cols_count+=1
-                if cols_count > self.fields_to_use:
-                    break
-                    
+            if self.is_use_column(col_name):               
                 # assemble dataframe column by column             
                 df_col = df_add[[col_name]]
+                              
+#                 # if column has associated dictionary csv then it's a text column, replace column with actual text
+#                 dict_file_name = workdir+'dict_'+col_name+'.csv'
+#                 if self.os.path.isfile(dict_file_name) and self.map_dict:
+#                     dict1 = self.pd.read_csv(dict_file_name, dtype={'value': object}).set_index('key')["value"].to_dict()  # load dictionary
+#                     df_col[col_name] = df_col[col_name].map(dict1)                                                         # map and replace
                 
-                # if column has associated dictionary csv then it's a text column, replace column with actual text
-                dict_file_name = workdir+'dict_'+col_name+'.csv'
-                if self.os.path.isfile(dict_file_name) and self.map_dict:
-                    dict1 = self.pd.read_csv(dict_file_name, dtype={'value': object}).set_index('key')["value"].to_dict()  # load dictionary
-                    df_col[col_name] = df_col[col_name].map(dict1)                                                         # map and replace
-                                   
+                # if column is in global dictionary then it's a text column, replace column with actual text
+                if col_name in dicts:
+                    reverse_dict1    = {v:k for k,v in dicts[col_name].items()}
+                    df_col[col_name] = df_col[col_name].map(reverse_dict1)                   
                     df_col[col_name] = df_col[col_name].astype(str).apply(self.clean_text)    
                 else:
                     if df_col[col_name].dtype == self.np.float64 and self.use_float32_dtype:                               # downcast to save memory if needed
                         df_col[col_name] = df_col[col_name].astype(self.np.float32)
                         
-                if cols_count==1:
+                if i==0:
                     df = df_col[[col_name]]
                 else:
                     df = df.merge(df_col[[col_name]], left_index=True, right_index=True)
