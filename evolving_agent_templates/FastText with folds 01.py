@@ -899,7 +899,7 @@ class cls_ev_agent_{id}:
                 predicted_valid_set = self.np.argmax(predicted_valid_set, axis=1)
                 predicted_test_set  = self.np.argmax(predicted_test_set, axis=1)
         
-            if use_validation_set:
+            if self.use_validation_set:
                 print()
                 print ("*************  VALIDATION SET RESULTS  *****************")
                 print ("Length of validation set:", len(predicted_valid_set))
