@@ -2,7 +2,7 @@
 #key=data;  type=random_array_of_fields;  length=13
 #key=fields_to_use;  type=random_int;  from=13;  to=13;  step=1
 #key=map_dict;  type=random_from_set;  set=True
-#key=field_ev_prefix;  type=random_from_set;  set=ev_field_fasttext
+#key=field_ev_prefix;  type=random_from_set;  set=ev_field_ft
 #key=field_ev_prefix_use_source_names;  type=random_from_set;  set=True
 #key=nfolds;  type=random_int;  from=3;  to=3;  step=1
 #key=random_folds;  type=random_from_set;  set=True
@@ -26,7 +26,7 @@
 #key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
 #key=objective_multiclass;  type=random_from_set;  set='multiclass'
 #key=objective_regression;  type=random_from_set;  set='regression_l1'
-#key=loss_function;  type=random_from_set;  set='softmax','ns','hs'
+#key=loss_function;  type=random_from_set;  set='softmax','ns'
 #key=learning_rate;  type=random_float;  from=0.001;  to=1;  step=0.001
 #key=sampling_threshold;  type=random_float;  from=0.00005;  to=0.0002;  step=0.00001
 #key=lr_update_rate;  type=random_int;  from=10;  to=300;  step=1
@@ -48,7 +48,7 @@
 #key=num_threads;  type=random_int;  from=1;  to=1;  step=1
 #key=clean_text_v;  type=random_int;  from=0;  to=2;  step=1
 #key=use_float32_dtype; type=random_from_set;  set=True
-#key=min_perf_criteria;  type=random_float;  from=0.6;  to=0.6;  step=0.1
+#key=min_perf_criteria;  type=random_float;  from=0.55;  to=0.55;  step=0.1
 #key=use_thresholds_train; type=random_from_set;  set=True
 #key=print_to_html; type=random_from_set;  set=True
 #key=print_tables; type=random_from_set;  set=False
@@ -799,9 +799,10 @@ class cls_ev_agent_{id}:
 
                     # remove temp files created during learning
                     self.os.remove(workdir + self.output_column + '_train.tmp')
-                    self.os.remove(workdir + self.output_column + "_fold" + str(fold_all) + ".model.bin")
                     self.os.remove(workdir + self.output_column + "_fold" + str(fold_all) + ".model.vec")
-            
+                    if mode==0:
+                        self.os.remove(workdir + self.output_column + "_fold" + str(fold_all) + ".model.bin")
+    
                     if is_binary:
                         k = 2
                     else:
@@ -862,9 +863,13 @@ class cls_ev_agent_{id}:
                 print ('\nFolds Performance Overall:')
                 self.print_html( predictors, max_rows=50, max_cols=5 )
 
+                predictors['result_roc_auc_mean']      = predictors['result_roc_auc'].mean()
+                predictors['result_roc_auc_mean_diff'] = abs(predictors['result_roc_auc'] - predictors['result_roc_auc_mean'])
+                
                 best_predictor_idx  = predictors['result_roc_auc'].idxmax()
                 worst_predictor_idx = predictors['result_roc_auc'].idxmin()
-                avg_predictor_idx   = self.np.argwhere(predictors['result_roc_auc']>=predictors['result_roc_auc'].mean())[0][0]
+                avg_predictor_idx   = predictors['result_roc_auc_mean_diff'].idxmin()
+                
                 predictors = [predictors['predictor'][worst_predictor_idx], predictors['predictor'][avg_predictor_idx], predictors['predictor'][best_predictor_idx]]
 
                 x_test = df.drop(self.target_col, axis=1)
@@ -978,11 +983,26 @@ class cls_ev_agent_{id}:
                     df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column] = predicted_valid_set
             else:
                 # select 3 models from all train/test/valid folds
+                predictors_all['result_roc_auc_mean']      = predictors_all['result_roc_auc'].mean()
+                predictors_all['result_roc_auc_mean_diff'] = abs(predictors_all['result_roc_auc'] - predictors_all['result_roc_auc_mean'])
+                
                 best_predictor_idx  = predictors_all['result_roc_auc'].idxmax()
                 worst_predictor_idx = predictors_all['result_roc_auc'].idxmin()
-                avg_predictor_idx   = self.np.argwhere(predictors_all['result_roc_auc']>=predictors_all['result_roc_auc'].mean())[0][0]
-                predictors = [predictors_all['predictor'][worst_predictor_idx], predictors_all['predictor'][avg_predictor_idx], predictors_all['predictor'][best_predictor_idx]]
+                avg_predictor_idx   = predictors_all['result_roc_auc_mean_diff'].idxmin()
                 
+                predictors = [predictors_all['predictor'][worst_predictor_idx], predictors_all['predictor'][avg_predictor_idx], predictors_all['predictor'][best_predictor_idx]]
+                print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
+                
+                self.os.rename(workdir + self.output_column + "_fold" + str(worst_predictor_idx+1) + ".model.bin", workdir + self.output_column + "_fold" + str(0) + ".model")
+                self.os.rename(workdir + self.output_column + "_fold" + str(  avg_predictor_idx+1) + ".model.bin", workdir + self.output_column + "_fold" + str(1) + ".model")
+                self.os.rename(workdir + self.output_column + "_fold" + str( best_predictor_idx+1) + ".model.bin", workdir + self.output_column + "_fold" + str(2) + ".model")
+                
+                for i in range(1,fold_all+1):
+                    try:
+                        self.os.remove(workdir + self.output_column + "_fold" + str(i) + ".model.bin")
+                    except OSError:
+                        pass
+                    
                 x_test = df_all.drop(self.target_col, axis=1)
                 prediction = self.np.zeros(len(x_test))
                 if params['objective'] == self.objective_multiclass:
@@ -991,7 +1011,6 @@ class cls_ev_agent_{id}:
                 for fold in range(0, len(predictors)):
                     # predict entire data set
                     prediction += self.ft_predict_proba( predictors[fold], x_test, k=k, params=params )
-                    self.joblib.dump(predictors[fold], workdir + self.output_column + "_fold" + str(fold) + ".model")
 
                 # if multiclass convert list of lists into list of predicted labels
                 if params['objective'] == self.objective_multiclass:             
