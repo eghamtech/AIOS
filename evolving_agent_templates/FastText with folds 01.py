@@ -46,7 +46,7 @@
 #key=qout; type=random_from_set;  set=False
 #key=start_fold;  type=random_from_set;  set=0
 #key=num_threads;  type=random_int;  from=1;  to=1;  step=1
-#key=clean_text;  type=random_int;  from=0;  to=1;  step=1
+#key=clean_text_v;  type=random_int;  from=0;  to=2;  step=1
 #key=use_float32_dtype; type=random_from_set;  set=True
 #key=min_perf_criteria;  type=random_float;  from=0.6;  to=0.6;  step=0.1
 #key=use_thresholds_train; type=random_from_set;  set=True
@@ -90,6 +90,7 @@ class cls_ev_agent_{id}:
     start_fold    = {start_fold}
     nfolds        = {nfolds}
     map_dict      = {map_dict}
+    clean_text_v  = {clean_text_v}
     field_ev_prefix_use_source_names = {field_ev_prefix_use_source_names}
     
     dicts_agent   = {}         # various dictionary to be saved as part of model
@@ -206,23 +207,49 @@ class cls_ev_agent_{id}:
     def list_mean(self, lst, precision=4):
         return self.np.round(sum(lst)/float(len(lst)), decimals=precision)
     
-    def clean_text_v1(self, string):
+    def clean_text_v1(self, s):
         import re
-        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)     
-        string = re.sub(r"\'s", " 's", string) 
-        string = re.sub(r"\'ve", " \'ve", string) 
-        string = re.sub(r"n\'t", " n\'t", string) 
-        string = re.sub(r"\'re", " \'re", string) 
-        string = re.sub(r"\'d", " \'d", string) 
-        string = re.sub(r"\'ll", " \'ll", string) 
-        string = re.sub(r",", " , ", string) 
-        string = re.sub(r"!", " ! ", string) 
-        string = re.sub(r"\(", " ( ", string) 
-        string = re.sub(r"\)", " ) ", string) 
-        string = re.sub(r"\?", " ? ", string) 
-        string = re.sub(r"\s{2,}", " ", string)       
-        return  string.strip().lower()
-       
+        s = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", s)     
+        s = re.sub(r"\'s", " 's", s) 
+        s = re.sub(r"\'ve", " \'ve", s) 
+        s = re.sub(r"n\'t", " n\'t", s) 
+        s = re.sub(r"\'re", " \'re", s) 
+        s = re.sub(r"\'d", " \'d", s) 
+        s = re.sub(r"\'ll", " \'ll", s) 
+        s = re.sub(r",", " , ", s) 
+        s = re.sub(r"!", " ! ", s) 
+        s = re.sub(r"\(", " ( ", s) 
+        s = re.sub(r"\)", " ) ", s) 
+        s = re.sub(r"\?", " ? ", s) 
+        s = re.sub(r"\s{2,}", " ", s)       
+        s = s.strip().lower()
+        return  s
+    
+    def clean_text_v2(self, s):
+        # Replace numbers and symbols with language
+        s = s.replace('&', ' and ')
+        s = s.replace('@', ' at ')
+        s = s.replace('0', ' zero ')
+        s = s.replace('1', ' one ')
+        s = s.replace('2', ' two ')
+        s = s.replace('3', ' three ')
+        s = s.replace('4', ' four ')
+        s = s.replace('5', ' five ')
+        s = s.replace('6', ' six ')
+        s = s.replace('7', ' seven ')
+        s = s.replace('8', ' eight ')
+        s = s.replace('9', ' nine ')
+        return  s
+    
+    def clean_text(self, s):
+        if self.clean_text_v == 1:
+            s = self.clean_text_v1(s)
+        elif self.clean_text_v == 2:
+            s = self.clean_text_v1(s)
+            s = self.clean_text_v2(s)
+        
+        return  s
+          
     def ft_predict_proba(self, ft_predictor, xt, k, params):
         try:
             xt = xt.to_string(header=False, index=False, index_names=False).split('\n')
@@ -247,7 +274,7 @@ class cls_ev_agent_{id}:
         
         return pred
                     
-    def load_columns(self, map_dict=True, clean_text=1):
+    def load_columns(self, map_dict=True):
         from datetime import datetime
         # start from loading the target field
         df_all = self.pd.read_csv(workdir+self.target_file, usecols=[self.target_col])[[self.target_col]]
@@ -276,9 +303,9 @@ class cls_ev_agent_{id}:
                 if self.os.path.isfile(dict_file_name) and map_dict:
                     dict1 = self.pd.read_csv(dict_file_name, dtype={'value': object}).set_index('key')["value"].to_dict()  # load dictionary
                     df_col[col_name] = df_col[col_name].map(dict1)                                                         # map and replace
-                                                   
-                    if clean_text == 1:
-                        df_col[col_name] = df_col[col_name].astype(str).apply(self.clean_text_v1)
+                    self.dicts_agent[col_name] = dict1                                                                     # save in dictionary of dictionaries to be saved with model files
+                    
+                    df_col[col_name] = df_col[col_name].astype(str).apply(self.clean_text)
                 else:
                     if df_col[col_name].dtype == self.np.float64 and self.use_float32_dtype:           # downcast to save memory if needed
                         df_col[col_name] = df_col[col_name].astype(self.np.float32)
@@ -332,10 +359,9 @@ class cls_ev_agent_{id}:
                     dict1 = self.pd.read_csv(dict_file_name, dtype={'value': object}).set_index('key')["value"].to_dict()  # load dictionary
                     df_col[col_name] = df_col[col_name].map(dict1)                                                         # map and replace
                                    
-                    if self.dicts_agent['params']['clean_text'] == 1:
-                        df_col[col_name] = df_col[col_name].astype(str).apply(self.clean_text_v1)    
+                    df_col[col_name] = df_col[col_name].astype(str).apply(self.clean_text)    
                 else:
-                    if df_col[col_name].dtype == self.np.float64 and self.use_float32_dtype:                                    # downcast to save memory if needed
+                    if df_col[col_name].dtype == self.np.float64 and self.use_float32_dtype:                               # downcast to save memory if needed
                         df_col[col_name] = df_col[col_name].astype(self.np.float32)
                         
                 if cols_count==1:
@@ -412,7 +438,7 @@ class cls_ev_agent_{id}:
         params['verbose']                = 2
         params['num_threads']            = {num_threads}
         params['sampling_threshold']     = {sampling_threshold}
-        params['clean_text']             = {clean_text}
+        params['clean_text_v']           = {clean_text_v}
         
         params['random_valid']           = {random_valid}
         params['random_valid_size']      = {random_valid_size}
