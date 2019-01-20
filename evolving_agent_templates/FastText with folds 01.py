@@ -728,12 +728,13 @@ class cls_ev_agent_{id}:
                         predicted_test_set += pred
                         print (str(datetime.now())," remainder set predicted")
 
-                    if mode==0:
-                        self.os.remove(workdir + self.output_column + "_fold" + str(fold) + ".model.bin")
-                        self.os.remove(workdir + self.output_column + "_fold" + str(fold) + ".model.vec")
-
                     self.os.remove(workdir + self.output_column + '_train.tmp')
-                    # self.os.remove(workdir + self.output_column + '_test.tmp')
+                    self.os.remove(workdir + self.output_column + "_fold" + str(fold) + ".model.vec")
+                    if mode==1:
+                        self.os.rename(workdir + self.output_column + "_fold" + str(fold) + ".model.bin", workdir + self.output_column + "_fold" + str(fold) + ".model")
+                    else
+                        self.os.remove(workdir + self.output_column + "_fold" + str(fold) + ".model.bin")
+                      
             else:
                 # select folds using random shuffle and stratify
                 sss = StratifiedShuffleSplit(n_splits=self.nfolds, test_size=params['random_folds_size'])
