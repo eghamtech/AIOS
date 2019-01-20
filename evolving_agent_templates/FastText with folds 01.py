@@ -1,6 +1,7 @@
 #start_of_genes_definitions
 #key=data;  type=random_array_of_fields;  length=13
 #key=fields_to_use;  type=random_int;  from=13;  to=13;  step=1
+#key=map_dict;  type=random_from_set;  set=True
 #key=field_ev_prefix;  type=random_from_set;  set=ev_field_fasttext
 #key=field_ev_prefix_use_source_names;  type=random_from_set;  set=True
 #key=nfolds;  type=random_int;  from=3;  to=3;  step=1
@@ -59,8 +60,8 @@
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 
 # this agent concatenates given columns into sentences by rows and applies FastText to learn the target
-# if column is a text one it loads corresponding text from its dictionary
-# if column is just numeric then the number is converted into text
+# if column is a text one and map_dict==True it loads corresponding text from its dictionary
+# if column is just numeric or map_dict==False then the number is converted into text
 
 class cls_ev_agent_{id}:
     import warnings
@@ -88,6 +89,7 @@ class cls_ev_agent_{id}:
     fields_to_use = {fields_to_use}
     start_fold    = {start_fold}
     nfolds        = {nfolds}
+    map_dict      = {map_dict}
     field_ev_prefix_use_source_names = {field_ev_prefix_use_source_names}
     
     dicts_agent   = {}         # various dictionary to be saved as part of model
@@ -307,11 +309,11 @@ class cls_ev_agent_{id}:
         # by this stage all text fields should have been converted to dictionary values by previous agents that created such fields in AIOS
         # since this agent works with text fields, actual text values will be loaded from dictionary files
         columns_new = []
-        columns = []
+        columns     = []
         # assemble a list of column names given to the agent by AIOS in (data) DNA gene up-to (fields_to_use) gene
         cols_count = 0
         for i in range(0,len(self.data_defs)):
-            col_name = self.data_defs[i].split("|")[0]
+            col_name  = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
             
             if self.is_use_column(col_name):
@@ -324,11 +326,11 @@ class cls_ev_agent_{id}:
                 
                 # if column has associated dictionary csv then it's a text column, replace column with actual text
                 dict_file_name = workdir+'dict_'+col_name+'.csv'
-                if self.os.path.isfile(dict_file_name):
+                if self.os.path.isfile(dict_file_name) and self.map_dict:
                     dict1 = self.pd.read_csv(dict_file_name, dtype={'value': object}).set_index('key')["value"].to_dict()  # load dictionary
                     df_col[col_name] = df_col[col_name].map(dict1)                                                         # map and replace
                                    
-                    if self.lgbm_params['clean_text'] == 1:
+                    if self.dicts_agent['params']['clean_text'] == 1:
                         df_col[col_name] = df_col[col_name].astype(str).apply(self.clean_text_v1)    
                 else:
                     if df_col[col_name].dtype == self.np.float64 and self.use_float32_dtype:                                    # downcast to save memory if needed
@@ -353,30 +355,21 @@ class cls_ev_agent_{id}:
         
         # predict new data set in df applying model for each fold used for training
         pred = self.np.zeros(len(df))
-        if self.lgbm_params['objective'] == self.objective_multiclass:
+        if self.dicts_agent['params']['objective'] == self.objective_multiclass:
             # create a list of lists depending on number of classes used for training 
             # as each prediction is a list of values against each class
-            pred = [self.np.zeros(self.lgbm_params['num_class']) for i in range(len(df))]
+            pred = [self.np.zeros(self.dicts_agent['params']['num_class']) for i in range(len(df))]
          
-        # convert data set to list of strings as required by FT
-        df = df.to_string(header=False, index=False, index_names=False).split('\n')
         # apply model from each fold created during training and sum their predictions
-        for fold in range(self.start_fold, self.nfolds):
-            pred_f = self.predictors[fold-self.start_fold].predict_proba(df, k=self.lgbm_params['num_class'])
-            pred_f = [dict(r) for r in pred_f]                                        # convert to list of dictionaries for each predicted item as predictor produces list of lists of tuples
-            if params['objective'] == self.objective_multiclass:
-                pred_f = [list(r.values()) for r in pred_f]                           # convert to list of lists with all labels probabilities
-            else:
-                pred_f = [r.get('1', 0) for r in pred_f]                              # get probability for label '1' from each prediction item
-            
-            pred += pred_f                                                            # add to overall sum of all predictors output
-        
-        if self.lgbm_params['objective'] == self.objective_multiclass:
+        for fold in range(0, len(self.predictors)):
+            pred += self.ft_predict_proba( self.predictors[fold], df, k=self.dicts_agent['params']['num_class'], params=self.dicts_agent['params'] )
+                    
+        if self.dicts_agent['params']['objective'] == self.objective_multiclass:
             # select class with largest total value in case of multiclass
             pred = self.np.argmax(pred, axis=1)
         else:
             # average prediction over all folds in case of binary or regression   
-            pred = pred / (self.nfolds - self.start_fold)
+            pred = pred / len(self.predictors)
         
         df_add[self.output_column] = pred
         
@@ -452,7 +445,7 @@ class cls_ev_agent_{id}:
         remainder_set_indexes  = df_filter_column[self.np.logical_not(filter_condition_train)].index.tolist()   # remainder which is not in train
         
         # load specified in data_defs colums of data up-to fields_to_use quantity
-        df_all = self.load_columns(map_dict=True, clean_text=params['clean_text'])
+        df_all = self.load_columns(map_dict=self.map_dict, clean_text=params['clean_text'])
         original_row_count = len(df_all)
         
         # analyse target column whether it is binary which may result in different loss function used
