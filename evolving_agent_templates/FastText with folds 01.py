@@ -129,7 +129,7 @@ class cls_ev_agent_{id}:
         self.field_ev_prefix = "{field_ev_prefix}"        
         if self.field_ev_prefix_use_source_names:                   
             # concatenate all source column names into new field prefix
-            col_max_length = int(230 / self.fields_to_use)             # allow 230 characters max combined col name length
+            col_max_length = int(200 / self.fields_to_use)             # allow 200 characters max combined col name length
             for i in range(0,self.fields_to_use):
                 col_name = self.data_defs[i].split("|")[0]
                 col_name = col_name[:col_max_length]                   # only take first col_max_length chars from each column
