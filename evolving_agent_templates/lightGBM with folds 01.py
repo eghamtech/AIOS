@@ -701,11 +701,16 @@ class cls_ev_agent_{id}:
                 print ('\nFolds Performance Overall:')
                 self.print_html( predictors, max_rows=50, max_cols=5 )
 
+                predictors['result_roc_auc_mean']      = predictors['result_roc_auc'].mean()
+                predictors['result_roc_auc_mean_diff'] = abs(predictors['result_roc_auc'] - predictors['result_roc_auc_mean'])
+                
                 best_predictor_idx  = predictors['result_roc_auc'].idxmax()
                 worst_predictor_idx = predictors['result_roc_auc'].idxmin()
-                avg_predictor_idx   = self.np.argwhere(predictors['result_roc_auc']>=predictors['result_roc_auc'].mean())[0][0]
+                avg_predictor_idx   = predictors['result_roc_auc_mean_diff'].idxmin()
+                
                 predictors = [predictors['predictor'][worst_predictor_idx], predictors['predictor'][avg_predictor_idx], predictors['predictor'][best_predictor_idx]]
-
+                print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
+                
                 x_test = df.drop(self.target_col, axis=1)
 
                 for fold in range(0, len(predictors)):
@@ -830,10 +835,15 @@ class cls_ev_agent_{id}:
                     df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column] = predicted_valid_set
             else:
                 # select 3 models from all train/test/valid folds
+                predictors_all['result_roc_auc_mean']      = predictors_all['result_roc_auc'].mean()
+                predictors_all['result_roc_auc_mean_diff'] = abs(predictors_all['result_roc_auc'] - predictors_all['result_roc_auc_mean'])
+                
                 best_predictor_idx  = predictors_all['result_roc_auc'].idxmax()
                 worst_predictor_idx = predictors_all['result_roc_auc'].idxmin()
-                avg_predictor_idx   = self.np.argwhere(predictors_all['result_roc_auc']>=predictors_all['result_roc_auc'].mean())[0][0]
+                avg_predictor_idx   = predictors_all['result_roc_auc_mean_diff'].idxmin()
+                
                 predictors = [predictors_all['predictor'][worst_predictor_idx], predictors_all['predictor'][avg_predictor_idx], predictors_all['predictor'][best_predictor_idx]]
+                print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
                 
                 x_test = df_all.drop(self.target_col, axis=1)
                 prediction = self.np.zeros(len(x_test))
