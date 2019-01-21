@@ -871,7 +871,8 @@ class cls_ev_agent_{id}:
                 avg_predictor_idx   = predictors['result_roc_auc_mean_diff'].idxmin()
                 
                 predictors = [predictors['predictor'][worst_predictor_idx], predictors['predictor'][avg_predictor_idx], predictors['predictor'][best_predictor_idx]]
-
+                print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
+                
                 x_test = df.drop(self.target_col, axis=1)
                     
                 for fold in range(0, len(predictors)):
