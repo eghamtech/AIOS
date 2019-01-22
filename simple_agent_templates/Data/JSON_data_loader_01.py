@@ -20,11 +20,11 @@ class cls_agent_{id}:
     source_filename = "{source_filename_json}"
     # newfilename = trainfile
     # obtain a unique ID for the current instance
-    result_id = {id}
+    result_id  = {id}
     agent_name = 'agent_' + str(result_id)
-    colmap = {}
-    char_cols = []
-    date_cols = []
+    colmap      = {}
+    char_cols   = []
+    date_cols   = []
     lookup_cols = []
 
     def make_dict(self, col):
@@ -51,9 +51,9 @@ class cls_agent_{id}:
             dicts = self.pickle.load(rfile)
             rfile.close()
             
-            self.colmap = dicts[self.agent_name + '.colmap']
-            self.char_cols = dicts[self.agent_name + '.char_cols']
-            self.date_cols = dicts[self.agent_name + '.date_cols']
+            self.colmap      = dicts[self.agent_name + '.colmap']
+            self.char_cols   = dicts[self.agent_name + '.char_cols']
+            self.date_cols   = dicts[self.agent_name + '.date_cols']
             self.lookup_cols = dicts[self.agent_name + '.lookup_cols']
   
          
@@ -72,12 +72,25 @@ class cls_agent_{id}:
         print (str(datetime.now()), " creating dataframe...")       
         self.df = self.pd.DataFrame().from_dict(json_data["training_data"])
         
+        # identify columns based on their source of origin
+        colmap_origin = {}
+        for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
+            item   = json_data["model_definition"]["layout"]["columns"][i]
+            cname  = item["heading"]
+            origin = item["origin"]
+            colmap_origin[cname] = origin
+            
         # rename all columns by removing non alfa-numeric symbols
         cols = self.df.columns
-        new_cols = []
+        new_cols    = []
         self.colmap = {}
         for i in range(0, len(cols)):
             str1 = cols[i]
+            # prefix field depending on its source
+            # if colmap_origin[str1] == 'LL':
+            #    str1 = 'orgnLL_' + str1
+            str1 = 'orgn' + colmap_origin[str1] + '_' + str1
+                
             #for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
             #    str1 = str1.replace(ch, "_")
             str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
@@ -89,16 +102,16 @@ class cls_agent_{id}:
         print (str(datetime.now()), " processing DATETIME columns...")
         self.date_cols = []
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
-            item = json_data["model_definition"]["layout"]["columns"][i]               # get column definition item
+            item  = json_data["model_definition"]["layout"]["columns"][i]              # get column definition item
             cname = self.colmap[item["heading"]]                                       # obtain new name for the given column
             
             if item["data_type"]=='DATETIME':      
                 if cname not in self.date_cols:
                     self.date_cols.append(cname)
                     print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
-                    self.df[cname+'_Y'] = self.df[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
-                    self.df[cname+'_M'] = self.df[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
-                    self.df[cname+'_D'] = self.df[cname].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
+                    self.df[cname+'_Y']  = self.df[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
+                    self.df[cname+'_M']  = self.df[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
+                    self.df[cname+'_D']  = self.df[cname].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
                     self.df[cname+'_WD'] = self.df[cname].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
                     self.df[cname+'_TS'] = self.df[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
                     self.df = self.df.drop(cname, 1)
@@ -106,7 +119,7 @@ class cls_agent_{id}:
         print (str(datetime.now()), " processing FREETEXT/LARGETEXT columns")
         self.char_cols = []
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
-            item = json_data["model_definition"]["layout"]["columns"][i]               # get column definition item
+            item  = json_data["model_definition"]["layout"]["columns"][i]              # get column definition item
             cname = self.colmap[item["heading"]]                                       # obtain new name for the given column
             
             if item["data_type"]=='FREETEXT' or item["data_type"]=='LARGETEXT':
@@ -124,7 +137,7 @@ class cls_agent_{id}:
         print (str(datetime.now()), " processing LOOKUP columns")
         self.lookup_cols = []
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
-            item = json_data["model_definition"]["layout"]["columns"][i]               # get column definition item
+            item  = json_data["model_definition"]["layout"]["columns"][i]              # get column definition item
             cname = self.colmap[item["heading"]]                                       # obtain new name for the given column
             
             if item["data_type"]=='LOOKUP':
@@ -133,7 +146,7 @@ class cls_agent_{id}:
                     self.lookup_cols.append(cname)
                     
                     dict_lookup = {}
-                    lookup_id = str(item["meta"]["lookup_id"])
+                    lookup_id   = str(item["meta"]["lookup_id"])
                     lookup_type = item["meta"]["lookup_type"]
                     for key in json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"].keys():
                         dict_lookup[key] = json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"][key]["value"]
@@ -143,7 +156,7 @@ class cls_agent_{id}:
         # print ("lookup columns:", self.lookup_cols)
          
         print (str(datetime.now()), " processing DATA/OUTCOME columns")
-        self.target_cols = []
+        self.target_cols    = []
         self.use_for_models = []
         for i in range(0, len(json_data["model_definition"]["layout"]["columns"])):
             item = json_data["model_definition"]["layout"]["columns"][i]
@@ -168,9 +181,9 @@ class cls_agent_{id}:
         self.df.fillna(value=nan, inplace=True)
         
         print (str(datetime.now()), " saving dicts...")           
-        dicts[self.agent_name + '.colmap'] = self.colmap
-        dicts[self.agent_name + '.char_cols'] = self.char_cols
-        dicts[self.agent_name + '.date_cols'] = self.date_cols
+        dicts[self.agent_name + '.colmap']      = self.colmap
+        dicts[self.agent_name + '.char_cols']   = self.char_cols
+        dicts[self.agent_name + '.date_cols']   = self.date_cols
         dicts[self.agent_name + '.lookup_cols'] = self.lookup_cols
        
         sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
@@ -198,7 +211,7 @@ class cls_agent_{id}:
                 is_use_for_models="N"
             
             # save each column into separate file
-            output_column = cname
+            output_column   = cname
             output_filename = output_column + ".csv"
             self.df[[output_column]].to_csv(workdir+output_filename)
             
@@ -227,9 +240,9 @@ class cls_agent_{id}:
         self.printlog ("JSON Loader: columns renamed")
         
         for cname in self.date_cols:
-            df_add[cname+'_Y'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
-            df_add[cname+'_M'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
-            df_add[cname+'_D'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
+            df_add[cname+'_Y']  = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).year if x!=None and self.pd.notnull(x) else 0)
+            df_add[cname+'_M']  = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).month if x!=None and self.pd.notnull(x) else 0)
+            df_add[cname+'_D']  = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).day if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_WD'] = df_add[cname].apply(lambda x: self.dateutil.parser.parse(x).weekday() if x!=None and self.pd.notnull(x) else 0)
             df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
             df_add.drop(cname, axis=1, inplace=True)
@@ -238,7 +251,7 @@ class cls_agent_{id}:
         for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
             for cname in df_add.columns:                                          # iterate over each column in df_add row
                 if (cname in self.char_cols):
-                    cname_dict = dicts[cname]         
+                    cname_dict  = dicts[cname]         
                     cname_value = str(row[cname]) if row[cname] != None else ''
                     self.printlog ("JSON Loader: text column " + cname + "; value: " + cname_value)
                     
@@ -246,7 +259,7 @@ class cls_agent_{id}:
                         self.printlog ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
                         new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
                         dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
-                        df_add.at[index, cname] = new_key
+                        df_add.at[index, cname]   = new_key
                         
                         # since global dictionary is modified it needs to be saved to avoid issues with future predictions
                         # of columns with text not in dictionary
