@@ -26,12 +26,15 @@
 #key=objective_regression;  type=random_from_set;  set='regression_l1','regression_l2','huber','fair','poisson','quantile','mape','gamma','tweedie'
 #key=boosting_type;  type=random_from_set;  set='gbdt','rf','dart'
 #key=learning_rate;  type=random_float;  from=0.001;  to=0.06;  step=0.001
-#key=sub_feature;  type=random_float;  from=0.2;  to=1;  step=0.01
+#key=sub_feature;  type=random_float;  from=0.1;  to=1;  step=0.01
 #key=bagging_fraction;  type=random_float;  from=0.2;  to=1;  step=0.01
 #key=bagging_freq;  type=random_int;  from=10;  to=100;  step=1
 #key=num_leaves;  type=random_int;  from=16;  to=4096;  step=1
 #key=tree_learner;  type=random_from_set;  set='serial','feature','data','voting'
-#key=min_data;  type=random_int;  from=1;  to=2000;  step=5
+#key=min_data;  type=random_int;  from=1;  to=200;  step=5
+#key=max_bin;  type=random_int;  from=2;  to=512;  step=1
+#key=min_data_in_bin;  type=random_int;  from=3;  to=10;  step=1
+#key=min_gain_to_split;  type=random_float;  from=0.0;  to=1;  step=0.02
 #key=feature_fraction_seed;  type=random_int;  from=1;  to=10;  step=1
 #key=bagging_seed;  type=random_int;  from=1;  to=10;  step=1
 #key=boost_from_average;  type=random_from_set;  set=True,False
@@ -350,6 +353,9 @@ class cls_ev_agent_{id}:
         params['num_leaves']    = {num_leaves}          # num_leaf
         params['tree_learner']  = {tree_learner}
         params['min_data']      = {min_data}            # min_data_in_leaf
+        params['max_bin']       = {max_bin}
+        params['min_data_in_bin']       = {min_data_in_bin} 
+        params['min_gain_to_split']     = {min_gain_to_split}
         params['verbose'] = 1
         params['feature_fraction_seed'] = {feature_fraction_seed}
         params['bagging_seed']  = {bagging_seed}
