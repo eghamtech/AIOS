@@ -9,6 +9,7 @@
 #key=random_valid;  type=random_from_set;  set=True
 #key=random_valid_size;  type=random_float;  from=0.3;  to=0.3;  step=0.1
 #key=random_valid_folds;  type=random_int;  from=10;  to=10;  step=1
+#key=random_seed_init;  type=random_int;  from=1;  to=10000000;  step=1
 #key=filter_column;  type=random_from_set;  set=field|field.csv
 #key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
 #key=train_set_to;  type=random_from_set;  set=self.timestamp('2014-11-01')
@@ -116,6 +117,8 @@ class cls_ev_agent_{id}:
     
     def __init__(self):
         from datetime import datetime
+        self.np.random.seed({random_seed_init})        # set same seed for every run of this agent's instance
+        
         # remove the target field for this instance from the data used for training
         if self.target_definition in self.data_defs:
             self.data_defs.remove(self.target_definition)
@@ -341,6 +344,7 @@ class cls_ev_agent_{id}:
         from sklearn.model_selection import StratifiedShuffleSplit
         from math import sqrt
         from datetime import datetime
+        import shap
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
         
         # prepare LGBM parameters    
@@ -728,7 +732,13 @@ class cls_ev_agent_{id}:
 
                     # predict validation set
                     if self.use_validation_set:
-                        predicted_valid_set += predictors[fold].predict(df_valid.drop(self.target_col, axis=1))
+                        df_valid_x = df_valid.drop(self.target_col, axis=1)
+                        predicted_valid_set += predictors[fold].predict(df_valid_x)
+
+                        if fold == 0:
+                            valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x)
+                        else:
+                            valid_set_shap_values += shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x)
 
                 prediction = prediction / len(predictors)
                 predicted_test_set  = predicted_test_set  / len(predictors)
@@ -819,9 +829,15 @@ class cls_ev_agent_{id}:
         print ('\nFEATURE Importance Overall:')
         self.print_html( self.fi_total[['Feature','Importance_AVG','Importance_AVG_perc']].sort_values(by=['Importance_AVG'], ascending=False), max_rows=200, max_cols=4 )
            
+        #print ('\nFEATURE Importance SHAP last validation:')
+        #shap.initjs()
+        #shap.summary_plot(valid_set_shap_values, df_valid_x)
+        
         # save performance summaries across all validation folds
         self.dicts_agent['fi_total']                               = self.fi_total
-                        
+        self.dicts_agent['fi_valid_shap']                          = valid_set_shap_values
+        self.dicts_agent['fi_valid_x']                             = df_valid_x
+        
         #############################################################
         #                   OUTPUT
         #############################################################
