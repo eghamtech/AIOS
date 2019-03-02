@@ -401,6 +401,10 @@ class cls_ev_agent_{id}:
         train_filtered_indexes = df_filter_column[filter_condition_train].index.tolist()
         remainder_set_indexes  = df_filter_column[self.np.logical_not(filter_condition_train)].index.tolist()   # remainder which is not in train
         
+        # initialise prediction column for entire data set as it will be aggregate prediction from multiple folds
+        df_filter_column[self.output_column+'_folds_pred']       = 0
+        df_filter_column[self.output_column+'_folds_pred_count'] = 0   # number of predictions for each record as different folds will predict different records, so each record may have unique number of predictions
+  
         # load specified in data_defs colums of data up-to fields_to_use quantity
         df_all = self.load_columns()
         original_row_count = len(df_all)
@@ -418,6 +422,7 @@ class cls_ev_agent_{id}:
             params['objective'] = self.objective_multiclass
             params['num_class'] = max(target_classes) + 1        # requires all int numbers from 0 to max to be classes
             params['metric']    = ['multi_logloss','multi_error']
+            df_filter_column[self.output_column+'_folds_pred'] = [self.np.zeros(params['num_class']) for i in range(len(df_filter_column))]
         else:
             print ("detected regression target: use RMSE/MAE")
             params['objective'] = self.objective_regression
@@ -425,8 +430,10 @@ class cls_ev_agent_{id}:
         
         self.dicts_agent['params'] = params
             
-        train_sets_ix                = []
+        train_sets_ix                = []      # indexes of each whole set used for training
         valid_sets_ix                = []
+        train_sub_sets_ix            = []      # indexes of each subset of whole set used for training
+        test_sub_sets_ix             = []      # indexes of each subset of whole set used for out-of-sample testing during training
         predictors_all               = []
         weighted_result_folds        = []
         weighted_auc_folds           = []
@@ -462,8 +469,8 @@ class cls_ev_agent_{id}:
                 else:
                     # apply stratified random selection to previously filtered train set
                     sss = StratifiedShuffleSplit(n_splits=1, test_size=params['random_valid_size'])
-                    y  = df_filter_column[df_filter_column.index.isin(train_filtered_indexes)][[self.target_col]]
-                    iy = y.reset_index(level=0)                                                     # create copy, save existing index in 'index' column and reset index 
+                    y   = df_filter_column[df_filter_column.index.isin(train_filtered_indexes)][[self.target_col]]
+                    iy  = y.reset_index(level=0)                                                    # create copy, save existing index in 'index' column and reset index 
                     y.reset_index(drop=True, inplace=True)                                          # reset index because StratifiedShuffleSplit will reset index anyway
 
                     for train_ix, valid_ix in sss.split(self.np.zeros(len(y)), y):
@@ -486,11 +493,11 @@ class cls_ev_agent_{id}:
             df = df_all.copy()
             # use previously calculated indexes to select train, validation and remainder sets
             df_test       = df[df.index.isin(remainder_set_indexes)]
-            df_test.reset_index(drop=True, inplace=True)
+            #df_test.reset_index(drop=True, inplace=True)
 
             if self.use_validation_set:        
                 df_valid  = df[df.index.isin(valid_sets_ix[valid_fold])]
-                df_valid.reset_index(drop=True, inplace=True)
+                #df_valid.reset_index(drop=True, inplace=True)
                 # initialise prediction column for validation as it will be aggregate prediction from multiple folds
                 predicted_valid_set = self.np.zeros(len(df_valid))                
                 # Multi-class case: initialise prediction list of lists depending on number of classes 
@@ -499,7 +506,7 @@ class cls_ev_agent_{id}:
                     predicted_valid_set = [self.np.zeros(params['num_class']) for i in range(len(df_valid))]
 
             df            = df[df.index.isin(train_sets_ix[valid_fold])]
-            df.reset_index(drop=True, inplace=True)
+            #df.reset_index(drop=True, inplace=True)
 
             # initialise prediction column for main train set as it will be aggregate prediction from multiple folds
             prediction = self.np.zeros(len(df))
@@ -624,17 +631,25 @@ class cls_ev_agent_{id}:
             else:
                 # select folds using random shuffle and stratify
                 sss = StratifiedShuffleSplit(n_splits=self.nfolds, test_size=params['random_folds_size'])
-                y = df[[self.target_col]]
-              
+                y   = df[[self.target_col]]
+                iy  = y.reset_index(level=0)                                                    # create copy, save existing index in 'index' column and reset index 
+                y.reset_index(drop=True, inplace=True)                                          # reset index because StratifiedShuffleSplit will reset index anyway
+    
                 predictors = []
                 for train_ix, test_ix in sss.split(self.np.zeros(len(y)), y):
                     fold_all += 1
                     print ()
                     print (str(datetime.now())," Train/Test FOLD: ", fold_all)
 
-                    x_test  = df[df.index.isin(test_ix)]
-                    x_test.reset_index(drop=True, inplace=True)
-                    x_train = df[df.index.isin(train_ix)]
+                    train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()       # obtain original indexes from saved copy of labels with original indexes
+                    test_ix_orig  = iy[iy.index.isin(test_ix)]['index'].tolist()        # can't use train_ix, test_ix directly because they refer to new index reset during shuffling
+                    
+                    train_sub_sets_ix.append(train_ix_orig)                             # save indexes in the overall list for all folds
+                    test_sub_sets_ix.append(test_ix_orig)                      
+
+                    x_test  = df[df.index.isin(test_ix_orig)]
+                    #x_test.reset_index(drop=True, inplace=True)
+                    x_train = df[df.index.isin(train_ix_orig)]
 
                     print ("x_test  rows count: " + str(len(x_test)))
                     print ("x_train rows count: " + str(len(x_train)))
@@ -660,6 +675,11 @@ class cls_ev_agent_{id}:
 
                     pred = predictor.predict(x_test)
 
+                    # assign predictions to corresponding test records only
+                    df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred']       += pred
+                    df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred_count'] += 1
+
+                    y_test = self.np.asarray(y_test)
                     if is_binary:
                         result = self.my_log_loss(y_test, pred)
                         # show various metrics as per
@@ -724,16 +744,27 @@ class cls_ev_agent_{id}:
                 x_test = df.drop(self.target_col, axis=1)
 
                 for fold in range(0, len(predictors)):
-                    # predict entire train set
+                     # predict entire train set using selected predictors
+                    # it will predict records used for actual model training so results expected to be good 
+                    # this may also result in leakage if used in a pipeline
                     prediction += predictors[fold].predict(x_test)
+                    
                     # predict remainder set
                     if len(df_test) > 0:
-                        predicted_test_set  += predictors[fold].predict(df_test.drop(self.target_col, axis=1))
+                        pred = predictors[fold].predict(df_test.drop(self.target_col, axis=1))
+                        predicted_test_set  += pred
+                        
+                        df_filter_column.loc[remainder_set_indexes, self.output_column+'_folds_pred']       += pred
+                        df_filter_column.loc[remainder_set_indexes, self.output_column+'_folds_pred_count'] += 1
 
                     # predict validation set
                     if self.use_validation_set:
                         df_valid_x = df_valid.drop(self.target_col, axis=1)
-                        predicted_valid_set += predictors[fold].predict(df_valid_x)
+                        pred       = predictors[fold].predict(df_valid_x)
+                        predicted_valid_set += pred
+                        
+                        df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred']       += pred
+                        df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred_count'] += 1
 
                         if fold == 0:
                             valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x)
@@ -743,6 +774,8 @@ class cls_ev_agent_{id}:
                 prediction = prediction / len(predictors)
                 predicted_test_set  = predicted_test_set  / len(predictors)
                 predicted_valid_set = predicted_valid_set / len(predictors)
+
+                df_filter_column[self.output_column+'_folds_pred_avg'] = df_filter_column[self.output_column+'_folds_pred'] / df_filter_column[self.output_column+'_folds_pred_count']
 
 
             weighted_result = weighted_result/count_records_notnull
@@ -833,6 +866,10 @@ class cls_ev_agent_{id}:
         #shap.initjs()
         #shap.summary_plot(valid_set_shap_values, df_valid_x)
         
+        # save indexes used for splits
+        self.dicts_agent['train_sub_sets_ix'] = train_sub_sets_ix
+        self.dicts_agent['test_sub_sets_ix']  = test_sub_sets_ix
+        
         # save performance summaries across all validation folds
         self.dicts_agent['fi_total']                               = self.fi_total
         self.dicts_agent['fi_valid_shap']                          = valid_set_shap_values
@@ -867,21 +904,23 @@ class cls_ev_agent_{id}:
                 predictors = [predictors_all['predictor'][worst_predictor_idx], predictors_all['predictor'][avg_predictor_idx], predictors_all['predictor'][best_predictor_idx]]
                 print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
                 
-                x_test = df_all.drop(self.target_col, axis=1)
-                prediction = self.np.zeros(len(x_test))
-                if params['objective'] == self.objective_multiclass:
-                    prediction = [self.np.zeros(params['num_class']) for i in range(len(x_test))]
+                #x_test = df_all.drop(self.target_col, axis=1)
+                #prediction = self.np.zeros(len(x_test))
+                #if params['objective'] == self.objective_multiclass:
+                #    prediction = [self.np.zeros(params['num_class']) for i in range(len(x_test))]
                 
                 for fold in range(0, len(predictors)):
                     # predict entire data set
-                    prediction += predictors[fold].predict(x_test)
+                    #prediction += predictors[fold].predict(x_test)
                     predictors[fold].save_model(workdir + self.output_column + "_fold" + str(fold) + ".model")
 
                 # if multiclass convert list of lists into list of predicted labels
                 if params['objective'] == self.objective_multiclass:             
-                    df_filter_column[self.output_column] = self.np.argmax(prediction, axis=1)
+                    #df_filter_column[self.output_column] = self.np.argmax(prediction, axis=1)
+                    df_filter_column[self.output_column] = self.np.argmax(df_filter_column[self.output_column+'_folds_pred'], axis=1)
                 else:
-                    df_filter_column[self.output_column] = prediction / len(predictors)
+                    #df_filter_column[self.output_column] = prediction / len(predictors)
+                    df_filter_column[self.output_column] = df_filter_column[self.output_column+'_folds_pred'] / df_filter_column[self.output_column+'_folds_pred_count']
                     
             df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
