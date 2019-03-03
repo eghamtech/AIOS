@@ -3,6 +3,7 @@
 #key=field_filter;  type=constant;  value=enter_field_to_filter_by_with_csv_file_name
 #key=filter_values;  type=constant;  value=enter_values_to_filter_by
 #key=set_value;  type=constant;  value=enter_value_to_set
+#key=set_value_default;  type=constant;  value=
 #key=new_field_prefix;  type=constant;  value=filter_
 #end_of_parameters
 
@@ -13,7 +14,8 @@
 #
 # this agent creates new column which is a copy of "field_source" but with some rows set to "set_value" 
 # where those rows in "field_filter" appear in "filter_values" 
-# if only "field_source" specified then create new column as exact its copy
+# if only "field_source" specified then create new column as exact its copy - works for both numeric and dict fields
+# if "set_value_default" is set then new column is set to it when "field_filter" value is not in "filter_values"
 
 class cls_agent_{id}:
     import warnings
@@ -26,6 +28,7 @@ class cls_agent_{id}:
     # data_defs          = ["{field_source}","{field_filter}"]
     filter_values_list = [{filter_values}]
     new_value          = {set_value}
+    default_value      = {set_value_default}
     
     # obtain a unique ID for the current instance
     result_id = {id}
@@ -87,7 +90,11 @@ class cls_agent_{id}:
             col_source = self.data_defs[0].split("|")[0]
             col_filter = self.data_defs[1].split("|")[0]
 
-            self.df[self.output_column] = self.df[col_source]
+            if self.is_set(self.default_value):
+                self.df[self.output_column] = self.default_value
+            else:
+                self.df[self.output_column] = self.df[col_source]
+            
             self.df.loc[self.np.isin(self.df[col_filter], self.filter_values_list), self.output_column] = self.new_value
 
             self.df[[self.output_column]].to_csv(workdir+self.output_filename)
@@ -102,7 +109,11 @@ class cls_agent_{id}:
             col_source = self.data_defs[0].split("|")[0]
             col_filter = self.data_defs[1].split("|")[0]
 
-            df_add[self.output_column] = df_add[col_source]
+            if self.is_set(self.default_value):
+                df_add[self.output_column] = self.default_value
+            else:
+                df_add[self.output_column] = df_add[col_source]
+            
             df_add.loc[self.np.isin(df_add[col_filter], self.filter_values_list), self.output_column] = self.new_value
        
 
