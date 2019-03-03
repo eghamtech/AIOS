@@ -420,9 +420,10 @@ class cls_ev_agent_{id}:
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(target_classes)) + " classes")
             params['objective'] = self.objective_multiclass
-            params['num_class'] = max(target_classes) + 1        # requires all int numbers from 0 to max to be classes
+            params['num_class'] = int(max(target_classes) + 1)        # requires all int numbers from 0 to max to be classes
             params['metric']    = ['multi_logloss','multi_error']
-            df_filter_column[self.output_column+'_folds_pred'] = [self.np.zeros(params['num_class']) for i in range(len(df_filter_column))]
+            # initialise temp df holding multi-class predictions for entire data set
+            df_filter_column_mc = self.pd.DataFrame([self.np.zeros(params['num_class']) for i in range(len(df_filter_column))])
         else:
             print ("detected regression target: use RMSE/MAE")
             params['objective'] = self.objective_regression
@@ -675,10 +676,6 @@ class cls_ev_agent_{id}:
 
                     pred = predictor.predict(x_test)
 
-                    # assign predictions to corresponding test records only
-                    df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred']       += pred
-                    df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred_count'] += 1
-
                     y_test = self.np.asarray(y_test)
                     if is_binary:
                         result = self.my_log_loss(y_test, pred)
@@ -692,6 +689,11 @@ class cls_ev_agent_{id}:
                             result_cr      = classification_report(y_test, (pred>0.5))                           
                             print ("Confusion Matrix:\n", result_cm)
                             print ("Classification Report:\n", result_cr)
+                                                                      
+                        # assign predictions to corresponding test records only
+                        df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred']       += pred
+                        df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred_count'] += 1
+                        
                     elif params['objective'] == self.objective_multiclass:
                         try:
                             pred_classes = self.np.argmax(pred, axis=1)
@@ -707,11 +709,21 @@ class cls_ev_agent_{id}:
                                 
                             result = predictor.best_score['valid_0']['multi_logloss']
                             result_roc_auc = f1_score(y_test, pred_classes, average='weighted')
+                            
+                            # assign predictions to corresponding test records only
+                            df_pred = self.np.array(df_filter_column_mc.loc[test_ix_orig])                     # get array of previous folds test records predictions
+                            df_pred += pred
+                            df_filter_column_mc.loc[test_ix_orig] = df_pred                                    # temp df holding multi-class prediction
+                            df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred_count'] += 1
                         except Exception as e:
                             print (e)          
                     else:
                         result = sum(abs(y_test-pred))/len(y_test)
                         #result = sqrt(mean_squared_error(y_test, pred))
+                        
+                        # assign predictions to corresponding test records only
+                        df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred']       += pred
+                        df_filter_column.loc[test_ix_orig, self.output_column+'_folds_pred_count'] += 1
 
                     print ("result: ", result)
 
@@ -744,7 +756,7 @@ class cls_ev_agent_{id}:
                 x_test = df.drop(self.target_col, axis=1)
 
                 for fold in range(0, len(predictors)):
-                     # predict entire train set using selected predictors
+                    # predict entire train set using selected predictors
                     # it will predict records used for actual model training so results expected to be good 
                     # this may also result in leakage if used in a pipeline
                     prediction += predictors[fold].predict(x_test)
@@ -754,8 +766,15 @@ class cls_ev_agent_{id}:
                         pred = predictors[fold].predict(df_test.drop(self.target_col, axis=1))
                         predicted_test_set  += pred
                         
-                        df_filter_column.loc[remainder_set_indexes, self.output_column+'_folds_pred']       += pred
-                        df_filter_column.loc[remainder_set_indexes, self.output_column+'_folds_pred_count'] += 1
+                        if params['objective'] == self.objective_multiclass: 
+                            # assign predictions to corresponding test records only
+                            df_pred = self.np.array(df_filter_column_mc.loc[remainder_set_indexes])         # get array of previous folds test records predictions
+                            df_pred += pred
+                            df_filter_column_mc.loc[remainder_set_indexes] = df_pred                        # temp df holding multi-class prediction
+                            df_filter_column.loc[remainder_set_indexes, self.output_column+'_folds_pred_count'] += 1
+                        else:
+                            df_filter_column.loc[remainder_set_indexes, self.output_column+'_folds_pred']       += pred
+                            df_filter_column.loc[remainder_set_indexes, self.output_column+'_folds_pred_count'] += 1
 
                     # predict validation set
                     if self.use_validation_set:
@@ -763,9 +782,16 @@ class cls_ev_agent_{id}:
                         pred       = predictors[fold].predict(df_valid_x)
                         predicted_valid_set += pred
                         
-                        df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred']       += pred
-                        df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred_count'] += 1
-
+                        if params['objective'] == self.objective_multiclass: 
+                            # assign predictions to corresponding test records only
+                            df_pred = self.np.array(df_filter_column_mc.loc[valid_sets_ix[valid_fold]])         # get array of previous folds test records predictions
+                            df_pred += pred
+                            df_filter_column_mc.loc[valid_sets_ix[valid_fold]] = df_pred                        # temp df holding multi-class prediction
+                            df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred_count'] += 1
+                        else:
+                            df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred']       += pred
+                            df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred_count'] += 1
+                            
                         if fold == 0:
                             valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x)
                         else:
@@ -917,11 +943,13 @@ class cls_ev_agent_{id}:
                 # if multiclass convert list of lists into list of predicted labels
                 if params['objective'] == self.objective_multiclass:             
                     #df_filter_column[self.output_column] = self.np.argmax(prediction, axis=1)
-                    df_filter_column[self.output_column] = self.np.argmax(df_filter_column[self.output_column+'_folds_pred'], axis=1)
+                    df_filter_column[self.output_column+'_folds_pred'] = self.np.argmax(self.np.array(df_filter_column_mc), axis=1)
+                    df_filter_column[self.output_column] = df_filter_column[self.output_column+'_folds_pred'] 
+                    df_filter_column.loc[df_filter_column[self.output_column+'_folds_pred_count']==0,self.output_column] = float('nan')
                 else:
                     #df_filter_column[self.output_column] = prediction / len(predictors)
                     df_filter_column[self.output_column] = df_filter_column[self.output_column+'_folds_pred'] / df_filter_column[self.output_column+'_folds_pred_count']
-                    
+            
             df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
             
