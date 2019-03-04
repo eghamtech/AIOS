@@ -907,13 +907,13 @@ class cls_ev_agent_{id}:
                 predictors = [predictors['predictor'][worst_predictor_idx], predictors['predictor'][avg_predictor_idx], predictors['predictor'][best_predictor_idx]]
                 print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
                 
-                x_test = df.drop(self.target_col, axis=1)
+                #x_test = df.drop(self.target_col, axis=1)
                     
                 for fold in range(0, len(predictors)):
-                    # predict entire train set using selected predictors
+                    # predict entire train set using selected predictors - no longer needed as prediction is assembled from individual test folds
                     # it will predict records used for actual model training so results expected to be good 
                     # this may also result in leakage if used in a pipeline
-                    prediction += self.ft_predict_proba( predictors[fold], x_test, k=k, params=params )
+                    #prediction += self.ft_predict_proba( predictors[fold], x_test, k=k, params=params )
                     
                     # predict remainder set
                     if len(df_test) > 0:
