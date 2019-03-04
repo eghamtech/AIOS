@@ -933,7 +933,7 @@ class cls_ev_agent_{id}:
                     # predict validation set
                     if self.use_validation_set:
                         df_valid_x = df_valid.drop(self.target_col, axis=1)
-                        pred = self.ft_predict_proba( predictors[fold], df_valid_x, axis=1), k=k, params=params )
+                        pred = self.ft_predict_proba( predictors[fold], df_valid_x, k=k, params=params )
                         predicted_valid_set += pred
                         
                         if params['objective'] == self.objective_multiclass: 
