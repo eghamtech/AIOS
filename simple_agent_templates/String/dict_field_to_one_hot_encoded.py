@@ -20,7 +20,7 @@ class cls_agent_{id}:
     warnings.filterwarnings("ignore")
     
     import pandas as pd
-    import os.path, bz2, pickle
+    import os.path, bz2, pickle, re
     
     col_definition1 = "{random_field_distinct}"
     col1  = col_definition1.split("|")[0]
@@ -54,7 +54,7 @@ class cls_agent_{id}:
         self.new_columns = []
 
         for k,v in self.dicts_agent[col_name].items():
-            new_col_name = self.new_field_prefix + col_name + '_' + str(self.result_id) + '_v_' + str(v)
+            new_col_name = self.new_field_prefix + col_name + '_' + str(self.result_id) + '_v_' + self.re.sub('[^0-9a-zA-Z]+', '_', str(v))
             new_col_name = new_col_name[:self.col_max_length]
             self.new_columns.append(new_col_name)
             df_run[new_col_name] = 0
@@ -65,7 +65,7 @@ class cls_agent_{id}:
                 value_mapped = self.dicts_agent[col_name].get(value)
 
                 if value_mapped != None:
-                    new_col_name = self.new_field_prefix + col_name + '_' + str(self.result_id) + '_v_' + str(value_mapped)
+                    new_col_name = self.new_field_prefix + col_name + '_' + str(self.result_id) + '_v_' + self.re.sub('[^0-9a-zA-Z]+', '_', str(value_mapped))
                     new_col_name = new_col_name[:self.col_max_length]
                     df_run.at[index, new_col_name] = 1
         
