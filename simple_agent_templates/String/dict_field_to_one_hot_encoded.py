@@ -85,7 +85,7 @@ class cls_agent_{id}:
             return    
 
         if len(unique_list) > self.max_unique_values:
-            print ("Selected column contains " + str(unique_v) + " unique values which is more than " + str(max_unique_values) + " allowed - ignoring it.")
+            print ("Selected column contains " + str(len(unique_list)) + " unique values which is more than " + str(self.max_unique_values) + " allowed - ignoring it.")
             return
 
         file_name  = self.file1
