@@ -1,7 +1,7 @@
 #start_of_parameters
-#key=max_unique_values;  type=constant;  value=enter_max_unique_values
-#key=col_max_length;  type=constant;  value=enter_col_max_length
-#key=new_field_prefix;  type=constant;  value=enter_new_field_prefix
+#key=max_unique_values;  type=constant;  value=50
+#key=col_max_length;  type=constant;  value=200
+#key=new_field_prefix;  type=constant;  value=onehe_
 #end_of_parameters
 
 # AICHOO OS Simple Agent 
