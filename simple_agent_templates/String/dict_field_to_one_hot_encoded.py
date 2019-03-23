@@ -65,7 +65,7 @@ class cls_agent_{id}:
             df_run[new_col_name] = 0
 
         for index, row in df_run.iterrows():
-            value = row[col_name]
+            value = round(row[col_name],5)
             
             if self.pd.notnull(value):
                 if self.dicts_agent['dict_type'] == 'dictionary':   
@@ -89,7 +89,7 @@ class cls_agent_{id}:
         print ("enter run mode " + str(mode))
         self.df  = self.pd.read_csv(workdir+self.file1)[[self.col1]]
 
-        #self.df[self.col1] = self.df[self.col1].apply(lambda x: int(round(x,0)) if self.pd.notnull(x) else None)
+        self.df[self.col1] = self.df[self.col1].apply(lambda x: round(x,5) if self.pd.notnull(x) else None)
         unique_list = self.df[self.col1].unique()
    
         if len(unique_list) == 1:
