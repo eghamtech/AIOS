@@ -36,6 +36,7 @@ class cls_agent_{id}:
     new_field_prefix  = "{new_field_prefix}"
     max_unique_values = {max_unique_values}
     col_max_length    = {col_max_length}
+    agent_name        = 'agent_' + str(result_id)
 
     dicts_agent = {}
     new_columns = []
@@ -46,8 +47,8 @@ class cls_agent_{id}:
     def __init__(self):
         from datetime import datetime
         # if saved dictionaries for the target field already exist then load them from filesystem              
-        if self.os.path.isfile(workdir + self.col1 + '_dicts.model'):
-            rfile = self.bz2.BZ2File(workdir + self.col1 + '_dicts.model', 'r')
+        if self.os.path.isfile(workdir + self.agent_name + '.model'):
+            rfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'r')
             self.dicts_agent = self.pickle.load(rfile)
             rfile.close()
             print (str(datetime.now()), self.col1 + ': one hot encoding agent dictionaries model loaded')
@@ -128,7 +129,7 @@ class cls_agent_{id}:
 
         self.dicts_agent['new_columns'] = self.new_columns
         # save dictionary of all auxiliary data into file
-        sfile = self.bz2.BZ2File(workdir + col_name + '_dicts.model', 'w')
+        sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
         self.pickle.dump(self.dicts_agent, sfile) 
         sfile.close()
 
