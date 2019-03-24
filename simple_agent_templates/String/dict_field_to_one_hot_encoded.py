@@ -102,17 +102,25 @@ class cls_agent_{id}:
         file_name  = self.file1
         col_name   = self.col1
         
-        if len(unique_list) <= self.max_unique_values:
+       if self.os.path.isfile(workdir + 'dict_' + file_name):
             # load dictionary if it exists
-            if self.os.path.isfile(workdir + 'dict_' + file_name):
-                dict_temp = self.pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
-            else:
-                # create dictionary by iterating over unique values
-                dict_temp = {x:str(x) for x in unique_list if str(x) != 'nan'}
-            
+            dict_temp     = self.pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
+
+            df_top_values = self.df.groupby(col_name)[col_name].agg({"count": len}).sort_values("count", ascending=False).head(self.max_unique_values).reset_index()
+            dict_temp     = {df_top_values[col_name][i]:dict_temp[df_top_values[col_name][i]] for i in range(0,len(df_top_values))}
+        
             self.df["dict_"+col_name]     = self.df[col_name].map(dict_temp)
             self.dicts_agent['dict_type'] = 'dictionary' 
             self.dicts_agent[col_name]    = dict_temp
+            
+        elif len(unique_list) <= self.max_unique_values:
+            # create dictionary by iterating over unique values
+            dict_temp = {x:str(x) for x in unique_list if str(x) != 'nan'}
+
+            self.df["dict_"+col_name]     = self.df[col_name].map(dict_temp)
+            self.dicts_agent['dict_type'] = 'dictionary' 
+            self.dicts_agent[col_name]    = dict_temp
+        
         else:
             # cut the column values into intervals
             df_cats   = self.pd.cut(self.df[col_name], self.max_unique_values)
