@@ -102,7 +102,7 @@ class cls_agent_{id}:
         file_name  = self.file1
         col_name   = self.col1
         
-       if self.os.path.isfile(workdir + 'dict_' + file_name):
+        if self.os.path.isfile(workdir + 'dict_' + file_name):
             # load dictionary if it exists
             dict_temp     = self.pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
 
