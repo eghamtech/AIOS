@@ -103,7 +103,7 @@ class cls_agent_{id}:
                 dict_temp = self.pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
                 
                 self.dicts_agent[col_name] = dict_temp               
-                self.df['dict_'+col_name]   = self.df[col_name].map(dict_temp)
+                self.df['dict_'+col_name]  = self.df[col_name].map(dict_temp)
                 
                 self.dict_cols.append(col_name)
                 self.df_all = self.df_all.append( self.df[['dict_'+col_name]].rename(index=str, columns={'dict_'+col_name: 'all_dict_columns'}), ignore_index=True )
