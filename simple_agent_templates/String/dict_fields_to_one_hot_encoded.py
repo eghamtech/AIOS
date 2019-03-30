@@ -79,7 +79,7 @@ class cls_agent_{id}:
                 
                 value = row['dict_'+col_name]
 
-                if self.pd.notnull(value):
+                if self.dicts_agent['all_dicts'].get(value) != None:
                     new_col_name = self.new_field_prefix + '_' + str(self.result_id) + '_v_' + self.re.sub('[^0-9a-zA-Z]+', '_', str(value))
                     new_col_name = new_col_name[:self.col_max_length]
                     df_run.at[index, new_col_name] = 1
