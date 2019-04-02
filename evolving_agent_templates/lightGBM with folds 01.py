@@ -42,6 +42,9 @@
 #key=is_unbalance;  type=random_from_set;  set=True,False
 #key=lambda_l1;  type=random_float;  from=0;  to=1;  step=0.01
 #key=lambda_l2;  type=random_float;  from=0;  to=1;  step=0.01
+#key=binary_balancing;  type=random_from_set;  set=False
+#key=binary_balancing_0;  type=random_float;  from=0.1;  to=1;  step=0.02
+#key=binary_balancing_1;  type=random_float;  from=0.1;  to=1;  step=0.02
 #key=start_fold;  type=random_from_set;  set=0
 #key=max_depth;  type=random_int;  from=-1;  to=10;  step=1
 #key=num_threads;  type=random_int;  from=4;  to=4;  step=1
@@ -362,18 +365,21 @@ class cls_ev_agent_{id}:
         params['min_gain_to_split']     = {min_gain_to_split}
         params['verbose'] = 1
         params['feature_fraction_seed'] = {feature_fraction_seed}
-        params['bagging_seed']  = {bagging_seed}
-        params['max_depth']     = {max_depth}
-        params['num_threads']   = {num_threads}
+        params['bagging_seed']       = {bagging_seed}
+        params['max_depth']          = {max_depth}
+        params['num_threads']        = {num_threads}
         params['boost_from_average'] = {boost_from_average}
-        params['is_unbalance']  = {is_unbalance}
-        params['lambda_l1']     = {lambda_l1}
-        params['lambda_l2']     = {lambda_l2}
+        params['is_unbalance']       = {is_unbalance}
+        params['lambda_l1']          = {lambda_l1}
+        params['lambda_l2']          = {lambda_l2}
         params['random_valid']       = {random_valid}
         params['random_valid_size']  = {random_valid_size}
         params['random_valid_folds'] = {random_valid_folds}
         params['random_folds']       = {random_folds}
         params['random_folds_size']  = {random_folds_size}
+        params['binary_balancing']   = {binary_balancing}
+        params['binary_balancing_0'] = {binary_balancing_0}
+        params['binary_balancing_1'] = {binary_balancing_1}
         
         # obtain indexes for train and remainder sets
         # load target column as it may be needed for filtering and removing NaN targets from training
@@ -645,6 +651,23 @@ class cls_ev_agent_{id}:
                     train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()       # obtain original indexes from saved copy of labels with original indexes
                     test_ix_orig  = iy[iy.index.isin(test_ix)]['index'].tolist()        # can't use train_ix, test_ix directly because they refer to new index reset during shuffling
                     
+                    #------ balance train set -----------------------------------------------------------------------------------------------------
+                    if params['binary_balancing']:                                           
+                        bal_y    = df[[self.target_col]]
+                        
+                        bal_cond = self.np.logical_and( bal_y.index.isin(train_ix_orig), bal_y[self.target_col]==0 )                                      
+                        train_ix_orig_balanced_0 = bal_y[bal_cond].index.tolist()
+                        train_balanced_size_0    = int(len(train_ix_orig_balanced_0) * params['binary_balancing_0'])
+                        train_ix_orig_balanced_0 = self.np.random.choice(train_ix_orig_balanced_0, train_balanced_size_0, replace=False).tolist()
+
+                        bal_cond = self.np.logical_and( bal_y.index.isin(train_ix_orig), bal_y[self.target_col]==1 )
+                        train_ix_orig_balanced_1 = bal_y[bal_cond].index.tolist()
+                        train_balanced_size_1    = int(len(train_ix_orig_balanced_1) * params['binary_balancing_1'])
+                        train_ix_orig_balanced_1 = self.np.random.choice(train_ix_orig_balanced_1, train_balanced_size_1, replace=False).tolist()
+
+                        train_ix_orig = train_ix_orig_balanced_0 + train_ix_orig_balanced_1
+                    #------------------------------------------------------------------------------------------------------------------------------
+                                              
                     train_sub_sets_ix.append(train_ix_orig)                             # save indexes in the overall list for all folds
                     test_sub_sets_ix.append(test_ix_orig)                      
 
