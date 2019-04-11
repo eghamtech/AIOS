@@ -2,6 +2,7 @@
 #key=data;  type=random_array_of_fields;  length=800
 #key=fields_to_use;  type=random_int;  from=200;  to=800;  step=1
 #key=nfolds;  type=random_int;  from=3;  to=3;  step=1
+#key=start_fold;  type=random_from_set;  set=0
 #key=use_validation_set;  type=random_from_set;  set=True
 #key=filter_column;  type=random_from_set;  set=Submission_Date_TS
 #key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
