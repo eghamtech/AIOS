@@ -785,7 +785,7 @@ class cls_ev_agent_{id}:
                     #prediction += predictors[fold].predict(x_test)
                     
                     # predict remainder set
-                    if len(df_test) > 0:
+                    if len(df_test) > 0 and mode==1:
                         pred = predictors[fold].predict(df_test.drop(self.target_col, axis=1))
                         predicted_test_set  += pred
                         
