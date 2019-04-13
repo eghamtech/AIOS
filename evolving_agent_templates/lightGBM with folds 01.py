@@ -47,6 +47,7 @@
 #key=binary_balancing_1;  type=random_float;  from=0.1;  to=1;  step=0.02
 #key=start_fold;  type=random_from_set;  set=0
 #key=max_depth;  type=random_int;  from=-1;  to=10;  step=1
+#key=num_round;  type=random_int;  from=100;  to=10000;  step=50
 #key=num_threads;  type=random_int;  from=4;  to=4;  step=1
 #key=use_float32_dtype; type=random_from_set;  set=True
 #key=min_perf_criteria;  type=random_float;  from=0.6;  to=0.6;  step=0.1
@@ -367,6 +368,7 @@ class cls_ev_agent_{id}:
         params['feature_fraction_seed'] = {feature_fraction_seed}
         params['bagging_seed']       = {bagging_seed}
         params['max_depth']          = {max_depth}
+        params['num_round']          = {num_round}
         params['num_threads']        = {num_threads}
         params['boost_from_average'] = {boost_from_average}
         params['is_unbalance']       = {is_unbalance}
@@ -446,6 +448,7 @@ class cls_ev_agent_{id}:
         weighted_auc_folds           = []
         valid_result_folds           = []
         valid_result_auc_folds       = []
+        valid_set_shap_values        = None
         
         fold_all = 0
         # repeat cross-validation multiple times with different validation set each time
@@ -685,10 +688,9 @@ class cls_ev_agent_{id}:
                     x_test = x_test.drop(self.target_col, 1)
 
                     x_train = self.lgb.Dataset( x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
-
-                    num_round=10000
+                    
                     watchlist  = [self.lgb.Dataset(x_test, label=y_test)]
-                    predictor  = self.lgb.train( params, x_train, num_round, watchlist, verbose_eval = 100, early_stopping_rounds=100 )          
+                    predictor  = self.lgb.train( params, x_train, params['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100 )          
                     self.bst   = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
 
                     fi = self.print_feature_importance(n_top_features=25, col_idx=fold_all, importance_type='gain', print_table = False, to_html = self.print_to_html )
