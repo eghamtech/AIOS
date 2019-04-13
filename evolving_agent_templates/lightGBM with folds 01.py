@@ -815,10 +815,11 @@ class cls_ev_agent_{id}:
                             df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred']       += pred
                             df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred_count'] += 1
                             
-                        if fold == 0:
-                            valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x)
-                        else:
-                            valid_set_shap_values += shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x)
+                        if mode == 1:
+                            if fold == 0:
+                                valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x)
+                            else:
+                                valid_set_shap_values += shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x)
 
                 prediction = prediction / len(predictors)
                 predicted_test_set  = predicted_test_set  / len(predictors)
