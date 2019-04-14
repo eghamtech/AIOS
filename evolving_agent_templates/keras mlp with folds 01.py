@@ -45,7 +45,7 @@
 #key=print_tables; type=random_from_set;  set=False
 #end_of_genes_definitions
 
-# AICHOO OS Evolving Agent 
+# AICHOO OS Evolving Agent
 # Documentation about AIOS and how to create Evolving Agents can be found on our WiKi
 # https://github.com/eghamtech/AIOS/wiki/Evolving-Agents
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
@@ -92,7 +92,7 @@ class cls_ev_agent_{id}:
     # based on filter criteria training + validation sets will not necessarily constitute all data, the remainder will be called "test set"
     filter_column   = "{filter_column}"
     filter_column_2 = "{filter_column_2}"
-    
+
     # fields matching the specified string will not be used in the model
     ignore_columns_containing  = "{ignore_columns_containing}"
     # include only fields matching string e.g., only properly scaled columns should be used with MLP
@@ -127,7 +127,7 @@ class cls_ev_agent_{id}:
 
     def is_set(self, s):
         return len(s)>0 and s!="0"
-    
+
     def is_use_column(self, s):
         # AIOS Kernel now selects columns using agent parameters
         # so no need to filter inside the agent
@@ -137,7 +137,7 @@ class cls_ev_agent_{id}:
             return False
 
         return True
-   
+
     def timestamp(self, x):
         return self.calendar.timegm(self.dateutil.parser.parse(x).timetuple())
 
@@ -152,7 +152,7 @@ class cls_ev_agent_{id}:
             display(df)
         else:
             print (df)
- 
+
     def my_log_loss(self, a, b):
         eps  = 1e-9
         sum1 = 0.0
@@ -347,8 +347,8 @@ class cls_ev_agent_{id}:
         df_all.columns = columns_new
         print (str(datetime.now()), " data loaded", len(df_all), "rows; ", len(df_all.columns), "columns")
         return df_all
-    
-    
+
+
     def __init__(self):
         from datetime import datetime
         # remove the target field for this instance from the data used for training
@@ -377,17 +377,17 @@ class cls_ev_agent_{id}:
                     predictor_stored = self.model_load(workdir + self.output_column + "_fold" + str(fold) + ".model")
                     self.predictors.append(predictor_stored)
                     print (str(datetime.now()), self.output_column + ' fold ' + str(fold) + ' predictor model loaded')
-                
+
         # obtain columns definitions to filter data set by
         if self.is_set(self.filter_column):
             self.filter_filename = self.filter_column.split("|")[1]
             self.filter_column   = self.filter_column.split("|")[0]
-      
+
         if self.is_set(self.filter_column_2):
             self.filter_filename_2 = self.filter_column_2.split("|")[1]
             self.filter_column_2   = self.filter_column_2.split("|")[0]
-    
-    
+
+
     def apply(self, df_add):
         # this method is called by AIOS when additional data is supplied and needs to be predicted on
         # df_add shouldn't contain columns with text values - only numeric
@@ -398,7 +398,7 @@ class cls_ev_agent_{id}:
         for i in range(0,self.fields_to_use):
             col_name  = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
-            
+
             if self.is_use_column(col_name):
                 # assemble dataframe column by column
                 df_col = df_add[[col_name]]
@@ -410,10 +410,10 @@ class cls_ev_agent_{id}:
                     df = df_col[[col_name]]
                 else:
                     df = df.merge(df_col[[col_name]], left_index=True, right_index=True)
-                
+
                 # df[col_name] = df[col_name].fillna(0) # replace NaN in each column with 0 as this is crucial for Keras
                 # above doesn't work for duplicate columns in DF but all columns must be pre-scaled anyway without NaN
-                
+
                 # some columns may appear multiple times in data_defs as inhereted from parents DNA
                 # assemble a list of columns assigning unique names to repeating columns
                 columns.append(col_name)
@@ -422,7 +422,7 @@ class cls_ev_agent_{id}:
                     columns_new.append(col_name)
                 else:
                     columns_new.append(col_name+"_v"+str(ncol_count))
-        
+
         # rename columns in df to unique names
         df.columns = columns_new
 
@@ -456,7 +456,7 @@ class cls_ev_agent_{id}:
 
         df_add[self.output_column] = pred
 
-        
+
     def run(self, mode):
         # this is main method called by AIOS with supplied DNA Genes to process data
         from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
@@ -520,7 +520,7 @@ class cls_ev_agent_{id}:
         self.params['input_dim'] = len(df_all.columns) - 1  # need this for some models init; df.columns includes the target column, hence need to do -1
 
         # initialise ML model with algorithm specific parameters
-        ml_model = model_init()
+        ml_model = self.model_init()
 
         # initialise temp df holding multi-class predictions for entire data set
         df_filter_column_mc = self.pd.DataFrame([self.np.zeros(self.params['num_class']) for i in range(len(df_filter_column))])
@@ -822,6 +822,8 @@ class cls_ev_agent_{id}:
                             df_filter_column.loc[test_ix_orig, self.output_column + '_folds_pred_count'] += 1
                     except Exception as e:
                         print (e)
+                        result = 999999
+                        result_roc_auc = 0
 
                     print ("result: ", result)
 
@@ -1054,6 +1056,5 @@ class cls_ev_agent_{id}:
             print ("out_result_3=" + str(self.list_mean(valid_result_folds)))                                               # main fitness on Validation
             print ("out_result_4=" + str(self.list_mean(valid_result_auc_folds)))                                           # ROC AUC on Validation
 
-            
-ev_agent_{id} = cls_ev_agent_{id}()
 
+ev_agent_{id} = cls_ev_agent_{id}()
