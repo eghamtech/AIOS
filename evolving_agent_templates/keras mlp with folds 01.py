@@ -261,6 +261,11 @@ class cls_ev_agent_{id}:
         try:
             xt   = self.np.array(xt)
             pred = predictor.predict(xt, verbose=0)
+                   
+            if self.is_binary:
+                # prediction is a list of lists by default convert to list of numbers
+                pred = [item for sublist in pred for item in sublist]
+                
         except Exception as e:
             print ('MLP Predict error: ', e)
             pred = 0
@@ -779,8 +784,8 @@ class cls_ev_agent_{id}:
                             print ("ROC AUC score: ", result_roc_auc)
 
                             if self.print_tables:
-                                result_cm = confusion_matrix(y_test, (pred > 0.5))  # assume 0.5 probability threshold
-                                result_cr = classification_report(y_test, (pred > 0.5))
+                                result_cm = confusion_matrix(y_test, self.np.asarray(pred) > 0.5)  # assume 0.5 probability threshold
+                                result_cr = classification_report(y_test, self.np.asarray(pred) > 0.5)
                                 print ("Confusion Matrix:\n",      result_cm)
                                 print ("Classification Report:\n", result_cr)
 
