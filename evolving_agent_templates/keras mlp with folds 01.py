@@ -164,6 +164,22 @@ class cls_ev_agent_{id}:
     def list_mean(self, lst, precision=4):
         return self.np.round(sum(lst)/float(len(lst)), decimals=precision)
 
+    def tf_roc_auc(self,y_true, y_pred):
+        import tensorflow as tf
+        with tf.device(self.s_tf_device):
+            from keras import backend as K
+            auc = tf.metrics.auc(y_true, y_pred, curve='ROC', summation_method='careful_interpolation')[1]
+            K.get_session().run(tf.local_variables_initializer())
+            return auc
+    
+    def tf_prc_auc(self,y_true, y_pred):
+        import tensorflow as tf
+        with tf.device(self.s_tf_device):
+            from keras import backend as K
+            auc = tf.metrics.auc(y_true, y_pred, curve='PR', summation_method='careful_interpolation')[1]
+            K.get_session().run(tf.local_variables_initializer())
+            return auc
+    
     def model_env_init(self):
         import tensorflow as tf
         # specify whether to run Keras/TensorFlow on CPU or GPU (and which GPU, if you have multiple)
@@ -207,23 +223,27 @@ class cls_ev_agent_{id}:
 
         if self.is_binary:
             print ("detected binary target: use AUC/LOGLOSS and Binary Cross Entropy loss evaluation")
-            self.params['objective']       = 'binary'
-            self.params['s_loss_function'] = 'binary_crossentropy'
-            self.params['metric']          = ['accuracy']
-            self.params['num_class']       = 1
-            # params['metric']             = ['auc', 'binary_logloss']
+            self.params['objective']                   = 'binary'
+            self.params['s_loss_function']             = 'binary_crossentropy'
+            self.params['metric']                      = [self.tf_roc_auc, self.tf_prc_auc]
+            self.params['early_stop_metric']           = 'val_tf_prc_auc'
+            self.params['early_stop_metric_direction'] = 'max'
+            self.params['num_class']                   = 1
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(self.target_classes)) + " classes")
-            self.params['objective']       = self.objective_multiclass
-            self.params['s_loss_function'] = 'categorical_crossentropy'
-            self.params['num_class']       = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
-            self.params['metric']          = ['accuracy']
-            # params['metric']             = ['multi_logloss', 'multi_error']
+            self.params['objective']                   = self.objective_multiclass
+            self.params['s_loss_function']             = 'categorical_crossentropy'
+            self.params['num_class']                   = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
+            self.params['metric']                      = ['accuracy']
+            self.params['early_stop_metric']           = 'val_loss'
+            self.params['early_stop_metric_direction'] = 'auto'
         else:
             print ("detected regression target: use RMSE/MAE")
             self.params['objective']       = self.objective_regression
             self.params['s_loss_function'] = 'mean_squared_error'
-            self.params['metric']          = ['mean_squared_error']
+            self.params['metric']                      = ['mean_squared_error']
+            self.params['early_stop_metric']           = 'val_loss'
+            self.params['early_stop_metric_direction'] = 'auto'
             self.params['num_class']       = 1
             # params['metric']             = ['rmse', 'mae']
 
@@ -236,7 +256,9 @@ class cls_ev_agent_{id}:
             from keras.layers         import Dense, Dropout
             from keras.callbacks      import EarlyStopping
 
-            early_stopper = EarlyStopping( monitor='val_loss', min_delta=self.params['early_stopping_min_delta'], patience=2, verbose=0, mode='auto' )
+            early_stopper = EarlyStopping( monitor   =self.params['early_stop_metric'], 
+                                           min_delta =self.params['early_stopping_min_delta'], patience=2, verbose=0, 
+                                           mode      =self.params['early_stop_metric_direction'] )
             mlp_model     = Sequential()
             self.params['early_stopper'] = [early_stopper]
 
