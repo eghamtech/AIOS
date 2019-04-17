@@ -163,6 +163,15 @@ class cls_ev_agent_{id}:
 
     def list_mean(self, lst, precision=4):
         return self.np.round(sum(lst)/float(len(lst)), decimals=precision)
+    
+    def prc_auc(self, train_y, pred):   
+        from sklearn.metrics import precision_recall_curve
+        from sklearn.metrics import auc
+        
+        precision, recall, thresholds = precision_recall_curve(train_y, pred)  
+        prc_auc = auc(recall, precision)
+                     
+        return prc_auc    
 
     def tf_roc_auc(self,y_true, y_pred):
         import tensorflow as tf
@@ -803,7 +812,9 @@ class cls_ev_agent_{id}:
                             # show various metrics as per
                             # http://scikit-learn.org/stable/modules/model_evaluation.html#classification-report
                             result_roc_auc = roc_auc_score(y_test, pred)
+                            result_prc_auc = self.prc_auc(y_test, pred)
                             print ("ROC AUC score: ", result_roc_auc)
+                            print ("PRC AUC score: ", result_prc_auc)
 
                             if self.print_tables:
                                 result_cm = confusion_matrix(y_test, self.np.asarray(pred) > 0.5)  # assume 0.5 probability threshold
@@ -962,6 +973,8 @@ class cls_ev_agent_{id}:
                         print ("LOGLOSS: ", result)
                         result_roc_auc = roc_auc_score(y_valid, predicted_valid_set)
                         print ("ROC AUC score: ", result_roc_auc)
+                        result_prc_auc = self.prc_auc(y_valid, predicted_valid_set)
+                        print ("PRC AUC score: ", result_prc_auc)
 
                         if self.print_tables:
                             result_cm = confusion_matrix(y_valid, (predicted_valid_set > 0.5))  # assume 0.5 probability threshold
