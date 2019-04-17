@@ -968,7 +968,7 @@ class cls_ev_agent_{id}:
                 predicted_valid_set = self.np.array(df_valid['predicted_valid_set'])
 
                 try:
-                    if is_binary:
+                    if self.is_binary:
                         result = log_loss(y_valid, predicted_valid_set)
                         print ("LOGLOSS: ", result)
                         result_roc_auc = roc_auc_score(y_valid, predicted_valid_set)
