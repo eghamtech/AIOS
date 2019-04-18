@@ -230,11 +230,12 @@ class cls_ev_agent_{id}:
         self.params['activation_output']        = {activation_output}
         self.params['early_stopping_min_delta'] = {early_stopping_min_delta}
 
-        if self.is_binary:
+       if self.is_binary:
             print ("detected binary target: use AUC/LOGLOSS and Binary Cross Entropy loss evaluation")
             self.params['objective']                   = 'binary'
             self.params['s_loss_function']             = 'binary_crossentropy'
-            self.params['metric']                      = [self.tf_roc_auc, self.tf_prc_auc]
+            #self.params['metric']                     = [self.tf_roc_auc, self.tf_prc_auc]                                 # if using custom metric function cannot save in params as pickle will fail
+            metric                                     = [self.tf_roc_auc, self.tf_prc_auc]                                 # in such case use local variable for metric
             self.params['early_stop_metric']           = 'val_tf_prc_auc'
             self.params['early_stop_metric_direction'] = 'max'
             self.params['num_class']                   = 1
@@ -243,14 +244,16 @@ class cls_ev_agent_{id}:
             self.params['objective']                   = self.objective_multiclass
             self.params['s_loss_function']             = 'categorical_crossentropy'
             self.params['num_class']                   = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
-            self.params['metric']                      = ['accuracy']
+            #self.params['metric']                      = ['accuracy']
+            metric                                     = ['accuracy']
             self.params['early_stop_metric']           = 'val_loss'
             self.params['early_stop_metric_direction'] = 'auto'
         else:
             print ("detected regression target: use RMSE/MAE")
             self.params['objective']       = self.objective_regression
             self.params['s_loss_function'] = 'mean_squared_error'
-            self.params['metric']                      = ['mean_squared_error']
+            #self.params['metric']                      = ['mean_squared_error']
+            metric                                     = ['mean_squared_error']
             self.params['early_stop_metric']           = 'val_loss'
             self.params['early_stop_metric_direction'] = 'auto'
             self.params['num_class']       = 1
@@ -283,7 +286,7 @@ class cls_ev_agent_{id}:
             # add output layer
             mlp_model.add(Dense(self.params['num_class'], activation=self.params['activation_output']))
 
-            mlp_model.compile(loss=self.params['s_loss_function'], optimizer=self.params['optimizer'], metrics=self.params['metric'])
+            mlp_model.compile(loss=self.params['s_loss_function'], optimizer=self.params['optimizer'], metrics=metric)
 
         return mlp_model
 
