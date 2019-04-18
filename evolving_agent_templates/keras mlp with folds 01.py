@@ -58,7 +58,7 @@ class cls_ev_agent_{id}:
     import random as rn
     import dateutil
     import calendar
-    import os.path
+    import os.path, bz2, pickle
     import pandas as pd
     import math
 
