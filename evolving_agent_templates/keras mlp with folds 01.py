@@ -266,13 +266,8 @@ class cls_ev_agent_{id}:
         with tf.device(self.s_tf_device):
             from keras.models         import Sequential
             from keras.layers         import Dense, Dropout
-            from keras.callbacks      import EarlyStopping
 
-            early_stopper = EarlyStopping( monitor   =self.params['early_stop_metric'], 
-                                           min_delta =self.params['early_stopping_min_delta'], patience=2, verbose=0, 
-                                           mode      =self.params['early_stop_metric_direction'] )
             mlp_model     = Sequential()
-            self.params['early_stopper'] = [early_stopper]
 
             # add hidden layers
             for i in range(self.params['layers']):
@@ -319,20 +314,28 @@ class cls_ev_agent_{id}:
 
 
     def model_train(self, ml_model, x_train, y_train, x_test, y_test):
-        mlp_history = ml_model.fit( x_train, y_train,
-                                    batch_size      = self.params['batch_size'],
-                                    epochs          = self.params['epochs'],
-                                    verbose         = 0,
-                                    validation_data = (x_test, y_test),
-                                    callbacks       = self.params['early_stopper'] )
+        import tensorflow as tf
+        with tf.device(self.s_tf_device):        
+            from keras.callbacks import EarlyStopping
 
-        self.print_html(self.pd.DataFrame(mlp_history.history))
+            early_stopper = EarlyStopping( monitor   =self.params['early_stop_metric'], 
+                                           min_delta =self.params['early_stopping_min_delta'], patience=2, verbose=0, 
+                                           mode      =self.params['early_stop_metric_direction'] )
 
-        score = ml_model.evaluate(x_test, y_test, verbose=0)
-        print('Test fold loss:',     score[0])
-        print('Test fold accuracy:', score[1])
+            mlp_history   = ml_model.fit( x_train, y_train,
+                                        batch_size      = self.params['batch_size'],
+                                        epochs          = self.params['epochs'],
+                                        verbose         = 0,
+                                        validation_data = (x_test, y_test),
+                                        callbacks       = [early_stopper] )
 
-        return ml_model
+            self.print_html(self.pd.DataFrame(mlp_history.history))
+
+            score = ml_model.evaluate(x_test, y_test, verbose=0)
+            print('Test fold loss:',     score[0])
+            print('Test fold accuracy:', score[1])
+
+            return ml_model
 
 
     def load_columns(self, map_dict=True):
