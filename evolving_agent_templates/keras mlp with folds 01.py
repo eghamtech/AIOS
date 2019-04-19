@@ -219,7 +219,7 @@ class cls_ev_agent_{id}:
             sess.run(init)
             K.set_session(sess)
 
-    def model_init(self):
+    def model_params(self):
         self.params['optimizer']                = {optimizer}
         self.params['activation']               = {activation}
         self.params['layers']                   = {layers}
@@ -230,12 +230,12 @@ class cls_ev_agent_{id}:
         self.params['activation_output']        = {activation_output}
         self.params['early_stopping_min_delta'] = {early_stopping_min_delta}
 
-       if self.is_binary:
+        if self.is_binary:
             print ("detected binary target: use AUC/LOGLOSS and Binary Cross Entropy loss evaluation")
             self.params['objective']                   = 'binary'
             self.params['s_loss_function']             = 'binary_crossentropy'
             #self.params['metric']                     = [self.tf_roc_auc, self.tf_prc_auc]                                 # if using custom metric function cannot save in params as pickle will fail
-            metric                                     = [self.tf_roc_auc, self.tf_prc_auc]                                 # in such case use local variable for metric
+            self.metric                                = [self.tf_roc_auc, self.tf_prc_auc]                                 # in such case use local class variable for metric
             self.params['early_stop_metric']           = 'val_tf_prc_auc'
             self.params['early_stop_metric_direction'] = 'max'
             self.params['num_class']                   = 1
@@ -245,7 +245,7 @@ class cls_ev_agent_{id}:
             self.params['s_loss_function']             = 'categorical_crossentropy'
             self.params['num_class']                   = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
             #self.params['metric']                      = ['accuracy']
-            metric                                     = ['accuracy']
+            self.metric                                = ['accuracy']
             self.params['early_stop_metric']           = 'val_loss'
             self.params['early_stop_metric_direction'] = 'auto'
         else:
@@ -253,12 +253,13 @@ class cls_ev_agent_{id}:
             self.params['objective']       = self.objective_regression
             self.params['s_loss_function'] = 'mean_squared_error'
             #self.params['metric']                      = ['mean_squared_error']
-            metric                                     = ['mean_squared_error']
+            self.metric                                = ['mean_squared_error']
             self.params['early_stop_metric']           = 'val_loss'
             self.params['early_stop_metric_direction'] = 'auto'
             self.params['num_class']       = 1
             # params['metric']             = ['rmse', 'mae']
-
+            
+    def model_init(self):
         #############################################################
         #                   MLP Model Compiling
         #############################################################
@@ -281,7 +282,7 @@ class cls_ev_agent_{id}:
             # add output layer
             mlp_model.add(Dense(self.params['num_class'], activation=self.params['activation_output']))
 
-            mlp_model.compile(loss=self.params['s_loss_function'], optimizer=self.params['optimizer'], metrics=metric)
+            mlp_model.compile(loss=self.params['s_loss_function'], optimizer=self.params['optimizer'], metrics=self.metric)
 
         return mlp_model
 
@@ -561,8 +562,8 @@ class cls_ev_agent_{id}:
 
         self.params['input_dim'] = len(df_all.columns) - 1  # need this for some models init; df.columns includes the target column, hence need to do -1
 
-        # initialise ML model with algorithm specific parameters
-        ml_model = self.model_init()
+        # configure ML model specific parameters which will be saved in self.params dictionary
+        self.model_params()
 
         # initialise temp df holding multi-class predictions for entire data set
         df_filter_column_mc = self.pd.DataFrame([self.np.zeros(self.params['num_class']) for i in range(len(df_filter_column))])
@@ -695,7 +696,8 @@ class cls_ev_agent_{id}:
                     y_test = self.np.array( x_test[self.target_col] )
                     x_test = self.np.array( x_test.drop(self.target_col, 1) )
 
-                    predictor = self.model_train(ml_model, x_train, y_train, x_test, y_test)
+                    predictor = self.model_init()
+                    predictor = self.model_train(predictor, x_train, y_train, x_test, y_test)
                     pred = self.model_predict(predictor, x_test)
 
                     if mode==1:
@@ -706,7 +708,9 @@ class cls_ev_agent_{id}:
                         # show various metrics as per
                         # http://scikit-learn.org/stable/modules/model_evaluation.html#classification-report
                         result_roc_auc = roc_auc_score(y_test, pred)
+                        result_prc_auc = self.prc_auc(y_test, pred)
                         print ("ROC AUC score: ", result_roc_auc)
+                        print ("PRC AUC score: ", result_prc_auc)
 
                         if self.print_tables:
                             result_cm = confusion_matrix(y_test, (pred > 0.5))  # assume 0.5 probability threshold
@@ -803,7 +807,8 @@ class cls_ev_agent_{id}:
                     y_test = self.np.array( x_test[self.target_col] )
                     x_test = self.np.array( x_test.drop(self.target_col, 1) )
 
-                    predictor = self.model_train(ml_model, x_train, y_train, x_test, y_test)
+                    predictor = self.model_init()
+                    predictor = self.model_train(predictor, x_train, y_train, x_test, y_test)
                     pred      = self.model_predict(predictor, x_test)
 
                     # fi = self.print_feature_importance(n_top_features=25, col_idx=fold_all, importance_type='gain', print_table=False, to_html=self.print_to_html)
