@@ -254,7 +254,7 @@ class cls_ev_agent_{id}:
 
     def model_predict(self, predictor, xt):
         try:
-            xt   = self.xgb.DMatrix(xt)
+            xt   = self.xgb.DMatrix(xt, feature_names=xt.columns)
             pred = predictor.predict(xt)
 
         except Exception as e:
@@ -273,12 +273,34 @@ class cls_ev_agent_{id}:
         return predictor
 
 
-    def model_train(self, ml_model, x_train, y_train, x_test, y_test):
-        dtrain = self.xgb.DMatrix( x_train, label=y_train)    # convert DF to xgb.DMatrix as required by XGB
-        dtest  = self.xgb.DMatrix( x_test,  label=y_test)
+    def model_feature_importance(self, predictor, n_top_features=25, col_idx=0, importance_type='gain', print_table = True, to_html = True ):
+        # get feature importance dictionary and transform it to list of original features
+        importance_dict = predictor.get_score(importance_type=importance_type)
+        importance_list = [ [k,v] for k, v in importance_dict.items() ]
 
-        watchlist = [(dtrain,'train'), (dtest, 'test')]
-        predictor = self.xgb.train( self.params, dtrain, self.params['num_round'], watchlist, verbose_eval=100, early_stopping_rounds=10 )
+        col_name = 'Importance_' + str(col_idx)
+        fi = self.pd.DataFrame( importance_list, columns = ['Feature', col_name] )
+        fi[col_name] = fi[col_name].round(4)
+
+        if col_idx == 1:
+            self.fi_total = fi
+        else:
+            self.fi_total = self.pd.merge(self.fi_total, fi, how='outer', on='Feature', sort=False)
+
+        if print_table:
+            print ()
+            self.print_html( fi.sort_values(by=[col_name], ascending=False), max_rows=n_top_features*2, max_cols=2 )
+
+
+
+    def model_train(self, ml_model, x_train, y_train, x_test, y_test, current_fold):
+        x_train = self.xgb.DMatrix( x_train, label=y_train, feature_names=x_train.columns)    # convert DF to xgb.DMatrix as required by XGB
+        x_test  = self.xgb.DMatrix( x_test,  label=y_test,  feature_names=x_test.columns)
+
+        watchlist = [(x_train,'train'), (x_test, 'test')]
+        predictor = self.xgb.train( self.params, x_train, self.params['num_round'], watchlist, verbose_eval=100, early_stopping_rounds=10 )
+
+        self.model_feature_importance(predictor, n_top_features=25, col_idx=current_fold, importance_type='gain', print_table = self.print_tables, to_html = self.print_to_html )
 
         return predictor
 
@@ -634,21 +656,21 @@ class cls_ev_agent_{id}:
                     print ("x_test rows count: " + str(len(x_test)))
                     print ("x_train rows count: " + str(len(x_train)))
 
-                    y_train = self.np.array( x_train[self.target_col] )          # separate training fields and the target
-                    x_train = self.np.array( x_train.drop(self.target_col, 1) )
+                    y_train = x_train[self.target_col]          # separate training fields and the target
+                    x_train = x_train.drop(self.target_col, 1)
 
-                    y_test = self.np.array( x_test[self.target_col] )
-                    x_test = self.np.array( x_test.drop(self.target_col, 1) )
+                    y_test = x_test[self.target_col]
+                    x_test = x_test.drop(self.target_col, 1)
 
                     predictor = self.model_init()
-                    predictor = self.model_train(predictor, x_train, y_train, x_test, y_test)
-                    pred = self.model_predict(predictor, x_test)
+                    predictor = self.model_train(predictor, x_train, y_train, x_test, y_test, fold-self.start_fold+1)
+                    pred      = self.model_predict(predictor, x_test)
 
                     if mode==1:
                         self.model_save(predictor, workdir + self.output_column + "_fold" + str(fold) + ".model")
 
                     if self.is_binary:
-                        result = self.my_log_loss(y_test, pred)
+                        result = my_log_loss(y_test, pred)
                         # show various metrics as per
                         # http://scikit-learn.org/stable/modules/model_evaluation.html#classification-report
                         result_roc_auc = roc_auc_score(y_test, pred)
@@ -689,7 +711,7 @@ class cls_ev_agent_{id}:
                     count_records_notnull += len(pred)
 
                     # predict all examples in the original test set which may include erroneous examples previously removed
-                    pred_all_test = self.model_predict(predictor, self.np.array(x_test_orig.drop(self.target_col, axis=1)))
+                    pred_all_test = self.model_predict(predictor, x_test_orig.drop(self.target_col, axis=1))
 
                     if self.params['objective'] == self.objective_multiclass:
                         prediction[range_start:range_end] = self.np.argmax(pred_all_test, axis=1)
@@ -698,8 +720,8 @@ class cls_ev_agent_{id}:
 
                     # predict validation and remainder sets examples
                     if self.use_validation_set:
-                        predicted_valid_set += self.model_predict(predictor, self.np.array(df_valid.drop(self.target_col, axis=1)))
-                        predicted_test_set  += self.model_predict(predictor, self.np.array(df_test.drop(self.target_col, axis=1)))
+                        predicted_valid_set += self.model_predict(predictor, df_valid.drop(self.target_col, axis=1))
+                        predicted_test_set  += self.model_predict(predictor, df_test.drop(self.target_col, axis=1))
 
                 predicted_valid_set = predicted_valid_set / (self.nfolds - self.start_fold)
                 predicted_test_set  = predicted_test_set / (self.nfolds - self.start_fold)
@@ -745,21 +767,15 @@ class cls_ev_agent_{id}:
                     print ("x_test  rows count: " + str(len(x_test)))
                     print ("x_train rows count: " + str(len(x_train)))
 
-                    y_train = self.np.array( x_train[self.target_col] )  # separate training fields and the target
-                    x_train = self.np.array( x_train.drop(self.target_col, 1) )
+                    y_train = x_train[self.target_col]  # separate training fields and the target
+                    x_train = x_train.drop(self.target_col, 1)
 
-                    y_test = self.np.array( x_test[self.target_col] )
-                    x_test = self.np.array( x_test.drop(self.target_col, 1) )
+                    y_test = x_test[self.target_col]
+                    x_test = x_test.drop(self.target_col, 1)
 
                     predictor = self.model_init()
-                    predictor = self.model_train(predictor, x_train, y_train, x_test, y_test)
+                    predictor = self.model_train(predictor, x_train, y_train, x_test, y_test, fold_all)
                     pred      = self.model_predict(predictor, x_test)
-
-                    # fi = self.print_feature_importance(n_top_features=25, col_idx=fold_all, importance_type='gain', print_table=False, to_html=self.print_to_html)
-                    # if fold_all == 1:
-                    #     self.fi_total = fi
-                    # else:
-                    #     self.fi_total = self.pd.merge(self.fi_total, fi, how='outer', on='Feature', sort=False)
 
                     try:
                         if self.is_binary:
@@ -854,7 +870,7 @@ class cls_ev_agent_{id}:
                 for fold in range(0, len(predictors)):
                     # predict remainder in the column output mode
                     if len(df_test) > 0 and mode == 1:
-                        pred = self.model_predict(predictors[fold], self.np.array(df_test.drop(self.target_col, axis=1)))
+                        pred = self.model_predict(predictors[fold], df_test.drop(self.target_col, axis=1))
                         predicted_test_set += pred
 
                         if self.params['objective'] == self.objective_multiclass:
@@ -869,7 +885,7 @@ class cls_ev_agent_{id}:
 
                     # predict validation set
                     if self.use_validation_set:
-                        df_valid_x = self.np.array( df_valid.drop(self.target_col, axis=1) )
+                        df_valid_x = df_valid.drop(self.target_col, axis=1)
                         pred = self.model_predict(predictors[fold], df_valid_x)
                         predicted_valid_set += pred
 
@@ -973,12 +989,12 @@ class cls_ev_agent_{id}:
         self.print_html(predictors_all, max_rows=50, max_cols=5)
 
         # combine feature importance results from all folds into one table
-        #fi_cols = [col for col in self.fi_total.columns if 'Importance' in col]
-        #self.fi_total['Importance_AVG'] = self.np.round(self.fi_total[fi_cols].sum(axis=1) / fold_all, decimals=2)
-        #self.fi_total['Importance_AVG_perc'] = self.np.round(100 * self.fi_total['Importance_AVG'] / self.fi_total['Importance_AVG'].sum(axis=0), decimals=2)
+        fi_cols = [col for col in self.fi_total.columns if 'Importance' in col]
+        self.fi_total['Importance_AVG']      = self.np.round(self.fi_total[fi_cols].sum(axis=1) / fold_all, decimals=2)
+        self.fi_total['Importance_AVG_perc'] = self.np.round(100 * self.fi_total['Importance_AVG'] / self.fi_total['Importance_AVG'].sum(axis=0), decimals=2)
 
-        #print ('\nFEATURE Importance Overall:')
-        #self.print_html( self.fi_total[['Feature', 'Importance_AVG', 'Importance_AVG_perc']].sort_values(by=['Importance_AVG'], ascending=False), max_rows=200, max_cols=4)
+        print ('\nFEATURE Importance Overall:')
+        self.print_html( self.fi_total[['Feature', 'Importance_AVG', 'Importance_AVG_perc']].sort_values(by=['Importance_AVG'], ascending=False), max_rows=200, max_cols=4)
 
         # print ('\nFEATURE Importance SHAP last validation:')
         # shap.initjs()
@@ -989,7 +1005,7 @@ class cls_ev_agent_{id}:
         self.dicts_agent['test_sub_sets_ix']  = test_sub_sets_ix
 
         # save performance summaries across all validation folds
-        #self.dicts_agent['fi_total'] = self.fi_total
+        self.dicts_agent['fi_total'] = self.fi_total
         #self.dicts_agent['fi_valid_shap'] = valid_set_shap_values
         #self.dicts_agent['fi_valid_x'] = df_valid_x
 
