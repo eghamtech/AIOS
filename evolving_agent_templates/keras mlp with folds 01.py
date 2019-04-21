@@ -698,13 +698,13 @@ class cls_ev_agent_{id}:
 
                     predictor = self.model_init()
                     predictor = self.model_train(predictor, x_train, y_train, x_test, y_test)
-                    pred = self.model_predict(predictor, x_test)
+                    pred      = self.model_predict(predictor, x_test)
 
                     if mode==1:
                         self.model_save(predictor, workdir + self.output_column + "_fold" + str(fold) + ".model")
 
                     if self.is_binary:
-                        result = self.my_log_loss(y_test, pred)
+                        result = log_loss(y_test, pred)
                         # show various metrics as per
                         # http://scikit-learn.org/stable/modules/model_evaluation.html#classification-report
                         result_roc_auc = roc_auc_score(y_test, pred)
@@ -745,7 +745,7 @@ class cls_ev_agent_{id}:
                     count_records_notnull += len(pred)
 
                     # predict all examples in the original test set which may include erroneous examples previously removed
-                    pred_all_test = self.model_predict(predictor, x_test_orig.drop(self.target_col, axis=1))
+                    pred_all_test = self.model_predict(predictor, self.np.array(x_test_orig.drop(self.target_col, axis=1)))
 
                     if self.params['objective'] == self.objective_multiclass:
                         prediction[range_start:range_end] = self.np.argmax(pred_all_test, axis=1)
@@ -754,8 +754,8 @@ class cls_ev_agent_{id}:
 
                     # predict validation and remainder sets examples
                     if self.use_validation_set:
-                        predicted_valid_set += self.model_predict(predictor, df_valid.drop(self.target_col, axis=1))
-                        predicted_test_set  += self.model_predict(predictor, df_test.drop(self.target_col, axis=1))
+                        predicted_valid_set += self.model_predict(predictor, self.np.array(df_valid.drop(self.target_col, axis=1)))
+                        predicted_test_set  += self.model_predict(predictor, self.np.array(df_test.drop(self.target_col, axis=1)))
 
                 predicted_valid_set = predicted_valid_set / (self.nfolds - self.start_fold)
                 predicted_test_set  = predicted_test_set / (self.nfolds - self.start_fold)
@@ -910,7 +910,7 @@ class cls_ev_agent_{id}:
                 for fold in range(0, len(predictors)):
                     # predict remainder in the column output mode
                     if len(df_test) > 0 and mode == 1:
-                        pred = self.model_predict(predictors[fold], df_test.drop(self.target_col, axis=1))
+                        pred = self.model_predict(predictors[fold], self.np.array(df_test.drop(self.target_col, axis=1)))
                         predicted_test_set += pred
 
                         if self.params['objective'] == self.objective_multiclass:
@@ -925,7 +925,7 @@ class cls_ev_agent_{id}:
 
                     # predict validation set
                     if self.use_validation_set:
-                        df_valid_x = df_valid.drop(self.target_col, axis=1)
+                        df_valid_x = self.np.array(df_valid.drop(self.target_col, axis=1))
                         pred = self.model_predict(predictors[fold], df_valid_x)
                         predicted_valid_set += pred
 
