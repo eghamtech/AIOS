@@ -114,8 +114,8 @@ class cls_ev_agent_{id}:
     # https://docs.python.org/3.4/using/cmdline.html#envvar-PYTHONHASHSEED
     # https://github.com/fchollet/keras/issues/2280#issuecomment-306959926
 
-    import os
-    os.environ['PYTHONHASHSEED'] = '0'
+    #import os
+    #os.environ['PYTHONHASHSEED'] = '0'
 
     # The below is necessary for starting Numpy generated random numbers
     # in a well-defined initial state.
@@ -163,15 +163,15 @@ class cls_ev_agent_{id}:
 
     def list_mean(self, lst, precision=4):
         return self.np.round(sum(lst)/float(len(lst)), decimals=precision)
-    
-    def prc_auc(self, train_y, pred):   
+
+    def prc_auc(self, train_y, pred):
         from sklearn.metrics import precision_recall_curve
         from sklearn.metrics import auc
-        
-        precision, recall, thresholds = precision_recall_curve(train_y, pred)  
+
+        precision, recall, thresholds = precision_recall_curve(train_y, pred)
         prc_auc = auc(recall, precision)
-                     
-        return prc_auc    
+
+        return prc_auc
 
     def tf_roc_auc(self,y_true, y_pred):
         import tensorflow as tf
@@ -180,7 +180,7 @@ class cls_ev_agent_{id}:
             auc = tf.metrics.auc(y_true, y_pred, curve='ROC', summation_method='careful_interpolation')[1]
             K.get_session().run(tf.local_variables_initializer())
             return auc
-    
+
     def tf_prc_auc(self,y_true, y_pred):
         import tensorflow as tf
         with tf.device(self.s_tf_device):
@@ -188,7 +188,7 @@ class cls_ev_agent_{id}:
             auc = tf.metrics.auc(y_true, y_pred, curve='PR', summation_method='careful_interpolation')[1]
             K.get_session().run(tf.local_variables_initializer())
             return auc
-    
+
     def model_env_init(self):
         import tensorflow as tf
         # specify whether to run Keras/TensorFlow on CPU or GPU (and which GPU, if you have multiple)
@@ -258,7 +258,7 @@ class cls_ev_agent_{id}:
             self.params['early_stop_metric_direction'] = 'auto'
             self.params['num_class']       = 1
             # params['metric']             = ['rmse', 'mae']
-            
+
     def model_init(self):
         #############################################################
         #                   MLP Model Compiling
@@ -291,11 +291,11 @@ class cls_ev_agent_{id}:
         try:
             xt   = self.np.array(xt)
             pred = predictor.predict(xt, verbose=0)
-                   
+
             if self.is_binary:
                 # prediction is a list of lists by default convert to list of numbers
                 pred = [item for sublist in pred for item in sublist]
-                
+
         except Exception as e:
             print ('MLP Predict error: ', e)
             pred = 0
@@ -316,11 +316,11 @@ class cls_ev_agent_{id}:
 
     def model_train(self, ml_model, x_train, y_train, x_test, y_test):
         import tensorflow as tf
-        with tf.device(self.s_tf_device):        
+        with tf.device(self.s_tf_device):
             from keras.callbacks import EarlyStopping
 
-            early_stopper = EarlyStopping( monitor   =self.params['early_stop_metric'], 
-                                           min_delta =self.params['early_stopping_min_delta'], patience=2, verbose=0, 
+            early_stopper = EarlyStopping( monitor   =self.params['early_stop_metric'],
+                                           min_delta =self.params['early_stopping_min_delta'], patience=2, verbose=0,
                                            mode      =self.params['early_stop_metric_direction'] )
 
             mlp_history   = ml_model.fit( x_train, y_train,

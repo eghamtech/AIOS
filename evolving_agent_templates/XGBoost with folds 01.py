@@ -89,7 +89,7 @@ class cls_ev_agent_{id}:
     fields_to_use = {fields_to_use}
     start_fold    = {start_fold}
     nfolds        = {nfolds}
-    num_threads   = {num_threads}
+    num_threads   = {nthread}
     rn_seed_init  = {random_seed_init}
 
     params        = {}             # ML algo parameters
@@ -121,8 +121,8 @@ class cls_ev_agent_{id}:
     # https://docs.python.org/3.4/using/cmdline.html#envvar-PYTHONHASHSEED
     # https://github.com/fchollet/keras/issues/2280#issuecomment-306959926
 
-    import os
-    os.environ['PYTHONHASHSEED'] = rn_seed_init
+    #import os
+    #os.environ['PYTHONHASHSEED'] = rn_seed_init
 
     # The below is necessary for starting Numpy generated random numbers
     # in a well-defined initial state.
