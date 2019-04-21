@@ -854,7 +854,7 @@ class cls_ev_agent_{id}:
                 for fold in range(0, len(predictors)):
                     # predict remainder in the column output mode
                     if len(df_test) > 0 and mode == 1:
-                        pred = self.model_predict(predictors[fold], df_test.drop(self.target_col, axis=1))
+                        pred = self.model_predict(predictors[fold], self.np.array(df_test.drop(self.target_col, axis=1)))
                         predicted_test_set += pred
 
                         if self.params['objective'] == self.objective_multiclass:
@@ -869,7 +869,7 @@ class cls_ev_agent_{id}:
 
                     # predict validation set
                     if self.use_validation_set:
-                        df_valid_x = df_valid.drop(self.target_col, axis=1)
+                        df_valid_x = self.np.array( df_valid.drop(self.target_col, axis=1) )
                         pred = self.model_predict(predictors[fold], df_valid_x)
                         predicted_valid_set += pred
 
