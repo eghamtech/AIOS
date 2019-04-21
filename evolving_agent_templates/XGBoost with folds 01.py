@@ -689,7 +689,7 @@ class cls_ev_agent_{id}:
                     count_records_notnull += len(pred)
 
                     # predict all examples in the original test set which may include erroneous examples previously removed
-                    pred_all_test = self.model_predict(predictor, x_test_orig.drop(self.target_col, axis=1))
+                    pred_all_test = self.model_predict(predictor, self.np.array(x_test_orig.drop(self.target_col, axis=1)))
 
                     if self.params['objective'] == self.objective_multiclass:
                         prediction[range_start:range_end] = self.np.argmax(pred_all_test, axis=1)
@@ -698,8 +698,8 @@ class cls_ev_agent_{id}:
 
                     # predict validation and remainder sets examples
                     if self.use_validation_set:
-                        predicted_valid_set += self.model_predict(predictor, df_valid.drop(self.target_col, axis=1))
-                        predicted_test_set  += self.model_predict(predictor, df_test.drop(self.target_col, axis=1))
+                        predicted_valid_set += self.model_predict(predictor, self.np.array(df_valid.drop(self.target_col, axis=1)))
+                        predicted_test_set  += self.model_predict(predictor, self.np.array(df_test.drop(self.target_col, axis=1)))
 
                 predicted_valid_set = predicted_valid_set / (self.nfolds - self.start_fold)
                 predicted_test_set  = predicted_test_set / (self.nfolds - self.start_fold)
