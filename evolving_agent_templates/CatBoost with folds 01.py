@@ -201,7 +201,7 @@ class cls_ev_agent_{id}:
         self.params['iterations']                   = {iterations}
         self.params['learning_rate']                = {learning_rate}
         self.params['bootstrap_type']               = {bootstrap_type}
-        self.params['metric_period']                = {metric_period}
+        #self.params['metric_period']                = {metric_period}
 
         self.params['bagging_temperature']          = {bagging_temperature}
         self.params['sampling_frequency']           = {sampling_frequency}
@@ -210,7 +210,6 @@ class cls_ev_agent_{id}:
 
         self.params['l2_leaf_reg']                  = {l2_leaf_reg}
         self.params['random_seed']                  = self.rn_seed_init
-
 
         self.params['use_best_model']               = {use_best_model}
         self.params['depth']                        = {depth}
@@ -242,6 +241,7 @@ class cls_ev_agent_{id}:
             self.params['objective']                     = 'CrossEntropy'
             self.params['eval_metric']                   = 'AUC'
             self.params['num_class']                     = 1
+            self.params['prediction_type']               = 'Probability'
             # self.params['loss_function']               = 'crossentropy'
             # self.params['metric']                      = [self.tf_roc_auc, self.tf_prc_auc]                                 # if using custom metric function cannot save in params as pickle will fail
             # self.metric                                = [self.tf_roc_auc, self.tf_prc_auc]                                 # in such case use local class variable for metric
@@ -252,6 +252,7 @@ class cls_ev_agent_{id}:
             self.params['objective']                     = self.objective_multiclass
             self.params['eval_metric']                   = 'MultiClassOneVsAll'
             self.params['num_class']                     = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
+            self.params['prediction_type']               = 'Probability'
             # self.params['loss_function']               = 'MultiClassOneVsAll'
             # self.params['metric']                      = ['accuracy']
             # self.metric                                = ['accuracy']
@@ -261,6 +262,7 @@ class cls_ev_agent_{id}:
             print ("detected regression target: use RMSE/MAE")
             self.params['objective']                     = self.objective_regression
             self.params['eval_metric']                   = 'RMSE'
+            self.params['prediction_type']               = 'RawFormulaVal'
             # self.params['loss_function']               = 'RMSE'
             # self.params['metric']                      = ['mean_squared_error']
             # self.metric                                = ['mean_squared_error']
@@ -278,8 +280,12 @@ class cls_ev_agent_{id}:
             cat_features_ind = self.np.where(self.np.logical_and(xt.dtypes != self.np.float32, xt.dtypes != self.np.float64))[0]
 
             xt   = self.cbst.Pool(xt, cat_features=cat_features_ind, feature_names=list(xt.columns))
-            pred = predictor.predict(xt, prediction_type='RawFormulaVal', ntree_start=0, ntree_end=0,
+            pred = predictor.predict(xt, prediction_type=self.params['prediction_type'], ntree_start=0, ntree_end=0,
                                      thread_count=self.params['thread_count'], verbose=self.params['verbose'])
+
+            if self.is_binary:
+                # convert list of two class lists into a list of probabilities for class 1
+                pred = self.np.array( [r[1] for r in pred] )
 
         except Exception as e:
             print ('CatBoost Predict error: ', e)
@@ -793,6 +799,9 @@ class cls_ev_agent_{id}:
 
                     y_test = x_test[self.target_col]
                     x_test = x_test.drop(self.target_col, 1)
+
+                    print ('Y_TEST  Target mean: ', y_test.mean().round(3))
+                    print ('Y_TRAIN Target mean: ', y_train.mean().round(3))
 
                     predictor = self.model_init()
                     predictor = self.model_train(predictor, x_train, y_train, x_test, y_test, fold_all)
