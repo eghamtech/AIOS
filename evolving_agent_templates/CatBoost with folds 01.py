@@ -25,7 +25,7 @@
 #key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
 #key=objective_multiclass;  type=random_from_set;  set='MultiClassOneVsAll'
 #key=objective_regression;  type=random_from_set;  set='RMSE'
-#key=bootstrap_type;  type=random_from_set;  set='Bayesian','Bernoulli','No'
+#key=bootstrap_type;  type=random_from_set;  set='Bayesian','Bernoulli'
 #key=learning_rate;  type=random_float;  from=0.01;  to=0.09;  step=0.005
 #key=metric_period;  type=random_int;  from=1;  to=5;  step=1
 #key=bagging_temperature;  type=random_int;  from=1;  to=50;  step=1
@@ -36,7 +36,7 @@
 #key=use_best_model;  type=random_from_set;  set=True,False
 #key=depth;  type=random_int;  from=1;  to=16;  step=1
 #key=grow_policy;  type=random_from_set;  set='SymmetricTree'
-#key=min_data_in_leaf;  type=random_int;  from=1;  to=10;  step=1
+#key=min_data_in_leaf;  type=random_int;  from=1;  to=1;  step=1
 #key=max_leaves;  type=random_int;  from=10;  to=64;  step=1
 #key=iterations;  type=random_int;  from=100;  to=1500;  step=50
 #key=has_time;  type=random_from_set;  set=True,False
@@ -200,8 +200,8 @@ class cls_ev_agent_{id}:
     def model_params(self):
         self.params['iterations']                   = {iterations}
         self.params['learning_rate']                = {learning_rate}
-        self.params['bootstrap_type']               = [bootstrap_type]
-        self.params['metric_period']                = [metric_period]
+        self.params['bootstrap_type']               = {bootstrap_type}
+        self.params['metric_period']                = {metric_period}
 
         self.params['bagging_temperature']          = {bagging_temperature}
         self.params['sampling_frequency']           = {sampling_frequency}
