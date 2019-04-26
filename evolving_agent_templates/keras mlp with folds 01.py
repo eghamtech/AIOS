@@ -309,7 +309,7 @@ class cls_ev_agent_{id}:
         import tensorflow as tf
         with tf.device(self.s_tf_device):
             from keras.models import load_model
-            ml_model = load_model(file_path)
+            ml_model = load_model(file_path, custom_objects={'tf_roc_auc':self.tf_roc_auc, 'tf_prc_auc':self.tf_prc_auc})
 
         return ml_model
 
