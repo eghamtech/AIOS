@@ -785,6 +785,9 @@ class cls_ev_agent_{id}:
                     y_test = x_test[self.target_col]
                     x_test = x_test.drop(self.target_col, 1)
 
+                    print ('Y_TEST  Target mean: ', y_test.mean().round(3))
+                    print ('Y_TRAIN Target mean: ', y_train.mean().round(3))
+
                     predictor = self.model_init()
                     predictor = self.model_train(predictor, x_train, y_train, x_test, y_test, fold_all)
                     pred      = self.model_predict(predictor, x_test)

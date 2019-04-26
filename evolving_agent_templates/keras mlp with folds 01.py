@@ -250,13 +250,13 @@ class cls_ev_agent_{id}:
             self.params['early_stop_metric_direction'] = 'auto'
         else:
             print ("detected regression target: use RMSE/MAE")
-            self.params['objective']       = self.objective_regression
-            self.params['s_loss_function'] = 'mean_squared_error'
+            self.params['objective']                   = self.objective_regression
+            self.params['s_loss_function']             = 'mean_squared_error'
             #self.params['metric']                      = ['mean_squared_error']
             self.metric                                = ['mean_squared_error']
             self.params['early_stop_metric']           = 'val_loss'
             self.params['early_stop_metric_direction'] = 'auto'
-            self.params['num_class']       = 1
+            self.params['num_class']                   = 1
             # params['metric']             = ['rmse', 'mae']
 
     def model_init(self):
@@ -806,6 +806,9 @@ class cls_ev_agent_{id}:
 
                     y_test = self.np.array( x_test[self.target_col] )
                     x_test = self.np.array( x_test.drop(self.target_col, 1) )
+
+                    print ('Y_TEST  Target mean: ', y_test.mean().round(3))
+                    print ('Y_TRAIN Target mean: ', y_train.mean().round(3))
 
                     predictor = self.model_init()
                     predictor = self.model_train(predictor, x_train, y_train, x_test, y_test)

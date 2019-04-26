@@ -570,6 +570,9 @@ class cls_ev_agent_{id}:
                     y_test = x_test[self.target_col]
                     x_test = x_test.drop(self.target_col, 1)
 
+                    print ('Y_TEST  Target mean: ', y_test.mean().round(3))
+                    print ('Y_TRAIN Target mean: ', y_train.mean().round(3))
+
                     x_train = self.lgb.Dataset( x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
 
                     num_round=10000
