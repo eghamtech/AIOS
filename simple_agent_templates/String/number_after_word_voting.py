@@ -2,9 +2,9 @@
 #key=fields_source;  type=constant;  value='string_field|string_field.csv'
 #key=words;  type=constant;  value=['No','Maybe','Yes']
 #key=new_field_prefix;  type=constant;  value=vote_
-#key=include_columns_type;  type=constant;  set='is_dict_only'
-#key=include_columns_containing;  type=constant;  set=
-#key=ignore_columns_containing;  type=constant;  set='%ev_field%' and '%onehe_%' and '%scaled%'
+#key=include_columns_type;  type=constant;  value='is_dict_only'
+#key=include_columns_containing;  type=constant;  value=
+#key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%' and '%scaled%'
 #end_of_parameters
 
 # AICHOO OS Simple Agent
