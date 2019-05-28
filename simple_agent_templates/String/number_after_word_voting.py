@@ -30,15 +30,25 @@ class cls_agent_{id}:
     file1 = col_definition1.split("|")[1]
     
     words = {words}
+    dicts_agent = {}
     
     # obtain a unique ID for the current instance
     result_id = {id}
     # create new field name based on "new_field_prefix" with unique instance ID
     # and filename to save new field data
     new_field_prefix  = "{new_field_prefix}"
-    new_field_name    = new_field_prefix + col1 + '_' + str(result_id)
+    output_column     = new_field_prefix + col1 + '_' + str(result_id)
     agent_name        = 'agent_' + str(result_id)
     
+    def __init__(self):
+        from datetime import datetime
+        
+        if self.os.path.isfile(workdir + self.output_column + '_dicts.model'):
+            rfile = self.bz2.BZ2File(workdir + self.output_column + '_dicts.model', 'r')
+            self.dicts_agent = self.pickle.load(rfile)
+            rfile.close()
+            print (str(datetime.now()), self.output_column + ' dictionaries model loaded')
+            
     def is_set(self, s):
         return len(s)>0 and s!="0"
     
@@ -69,23 +79,25 @@ class cls_agent_{id}:
         # weights based score calculation
         wts = -1*row[columns[0]] + 0*row[columns[1]] + 1*row[columns[2]]
         n   = row[columns[0]] + row[columns[1]] + row[columns[2]]
-
         fr  = wts/n
         
-        if n <= 2:
-            if fr <= -0.5:
-                ret = 0
-            elif fr > -0.5 and fr <= 0.5:
-                ret = 1
-            elif fr > 0.5:
-                ret = 2
-        else:
-            if fr <= -0.5:
-                ret = 0
-            elif fr > -0.5 and fr < 0.5:
-                ret = 1
-            elif fr >= 0.5:
-                ret = 2
+        ret = 0      
+        if n != 0:
+            fr  = wts/n
+            if n <= 2:
+                if fr <= -0.5:
+                    ret = 1
+                elif fr > -0.5 and fr <= 0.5:
+                    ret = 2
+                elif fr > 0.5:
+                    ret = 3
+            else:
+                if fr <= -0.5:
+                    ret = 1
+                elif fr > -0.5 and fr < 0.5:
+                    ret = 2
+                elif fr >= 0.5:
+                    ret = 3
         
         return ret
                 
@@ -94,13 +106,14 @@ class cls_agent_{id}:
         col_name = self.col1
         
         df_t = df_run[[col_name]]
+        df_t['dict_' + col_name] = df_t[col_name].map(self.dicts_agent[col_name])
         
         for word in self.words:
             # create column for each word with a number found for such word
-            df_t[word] = df_t[col_name].apply( (lambda x: self.get_number_after_word(word, x)) )
+            df_t[word] = df_t['dict_' + col_name].apply( (lambda x: self.get_number_after_word(word, x)) )
             
         # apply voting function to each row of given words' numbers
-        df_run[self.new_field_name] = df_t[self.words].apply( (lambda x: self.get_vote(self.words, x)) )
+        df_run[self.output_column] = df_t[self.words].apply( (lambda x: self.get_vote(self.words, x)), axis=1 )
  
 
     def run(self, mode):
@@ -121,15 +134,21 @@ class cls_agent_{id}:
 
         if self.os.path.isfile(workdir + 'dict_' + file_name):
             # load dictionary if it exists
-            dict_temp         = self.pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
-            self.df[col_name] = self.df[col_name].map(dict_temp)
+            self.dicts_agent[col_name] = self.pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
   
         self.run_on(self.df)
         nrow = len(self.df)
 
-        fld   = self.new_field_name
+        # save new column into CSV file
+        fld   = self.output_column
         fname = fld + '.csv'
         self.df[[fld]].to_csv(workdir+fname)
+        
+        # save dictionaries of the new column into model file needed for Apply stage
+        sfile = self.bz2.BZ2File(workdir + fld + '_dicts.model', 'w')
+        self.pickle.dump(self.dicts_agent, sfile) 
+        sfile.close()
+            
         print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
 
