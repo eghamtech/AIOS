@@ -15,7 +15,7 @@
 # this agent creates new column from given string field by finding numbers after specific words
 # and applying voting function to such numbers
 #
-# if "fields_source" is empty then source field is assigned by AIOS
+# if "fields_source" is empty then source field is assigned by AIOS - uncomment line 27 and comment 28 in such case
 
 class cls_agent_{id}:
     import warnings
@@ -50,40 +50,41 @@ class cls_agent_{id}:
         return swords 
         
     def get_number_after_word(self, word, sentence):
-        s_tok = self.tokenize(sentence)
-        match = self.re.search(word + ' (\d+)', s_tok)
+        s_tok = self.tokenize(sentence)                   # split string into words with punctuation
+        match = self.re.search(word + ' (\d+)', s_tok)    # search for number after a word
 
         if match == None:
-            match = self.re.search(word, s_tok)
+            match = self.re.search(word, s_tok)           # just match a word when no number after the word is found
 
             if match == None:
-                ret = 0
+                ret = 0                                   # if no word found then return 0
             else:
-                ret = 1
+                ret = 1                                   # if word is found without a number after it return 1
         else:
-            ret = int(match.group(1))
+            ret = int(match.group(1))                     # return actual number found after the word
 
         return ret
 
     def get_vote(self, columns, row):
+        # weights based score calculation
         wts = -1*row[columns[0]] + 0*row[columns[1]] + 1*row[columns[2]]
         n   = row[columns[0]] + row[columns[1]] + row[columns[2]]
 
         fr  = wts/n
         
         if n <= 2:
-            if r <= -0.5:
+            if fr <= -0.5:
                 ret = 0
-            elif r > -0.5 and r <= 0.5:
+            elif fr > -0.5 and fr <= 0.5:
                 ret = 1
-            elif r > 0.5:
+            elif fr > 0.5:
                 ret = 2
         else:
-            if r <= -0.5:
+            if fr <= -0.5:
                 ret = 0
-            elif r > -0.5 and r < 0.5:
+            elif fr > -0.5 and fr < 0.5:
                 ret = 1
-            elif r >= 0.5:
+            elif fr >= 0.5:
                 ret = 2
         
         return ret
@@ -95,8 +96,10 @@ class cls_agent_{id}:
         df_t = df_run[[col_name]]
         
         for word in self.words:
+            # create column for each word with a number found for such word
             df_t[word] = df_t[col_name].apply( (lambda x: self.get_number_after_word(word, x)) )
             
+        # apply voting function to each row of given words' numbers
         df_run[self.new_field_name] = df_t[self.words].apply( (lambda x: self.get_vote(self.words, x)) )
  
 
@@ -104,9 +107,9 @@ class cls_agent_{id}:
         print ("enter run mode " + str(mode))
         self.df  = self.pd.read_csv(workdir+self.file1)[[self.col1]]
         
-        unique_list = self.df[self.col1].unique()
+        unique_l = self.df[self.col1].unique()
 
-        if len(unique_list) == 1:
+        if len(unique_l) == 1:
             print ("Selected column contains only 1 unique value - no point to do anything with it.")
             # register the same field as the source field, which notifies AIOS of successful exit
             # and instructs to mark such field with use_for_models=False
