@@ -60,15 +60,14 @@ class cls_agent_{id}:
     def run(self, mode):
         print ("enter run mode " + str(mode))
         
+        self.df = self.pd.read_csv(workdir+self.file1)[[self.col1]]
+        
         for i in range(0,len(self.data_defs)):
             col_name  = self.data_defs[i].split("|")[0]
             file_name = self.data_defs[i].split("|")[1]
 
-            if i==0:
-                self.df = self.pd.read_csv(workdir+file_name)[[col_name]]
-            else:
-                self.df = self.df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
-                
+            self.df = self.df.merge(self.pd.read_csv(workdir+file_name)[[col_name]], left_index=True, right_index=True)
+            
             # load dictionary if it exists
             if self.os.path.isfile(workdir + 'dict_' + file_name):
                 dict_temp = self.pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
