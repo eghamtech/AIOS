@@ -348,7 +348,7 @@ class cls_ev_agent_{id}:
         from sklearn.model_selection import StratifiedShuffleSplit
         from math import sqrt
         from datetime import datetime
-        import shap
+        import shap, json
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
         
         # prepare LGBM parameters    
@@ -933,6 +933,8 @@ class cls_ev_agent_{id}:
         #############################################################
         #                   OUTPUT
         #############################################################
+        fi_total_dict = dict(zip(self.fi_total['Feature'],self.fi_total['Importance_AVG_perc']))
+        print ("#feature_importance="+json.dumps(fi_total_dict))
         
         if mode==1:
             # save dictionary of all auxiliry data and params into file
