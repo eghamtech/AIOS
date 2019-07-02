@@ -718,7 +718,7 @@ class cls_ev_agent_{id}:
                     watchlist  = [self.lgb.Dataset(x_test, label=y_test)]
                     
                     if params['binary_eval_fun'] == 'PRCAUC':
-                        predictor = self.lgb.train( params, x_train, params['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100, feval==self.f_eval_prc_auc)
+                        predictor = self.lgb.train( params, x_train, params['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100, feval=self.f_eval_prc_auc)
                     else:
                         predictor = self.lgb.train( params, x_train, params['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100)          
                     
