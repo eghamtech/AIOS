@@ -444,7 +444,12 @@ class cls_ev_agent_{id}:
         if is_binary:
             print ("detected binary target: use AUC/LOGLOSS")
             params['objective']  = 'binary'
-            params['metric']     = ['auc', 'binary_logloss']
+                       
+            if params['binary_eval_fun'] == 'PRCAUC':
+            	params['metric'] = ['prc_auc', 'auc', 'binary_logloss']
+            else:
+            	params['metric'] = ['auc', 'binary_logloss']
+                
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(target_classes)) + " classes")
             params['objective'] = self.objective_multiclass
