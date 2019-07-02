@@ -45,6 +45,7 @@
 #key=binary_balancing;  type=random_from_set;  set=False
 #key=binary_balancing_0;  type=random_float;  from=0.1;  to=1;  step=0.02
 #key=binary_balancing_1;  type=random_float;  from=0.1;  to=1;  step=0.02
+#key=binary_eval_fun;  type=random_from_set;  set='ROCAUC','PRCAUC'
 #key=start_fold;  type=random_from_set;  set=0
 #key=max_depth;  type=random_int;  from=-1;  to=10;  step=1
 #key=num_round;  type=random_int;  from=100;  to=10000;  step=50
@@ -227,6 +228,24 @@ class cls_ev_agent_{id}:
 
     def list_mean(self, lst, precision=4):
         return self.np.round(sum(lst)/float(len(lst)), decimals=precision)
+    
+    def f_eval_prc_auc(self, pred, train_data):   
+        from sklearn.metrics import precision_recall_curve
+        from sklearn.metrics import auc
+
+        precision, recall, thresholds = precision_recall_curve(train_data.get_label(), pred)  
+        prc_auc = auc(recall, precision)
+                     
+        return 'prc_auc', prc_auc, True
+                     
+    def prc_auc(self, train_y, pred):  
+        from sklearn.metrics import precision_recall_curve
+        from sklearn.metrics import auc
+
+        precision, recall, thresholds = precision_recall_curve(train_y, pred)  
+        prc_auc = auc(recall, precision)
+                     
+        return prc_auc 
 
     def load_columns(self):
         from datetime import datetime
@@ -382,6 +401,7 @@ class cls_ev_agent_{id}:
         params['binary_balancing']   = {binary_balancing}
         params['binary_balancing_0'] = {binary_balancing_0}
         params['binary_balancing_1'] = {binary_balancing_1}
+        params['binary_eval_fun']    = {binary_eval_fun}
         
         # obtain indexes for train and remainder sets
         # load target column as it may be needed for filtering and removing NaN targets from training
@@ -423,8 +443,8 @@ class cls_ev_agent_{id}:
         
         if is_binary:
             print ("detected binary target: use AUC/LOGLOSS")
-            params['objective'] = 'binary'
-            params['metric']    = ['auc', 'binary_logloss']
+            params['objective']  = 'binary'
+            params['metric']     = ['auc', 'binary_logloss']
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(target_classes)) + " classes")
             params['objective'] = self.objective_multiclass
@@ -689,12 +709,20 @@ class cls_ev_agent_{id}:
 
                     y_test = x_test[self.target_col]
                     x_test = x_test.drop(self.target_col, 1)
-
+                    
+                    print ('Y_TRAIN Target mean: ', y_train.mean().round(3))
+                    print ('Y_TEST  Target mean: ', y_test.mean().round(3))
+                    
                     x_train = self.lgb.Dataset( x_train, label=y_train)    # convert DF to lgb.Dataset as required by LGBM
                     
                     watchlist  = [self.lgb.Dataset(x_test, label=y_test)]
-                    predictor  = self.lgb.train( params, x_train, params['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100 )          
-                    self.bst   = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
+                    
+                    if params['binary_eval_fun'] == 'PRCAUC':
+                        predictor = self.lgb.train( params, x_train, params['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100, feval==self.f_eval_prc_auc)
+                    else:
+                        predictor = self.lgb.train( params, x_train, params['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100)          
+                    
+                    self.bst = predictor  # save trained model as class attribute, so e.g., plot_feature_importance can be called
 
                     fi = self.print_feature_importance(n_top_features=25, col_idx=fold_all, importance_type='gain', print_table = False, to_html = self.print_to_html )
                     if fold_all == 1:
@@ -710,7 +738,9 @@ class cls_ev_agent_{id}:
                         # show various metrics as per
                         # http://scikit-learn.org/stable/modules/model_evaluation.html#classification-report
                         result_roc_auc = roc_auc_score(y_test, pred)
+                        result_prc_auc = self.prc_auc(y_test, pred)
                         print ("ROC AUC score: ", result_roc_auc)
+                        print ("PRC AUC score: ", result_prc_auc)
                         
                         if self.print_tables:
                             result_cm      = confusion_matrix(y_test, (pred>0.5))  # assume 0.5 probability threshold
@@ -763,9 +793,13 @@ class cls_ev_agent_{id}:
                         print ("Minimum performance criteria: " + str(self.min_perf_criteria) + " not met! result_roc_auc: " + str(result_roc_auc))
                         return
 
-                    predictors.append([predictor,result,result_roc_auc])
-                    predictors_all.append([predictor,result,result_roc_auc])    # add predictors to global list across all validation folds
-
+                    if params['binary_eval_fun'] == 'PRCAUC':
+                        predictors.append([predictor,result,result_prc_auc])
+                        predictors_all.append([predictor,result,result_prc_auc])    # add predictors to global list across all validation folds
+                    else:
+                        predictors.append([predictor,result,result_roc_auc])
+                        predictors_all.append([predictor,result,result_roc_auc])    # add predictors to global list across all validation folds
+        
 
                 predictors = self.pd.DataFrame(predictors, columns=['predictor','result','result_roc_auc']).sort_values(by=['result_roc_auc'], ascending=False)
                 print ('\nFolds Performance Overall:')
@@ -865,6 +899,8 @@ class cls_ev_agent_{id}:
                         print ("LOGLOSS: ", result)
                         result_roc_auc = roc_auc_score(y_valid, predicted_valid_set)
                         print ("ROC AUC score: ", result_roc_auc)
+                        result_prc_auc = self.prc_auc(y_valid, predicted_valid_set)
+                        print ("PRC AUC score: ", result_prc_auc)
                         
                         if self.print_tables:
                             result_cm = confusion_matrix(y_valid, (self.np.asarray(predicted_valid_set)>0.5))  # assume 0.5 probability threshold
