@@ -54,6 +54,7 @@
 #key=min_perf_criteria;  type=random_float;  from=0.6;  to=0.6;  step=0.1
 #key=use_thresholds_train; type=random_from_set;  set=True
 #key=shap_data_limit;  type=random_int;  from=25000;  to=25000;  step=1
+#key=shap_tree_limit;  type=random_int;  from=-1;  to=-1;  step=1
 #key=print_to_html; type=random_from_set;  set=True
 #key=print_tables; type=random_from_set;  set=False
 #end_of_genes_definitions
@@ -121,6 +122,7 @@ class cls_ev_agent_{id}:
     use_float32_dtype  = {use_float32_dtype}
     min_perf_criteria  = {min_perf_criteria}
     shap_data_limit    = {shap_data_limit}
+    shap_tree_limit    = {shap_tree_limit}
     
     def __init__(self):
         from datetime import datetime
@@ -863,9 +865,9 @@ class cls_ev_agent_{id}:
                             
                         if mode == 1:
                             if fold == 0:
-                                valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x[0:self.shap_data_limit])
+                                valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
                             else:
-                                valid_set_shap_values += shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x[0:self.shap_data_limit])
+                                valid_set_shap_values += shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
 
                 prediction = prediction / len(predictors)
                 predicted_test_set  = predicted_test_set  / len(predictors)
