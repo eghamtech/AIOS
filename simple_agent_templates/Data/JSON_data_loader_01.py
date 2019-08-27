@@ -42,6 +42,39 @@ class cls_agent_{id}:
         if DEBUG == 1:
             print (str(datetime.now()), mesg)
     
+    def clean_text(self, s):
+        # Replace symbols with language
+        s = s.replace('&', '_and_')
+        s = s.replace('#', '_sharp_')
+        s = s.replace('@', '_at_')
+        s = s.replace('*', '_star_')
+        s = s.replace('%', '_prcnt_')
+        
+        s = s.replace('(', '_ob_')
+        s = s.replace(')', '_cb_')
+        s = s.replace('{', '_ocb_')
+        s = s.replace('}', '_ccb_')
+        s = s.replace('[', '_osb_')
+        s = s.replace(']', '_csb_')
+        
+        s = s.replace('=', '_eq_')
+        s = s.replace('>', '_gt_')
+        s = s.replace('<', '_lt_')
+        s = s.replace('+', '_plus_')
+        s = s.replace('-', '_dash_')
+        s = s.replace('/', '_fsl_')
+        s = s.replace('\\', '_bsl_')
+        s = s.replace('?', '_qm_')
+        s = s.replace('!', '_em_')
+
+        s = s.replace('.', '_dot_')
+        s = s.replace(',', '_coma_')
+        s = s.replace(':', '_cln_')
+        s = s.replace(';', '_scln_')
+
+        s = self.re.sub('[^0-9a-zA-Z]+', '_', s)
+        return  s
+    
     def __init__(self):
         global dicts
         
@@ -82,22 +115,29 @@ class cls_agent_{id}:
             
         # rename all columns by removing non alfa-numeric symbols
         cols = self.df.columns
-        new_cols    = []
-        self.colmap = {}
+        new_cols        = []                                     # list of new columns (with possible duplicates)
+        new_cols_unique = []                                     # list of new columns (fully unique names)
+        self.colmap     = {}                                     # dictionary 'original_column' : 'new_column'
         for i in range(0, len(cols)):
             str1 = cols[i]
             # prefix field depending on its source
-            # if colmap_origin[str1] == 'LL':
+            #if colmap_origin[str1] == 'LL':
             #    str1 = 'orgnLL_' + str1
-            str1 = 'orgn' + colmap_origin[str1] + '_' + str1
-                
-            #for ch in [".", ",", " ", "/", "(", ")", "?", "!"]:
-            #    str1 = str1.replace(ch, "_")
-            str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
-            str1 = str1 + "_" + str(self.result_id)
-            new_cols.append(str1)                                # list of new columns
+            
+            str1 = self.clean_text(str1)
+            str1 = str1[:220]                                    # limit column name length to comply with Linux filename limit 
+            new_cols.append(str1)                           
+            
+            ncol_count = new_cols.count(str1)
+            if ncol_count==1:
+                str1 = str1 + "_" + str(self.result_id)              
+            else:
+                str1 = str1 + "_dpl" + str(ncol_count) + "_" + str(self.result_id)
+            
+            new_cols_unique.append(str1)          
             self.colmap[cols[i]] = str1                          # a map from old column names to new ones
-        self.df.columns = new_cols                               # assign new column names to the dataframe
+        
+        self.df.columns = new_cols_unique                        # assign new column names to the dataframe
         
         print (str(datetime.now()), " processing DATETIME columns...")
         self.date_cols = []
