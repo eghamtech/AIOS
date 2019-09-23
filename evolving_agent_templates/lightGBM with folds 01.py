@@ -1029,13 +1029,13 @@ class cls_ev_agent_{id}:
             df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
             
-            print ("b_fitness="   +str(1-self.list_mean(weighted_auc_folds)*self.list_mean(valid_result_auc_folds)))
+            print ("b_fitness=" +str(self.np.round(1-self.list_mean(weighted_auc_folds)*self.list_mean(valid_result_auc_folds),4)))
             print ("b_result_1="+str(self.list_mean(weighted_result_folds)))
             print ("b_result_2="+str(self.list_mean(weighted_auc_folds)))
             print ("b_result_3="+str(self.list_mean(valid_result_folds)))
             print ("b_result_4="+str(self.list_mean(valid_result_auc_folds)))
         else:
-            print ("fitness="     +str(1-self.list_mean(weighted_auc_folds)*self.list_mean(valid_result_auc_folds)))  # main fitness metric
+            print ("fitness="     +str(self.np.round(1-self.list_mean(weighted_auc_folds)*self.list_mean(valid_result_auc_folds),4)))  # main fitness metric
             print ("out_result_1="+str(self.list_mean(weighted_result_folds)))                                        # Log Loss in train/test CV
             print ("out_result_2="+str(self.list_mean(weighted_auc_folds)))                                           # ROC AUC in train/test CV
             print ("out_result_3="+str(self.list_mean(valid_result_folds)))                                           # main fitness on Validation
