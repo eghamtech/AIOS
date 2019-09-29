@@ -105,7 +105,8 @@ class cls_ev_agent_{id}:
     num_threads   = {nthread}
     rn_seed_init  = {random_seed_init}
 
-    params        = {}             # ML algo parameters
+    params        = {}             # all parameters
+    params['algo']= {}             # ML algo parameters
     dicts_agent   = {}             # various dictionary to be saved as part of model
 
     # if filter columns are specified then training and validation sets will be selected based on filter criteria
@@ -198,48 +199,48 @@ class cls_ev_agent_{id}:
         return None
 
     def model_params(self):
-        self.params['iterations']                   = {iterations}
-        self.params['learning_rate']                = {learning_rate}
-        self.params['bootstrap_type']               = {bootstrap_type}
+        self.params['algo']['iterations']                   = {iterations}
+        self.params['algo']['learning_rate']                = {learning_rate}
+        self.params['algo']['bootstrap_type']               = {bootstrap_type}
         #self.params['metric_period']                = {metric_period}
 
-        self.params['bagging_temperature']          = {bagging_temperature}
-        self.params['sampling_frequency']           = {sampling_frequency}
-        self.params['sampling_unit']                = {sampling_unit}
-        self.params['random_strength']              = {random_strength}
+        self.params['algo']['bagging_temperature']          = {bagging_temperature}
+        self.params['algo']['sampling_frequency']           = {sampling_frequency}
+        self.params['algo']['sampling_unit']                = {sampling_unit}
+        self.params['algo']['random_strength']              = {random_strength}
 
-        self.params['l2_leaf_reg']                  = {l2_leaf_reg}
-        self.params['random_seed']                  = self.rn_seed_init
+        self.params['algo']['l2_leaf_reg']                  = {l2_leaf_reg}
+        self.params['algo']['random_seed']                  = self.rn_seed_init
 
-        self.params['use_best_model']               = {use_best_model}
-        self.params['depth']                        = {depth}
-        self.params['grow_policy']                  = {grow_policy}
-        self.params['min_data_in_leaf']             = {min_data_in_leaf}
-        self.params['max_leaves']                   = {max_leaves}
-        self.params['one_hot_max_size']             = {one_hot_max_size}
-        self.params['has_time']                     = {has_time}
-        self.params['rsm']                          = {rsm}
-        self.params['nan_mode']                     = {nan_mode}
-        self.params['fold_permutation_block']       = {fold_permutation_block}
-        self.params['leaf_estimation_method']       = {leaf_estimation_method}
+        self.params['algo']['use_best_model']               = {use_best_model}
+        self.params['algo']['depth']                        = {depth}
+        self.params['algo']['grow_policy']                  = {grow_policy}
+        self.params['algo']['min_data_in_leaf']             = {min_data_in_leaf}
+        #self.params['algo']['max_leaves']                   = {max_leaves}
+        self.params['algo']['one_hot_max_size']             = {one_hot_max_size}
+        self.params['algo']['has_time']                     = {has_time}
+        self.params['algo']['rsm']                          = {rsm}
+        self.params['algo']['nan_mode']                     = {nan_mode}
+        self.params['algo']['fold_permutation_block']       = {fold_permutation_block}
+        self.params['algo']['leaf_estimation_method']       = {leaf_estimation_method}
         # self.params['leaf_estimation_iterations'] = None
-        self.params['leaf_estimation_backtracking'] = {leaf_estimation_backtracking}
-        self.params['fold_len_multiplier']          = {fold_len_multiplier}
-        self.params['approx_on_full_history']       = {approx_on_full_history}
+        self.params['algo']['leaf_estimation_backtracking'] = {leaf_estimation_backtracking}
+        self.params['algo']['fold_len_multiplier']          = {fold_len_multiplier}
+        self.params['algo']['approx_on_full_history']       = {approx_on_full_history}
         # self.params['class_weights']            = [0.5, 1]
-        self.params['border_count']                 = {border_count}
-        self.params['feature_border_type']          = {feature_border_type}
+        self.params['algo']['border_count']                 = {border_count}
+        self.params['algo']['feature_border_type']          = {feature_border_type}
 
-        self.params['od_type']                      = {od_type}
-        self.params['od_wait']                      = {od_wait}
+        self.params['algo']['od_type']                      = {od_type}
+        self.params['algo']['od_wait']                      = {od_wait}
         # self.params['od_pval']                    = 0
-        self.params['thread_count']                 = {nthread}
-        self.params['verbose']                      = {verbose}
+        self.params['algo']['thread_count']                 = {nthread}
+        self.params['algo']['verbose']                      = {verbose}
 
         if self.is_binary:
             print ("detected binary target: use AUC/LOGLOSS and Binary Cross Entropy loss evaluation")
             self.params['objective']                     = 'CrossEntropy'
-            self.params['eval_metric']                   = 'AUC'
+            self.params['algo']['eval_metric']                   = 'AUC'
             self.params['num_class']                     = 1
             self.params['prediction_type']               = 'Probability'
             # self.params['loss_function']               = 'crossentropy'
@@ -250,7 +251,7 @@ class cls_ev_agent_{id}:
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(self.target_classes)) + " classes")
             self.params['objective']                     = self.objective_multiclass
-            self.params['eval_metric']                   = 'MultiClassOneVsAll'
+            self.params['algo']['eval_metric']                   = 'MultiClassOneVsAll'
             self.params['num_class']                     = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
             self.params['prediction_type']               = 'Probability'
             # self.params['loss_function']               = 'MultiClassOneVsAll'
@@ -261,7 +262,7 @@ class cls_ev_agent_{id}:
         else:
             print ("detected regression target: use RMSE/MAE")
             self.params['objective']                     = self.objective_regression
-            self.params['eval_metric']                   = 'RMSE'
+            self.params['algo']['eval_metric']                   = 'RMSE'
             self.params['prediction_type']               = 'RawFormulaVal'
             # self.params['loss_function']               = 'RMSE'
             # self.params['metric']                      = ['mean_squared_error']
@@ -272,7 +273,7 @@ class cls_ev_agent_{id}:
             # params['metric']             = ['rmse', 'mae']
 
     def model_init(self):
-        ml_model = self.cbst.CatBoost(self.params)
+        ml_model = self.cbst.CatBoost(self.params['algo'])
         return ml_model
 
     def model_predict(self, predictor, xt):
@@ -281,7 +282,7 @@ class cls_ev_agent_{id}:
 
             xt   = self.cbst.Pool(xt, cat_features=cat_features_ind, feature_names=list(xt.columns))
             pred = predictor.predict(xt, prediction_type=self.params['prediction_type'], ntree_start=0, ntree_end=0,
-                                     thread_count=self.params['thread_count'], verbose=self.params['verbose'])
+                                     thread_count=self.params['algo']['thread_count'], verbose=self.params['algo']['verbose'])
 
             if self.is_binary:
                 # convert list of two class lists into a list of probabilities for class 1
