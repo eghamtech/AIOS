@@ -1468,4 +1468,4 @@ class cls_ev_agent_{id}:
             print ("out_result_4=" + str(self.list_mean(valid_result_auc_folds)))                                           # ROC AUC on Validation
 
 
-ev_agent_1 = cls_ev_agent_1()
+ev_agent_{id} = cls_ev_agent_{id}()
