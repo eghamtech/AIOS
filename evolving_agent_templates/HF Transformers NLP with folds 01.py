@@ -175,7 +175,7 @@ class cls_ev_agent_{id}:
     clean_text_v  = {clean_text_v}
     field_ev_prefix_use_source_names = {field_ev_prefix_use_source_names}
     
-    num_threads   = {nthread}
+    num_threads   = {num_threads}
     rn_seed_init  = {random_seed_init}
     n_gpu         = {n_gpu}
 
