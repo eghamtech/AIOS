@@ -358,12 +358,15 @@ class cls_ev_agent_{id}:
      
 
     def model_env_init(self):   
+        torch.set_num_threads(self.num_threads)
+        torch.set_num_interop_threads(self.num_threads)
+        
         if self.n_gpu > 0:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.n_gpu  = torch.cuda.device_count()
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                        
+                              
         return None
 
     def model_init(self):
