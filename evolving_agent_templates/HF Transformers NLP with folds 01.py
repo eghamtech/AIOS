@@ -678,7 +678,7 @@ class cls_ev_agent_{id}:
         train_iterator = trange(int(self.params['algo']['num_train_epochs']), desc="Epoch")
 
         for _ in train_iterator:
-            epoch_iterator = tqdm(train_dataloader, desc="Iteration")
+            epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=True)
             for step, batch in enumerate(epoch_iterator):
                 ml_model.train()
                 batch  = tuple(t.to(self.device) for t in batch)
