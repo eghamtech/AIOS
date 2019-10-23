@@ -383,11 +383,13 @@ class cls_ev_agent_{id}:
     def model_params(self):
         self.params['algo']['model_type']                   = {transformer_model}
 
-        model_name_id = 0
+        model_name_id                                       = {transformer_model_id}
         n_model_names = len(MODEL_NAMES[self.params['algo']['model_type']])
         mappd_name_id = self.map_from_continuous_set_to_set(10, n_model_names, model_name_id)  # assuming 10 random options in "transformer_model_id" - change if expanded
 
         self.params['algo']['model_name']                   = MODEL_NAMES[self.params['algo']['model_type']][mappd_name_id]
+        print ("Model Type: ", self.params['algo']['model_type'])
+        print ("Model Name: ", self.params['algo']['model_name'])
         
         self.params['algo']['num_train_epochs']             = {epoch}
         self.params['algo']['max_train_steps']              = {max_train_steps}
