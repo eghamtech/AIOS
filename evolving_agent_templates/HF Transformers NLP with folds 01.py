@@ -147,7 +147,7 @@ MODEL_NAMES = {
                    'xlm-mlm-tlm-xnli15-1024','xlm-clm-enfr-1024','xlm-clm-ende-1024',
                    'xlm-mlm-17-1280','xlm-mlm-100-1280'],
     'roberta'   : ['roberta-base','roberta-large','roberta-large-mnli'],
-    'distilbert': ['distilbert-base-uncased','distilbert-base-uncased-distilled-squad','distilgpt2']
+    'distilbert': ['distilbert-base-uncased','distilbert-base-uncased-distilled-squad','distilroberta-base']
 }
 
 class cls_ev_agent_{id}:
