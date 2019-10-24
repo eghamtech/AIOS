@@ -24,17 +24,17 @@ class cls_agent_{id}:
     import pandas as pd
     import re, bz2, pickle, os.path
     
-    source_filename = "{source_filename}"                  # file in workdir where additional data is
+    source_filename      = "{source_filename}"             # file in workdir where additional data is
     source_primary_field = "{source_primary_field}"        # name of the field which can be used to link to existing data
-    primary_field = "{primary_field}"                      # name of the link field in the existing data
+    primary_field    = "{primary_field}"                   # name of the link field in the existing data
     new_field_prefix = "{field_prefix}"
     target = "{target}"
    
     # obtain a unique ID for the current instance
-    result_id = {id}
+    result_id  = {id}
     agent_name = 'csv_02_agent_' + str(result_id)
     
-    colmap = {}
+    colmap    = {}
     char_cols = []
     
     def printlog(self, mesg):
@@ -42,6 +42,39 @@ class cls_agent_{id}:
         global DEBUG
         if DEBUG == 1:
             print (str(datetime.now()), mesg)
+    
+    def clean_text(self, s):
+        # Replace symbols with language
+        s = s.replace('&', '_and_')
+        s = s.replace('#', '_sharp_')
+        s = s.replace('@', '_at_')
+        s = s.replace('*', '_star_')
+        s = s.replace('%', '_prcnt_')
+        
+        s = s.replace('(', '_ob_')
+        s = s.replace(')', '_cb_')
+        s = s.replace('{', '_ocb_')
+        s = s.replace('}', '_ccb_')
+        s = s.replace('[', '_osb_')
+        s = s.replace(']', '_csb_')
+        
+        s = s.replace('=', '_eq_')
+        s = s.replace('>', '_gt_')
+        s = s.replace('<', '_lt_')
+        s = s.replace('+', '_plus_')
+        s = s.replace('-', '_dash_')
+        s = s.replace('/', '_fsl_')
+        s = s.replace('\\', '_bsl_')
+        s = s.replace('?', '_qm_')
+        s = s.replace('!', '_em_')
+
+        s = s.replace('.', '_dot_')
+        s = s.replace(',', '_coma_')
+        s = s.replace(':', '_cln_')
+        s = s.replace(';', '_scln_')
+
+        s = self.re.sub('[^0-9a-zA-Z]+', '_', s)
+        return  s
         
     def __init__(self):
         global dicts
@@ -51,7 +84,7 @@ class cls_agent_{id}:
             dicts = self.pickle.load(rfile)
             rfile.close()
             
-            self.colmap = dicts[self.agent_name + '.colmap']
+            self.colmap    = dicts[self.agent_name + '.colmap']
             self.char_cols = dicts[self.agent_name + '.char_cols']
 
     def make_dict(self, col):
@@ -67,17 +100,30 @@ class cls_agent_{id}:
         print (str(datetime.now()), " creating dataframe...")
         self.df = self.pd.read_csv(workdir+self.source_filename, encoding='utf8', engine='python', error_bad_lines=False)
         
-        new_cols = []
-        self.colmap = {}
-        for c in self.df.columns:
-              str1 = c
-              str1 = self.re.sub('[^0-9a-zA-Z]+', '_', str1)
-              str1 = self.new_field_prefix + "_" + str1 + "_" + str(self.result_id)
-              new_cols.append(str1)                               # list of new columns
-              self.colmap[c] = str1                               # a map from old column names to new ones
-        self.df.columns = new_cols                                # assign new column names to the dataframe
+        # rename all new columns by removing non alfa-numeric symbols
+        cols            = self.df.columns
+        new_cols        = []                                     # list of new columns (with possible duplicates)
+        new_cols_unique = []                                     # list of new columns (fully unique names)
+        self.colmap     = {}
+        
+        for i in range(0, len(cols)):
+            str1 = self.new_field_prefix + "_" + cols[i]
+            str1 = self.clean_text(str1)
+            str1 = str1[:220]                                   # limit column name length to comply with Linux filename limit                 
+            new_cols.append(str1)                               # list of new columns
+              
+            ncol_count = new_cols.count(str1)
+            if ncol_count==1:
+                str1 = str1 + "_" + str(self.result_id)              
+            else:
+                str1 = str1 + "_dpl" + str(ncol_count) + "_" + str(self.result_id)
+            
+            new_cols_unique.append(str1)          
+            self.colmap[cols[i]] = str1                          # a map from old column names to new ones
+        
+        self.df.columns = new_cols_unique                        # assign new column names to the dataframe
 
-        col_name = self.primary_field.split("|")[0]
+        col_name  = self.primary_field.split("|")[0]
         file_name = self.primary_field.split("|")[1]
         
         # create a copy of specified primary field to have the same name as primary field in AIOS Memory
@@ -95,15 +141,15 @@ class cls_agent_{id}:
         print ("rows: ", len(df_primary))
  
         for cname in self.char_cols:
-            dict_char = self.make_dict(df_primary[cname].fillna(''))
-            dicts[cname] = dict_char
+            dict_char         = self.make_dict(df_primary[cname].fillna(''))
+            dicts[cname]      = dict_char
             df_primary[cname] = df_primary[cname].fillna('').map(dict_char)
             # save dictionary for each text column into separate file
             self.pd.DataFrame(list(dict_char.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv', encoding='utf-8')
             print ("text column: " + cname + " processed")
         
         print (str(datetime.now()), " saving dicts...")           
-        dicts[self.agent_name + '.colmap'] = self.colmap
+        dicts[self.agent_name + '.colmap']    = self.colmap
         dicts[self.agent_name + '.char_cols'] = self.char_cols
        
         sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
@@ -111,8 +157,6 @@ class cls_agent_{id}:
         sfile.close()
         
         print (str(datetime.now()), " ...dicts saved.")
-        
-        # self.df_primary.to_csv(workdir+self.output_filename, index=False) - deprecated
         
         nrow = len(df_primary)
         is_use_for_models="Y"
@@ -128,7 +172,7 @@ class cls_agent_{id}:
                 is_target="N"
                 
             # save each column into separate file and register new field
-            output_column = cname
+            output_column   = cname
             output_filename = output_column + ".csv"
             df_primary[[output_column]].to_csv(workdir+output_filename)           
             print ("#add_field:"+output_column+","+is_dict+","+output_filename+","+is_target+","+str(nrow)+","+is_use_for_models)
