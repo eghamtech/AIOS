@@ -367,8 +367,8 @@ class cls_ev_agent_{id}:
         from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
         from sklearn.metrics import confusion_matrix, f1_score
         from sklearn.metrics import classification_report
-        from sklearn.metrics import mean_squared_error
-        from sklearn.model_selection import StratifiedShuffleSplit
+        from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+        from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
         from math import sqrt
         from datetime import datetime
         import shap, json
@@ -462,6 +462,7 @@ class cls_ev_agent_{id}:
             # initialise temp df holding multi-class predictions for entire data set
             df_filter_column_mc = self.pd.DataFrame([self.np.zeros(params['num_class']) for i in range(len(df_filter_column))])
         else:
+            # if it is not binary and "multiclass" objective parameter not set then it is regression
             print ("detected regression target: use RMSE/MAE")
             params['objective'] = self.objective_regression
             params['metric']    = ['rmse','mae']
@@ -507,17 +508,26 @@ class cls_ev_agent_{id}:
                     valid_sets_ix.append( df_filter_column[filter_condition_valid].index.tolist() )
                 else:
                     # apply stratified random selection to previously filtered train set
-                    sss = StratifiedShuffleSplit(n_splits=1, test_size=params['random_valid_size'])
                     y   = df_filter_column[df_filter_column.index.isin(train_filtered_indexes)][[self.target_col]]
                     iy  = y.reset_index(level=0)                                                    # create copy, save existing index in 'index' column and reset index 
                     y.reset_index(drop=True, inplace=True)                                          # reset index because StratifiedShuffleSplit will reset index anyway
+                     
+                    if is_binary or self.is_set(self.objective_multiclass):
+                        sss = StratifiedShuffleSplit(n_splits=1, test_size=params['random_valid_size'])
 
-                    for train_ix, valid_ix in sss.split(self.np.zeros(len(y)), y):
-                        train_sets_ix.append( iy[iy.index.isin(train_ix)]['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
-                        valid_sets_ix.append( iy[iy.index.isin(valid_ix)]['index'].tolist() )       # can't use train_ix, valid_ix directly because they refer to new index reset during shuffling
-                        print ('TRAIN target mean: ', df_filter_column[df_filter_column.index.isin(train_sets_ix[valid_fold])][self.target_col].mean().round(3))
-                        print ('VALID target mean: ', df_filter_column[df_filter_column.index.isin(valid_sets_ix[valid_fold])][self.target_col].mean().round(3))
+                        for train_ix, valid_ix in sss.split(self.np.zeros(len(y)), y):
+                            train_sets_ix.append( iy[iy.index.isin(train_ix)]['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
+                            valid_sets_ix.append( iy[iy.index.isin(valid_ix)]['index'].tolist() )       # can't use train_ix, valid_ix directly because they refer to new index reset during shuffling
 
+                    else:
+                        train_y, valid_y = train_test_split(iy, test_size=params['random_valid_size'])
+                        train_sets_ix.append( train_y['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
+                        valid_sets_ix.append( valid_y['index'].tolist() )       # train_test_split produces data sets, so just access previously saved column with indexes
+                         
+                     
+                    print ('TRAIN target mean: ', df_filter_column[df_filter_column.index.isin(train_sets_ix[valid_fold])][self.target_col].mean().round(3))
+                    print ('VALID target mean: ', df_filter_column[df_filter_column.index.isin(valid_sets_ix[valid_fold])][self.target_col].mean().round(3))
+                    
             # save indexes used for splits
             self.dicts_agent['train_sets_ix']    = train_sets_ix
             self.dicts_agent['remainder_set_ix'] = remainder_set_indexes
@@ -548,7 +558,7 @@ class cls_ev_agent_{id}:
             #df.reset_index(drop=True, inplace=True)
 
             # initialise prediction column for main train set as it will be aggregate prediction from multiple folds
-            prediction = self.np.zeros(len(df))
+            prediction          = self.np.zeros(len(df))
             # initialise prediction column for remainder set as it will be aggregate prediction from multiple folds   
             predicted_test_set  = self.np.zeros(len(df_test))
             # Multi-class case: initialise prediction list of lists depending on number of classes 
@@ -645,7 +655,8 @@ class cls_ev_agent_{id}:
                         result = predictor.best_score['valid_0']['multi_logloss']
                         result_roc_auc = f1_score(y_test, pred_classes, average='weighted')
                     else:
-                        result = sum(abs(y_test-pred))/len(y_test)
+                        result         = sum(abs(y_test-pred))/len(y_test)
+                        result_roc_auc = r2_score(y_test, pred)
                         #result = sqrt(mean_squared_error(y_test, pred))
 
                     print ("result: ", result)
@@ -672,20 +683,27 @@ class cls_ev_agent_{id}:
                 predicted_test_set  = predicted_test_set / (self.nfolds - self.start_fold)
             else:
                 # select folds using random shuffle and stratify
-                sss = StratifiedShuffleSplit(n_splits=self.nfolds, test_size=params['random_folds_size'])
                 y   = df[[self.target_col]]
                 iy  = y.reset_index(level=0)                                                    # create copy, save existing index in 'index' column and reset index 
                 y.reset_index(drop=True, inplace=True)                                          # reset index because StratifiedShuffleSplit will reset index anyway
     
                 predictors = []
-                for train_ix, test_ix in sss.split(self.np.zeros(len(y)), y):
+                
+                for test_fld in range(0, self.nfolds):
                     fold_all += 1
                     print ()
                     print (str(datetime.now())," Train/Test FOLD: ", fold_all)
 
-                    train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()       # obtain original indexes from saved copy of labels with original indexes
-                    test_ix_orig  = iy[iy.index.isin(test_ix)]['index'].tolist()        # can't use train_ix, test_ix directly because they refer to new index reset during shuffling
-                    
+                    if is_binary or self.is_set(self.objective_multiclass):
+                        sss = StratifiedShuffleSplit(n_splits=1, test_size=params['random_folds_size'])
+                        for train_ix, test_ix in sss.split(self.np.zeros(len(y)), y):
+                            train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()       # obtain original indexes from saved copy of labels with original indexes
+                            test_ix_orig  = iy[iy.index.isin(test_ix)]['index'].tolist()        # can't use train_ix, test_ix directly because they refer to new index reset during shuffling
+                    else:
+                        train_y, test_y = train_test_split(iy, test_size=params['random_folds_size'])  # use train_test_split for regression tasks with non-stratified shuffling
+                        train_ix_orig   = train_y['index'].tolist()        # obtain original indexes from saved copy of labels with original indexes
+                        test_ix_orig    =  test_y['index'].tolist()        # train_test_split produces data sets, so just access previously saved column with indexes
+                        
                     #------ balance train set -----------------------------------------------------------------------------------------------------
                     if params['binary_balancing']:                                           
                         bal_y    = df[[self.target_col]]
@@ -785,7 +803,8 @@ class cls_ev_agent_{id}:
                         except Exception as e:
                             print (e)          
                     else:
-                        result = sum(abs(y_test-pred))/len(y_test)
+                        result         = sum(abs(y_test-pred))/len(y_test)
+                        result_roc_auc = r2_score(y_test, pred)
                         #result = sqrt(mean_squared_error(y_test, pred))
                         
                         # assign predictions to corresponding test records only
@@ -941,11 +960,15 @@ class cls_ev_agent_{id}:
                     except Exception as e:
                         print (e)          
                 else:
-                    #result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
-                    #print ("MAE: ", result)
-                    result = sqrt(mean_squared_error(y_valid, predicted_valid_set))
+                    result = mean_absolute_error(y_valid, predicted_valid_set)
+                    print ("MAE: ", result)
+                    result_rmse = sqrt(mean_squared_error(y_valid, predicted_valid_set))
+                    print ("RMSE: ", result_rmse)
+                    result_roc_auc = r2_score(y_valid, predicted_valid_set) 
+                    print ("R Squared: ", result_roc_auc)
+                     
                     valid_result_folds.append(result)
-                    print ("Root Mean Squared Error: ", result)
+                    valid_result_auc_folds.append(result_roc_auc)
 
                 print ("\n************* END of VALIDATION SET RESULTS  ****************\n")
         
