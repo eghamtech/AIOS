@@ -101,15 +101,15 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import auc
 from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.metrics import classification_report
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
 from sklearn.utils.extmath import softmax
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
 
 from math import sqrt
 from datetime import datetime
 
-from tqdm import tqdm, trange
+#from tqdm import tqdm, trange
 from __future__ import absolute_import, division, print_function
 
 import torch
@@ -465,7 +465,7 @@ class cls_ev_agent_{id}:
 
             pred = None
 
-            for batch in tqdm(eval_dataloader, desc="Predicting"):
+            for batch in iter(eval_dataloader):
                 ml_model.eval()
                 batch = tuple(t.to(self.device) for t in batch)
 
@@ -677,10 +677,11 @@ class cls_ev_agent_{id}:
         logging_loss = 0.0
 
         ml_model.zero_grad()
-        train_iterator = trange(int(self.params['algo']['num_train_epochs']), desc="Epoch")
 
-        for _ in train_iterator:
-            epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=True)
+        for ep in range(self.params['algo']['num_train_epochs']):
+            #epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=True)
+            epoch_iterator = iter(train_dataloader)
+                                  
             for step, batch in enumerate(epoch_iterator):
                 ml_model.train()
                 batch  = tuple(t.to(self.device) for t in batch)
@@ -725,7 +726,7 @@ class cls_ev_agent_{id}:
                     break
 
             if self.params['algo']['max_train_steps'] > 0 and global_step > self.params['algo']['max_train_steps']:
-                train_iterator.close()
+                #train_iterator.close()
                 break
 
         tr_loss = tr_loss / global_step
@@ -969,17 +970,24 @@ class cls_ev_agent_{id}:
                     valid_sets_ix.append(df_filter_column[filter_condition_valid].index.tolist())
                 else:
                     # apply stratified random selection to previously filtered train set
-                    sss = StratifiedShuffleSplit(n_splits=1, test_size=self.params['random_valid_size'])
                     y   = df_filter_column[df_filter_column.index.isin(train_filtered_indexes)][[self.target_col]]
-                    iy  = y.reset_index(level=0)                                              # create copy, save existing index in 'index' column and reset index
-                    y.reset_index(drop=True, inplace=True)                                    # reset index because StratifiedShuffleSplit will reset index anyway
+                    iy  = y.reset_index(level=0)                                                    # create copy, save existing index in 'index' column and reset index 
+                    y.reset_index(drop=True, inplace=True)                                          # reset index because StratifiedShuffleSplit will reset index anyway
+                     
+                    if self.is_binary or self.is_set(self.objective_multiclass):
+                        sss = StratifiedShuffleSplit(n_splits=1, test_size=params['random_valid_size'])
 
-                    for train_ix, valid_ix in sss.split(np.zeros(len(y)), y):
-                        train_sets_ix.append( iy[iy.index.isin(train_ix)]['index'].tolist())  # obtain original indexes from saved copy of labels with original indexes
-                        valid_sets_ix.append( iy[iy.index.isin(valid_ix)]['index'].tolist())  # can't use train_ix, valid_ix directly because they refer to new index reset during shuffling
-                        print ('TRAIN target mean: ', df_filter_column[df_filter_column.index.isin(train_sets_ix[valid_fold])][self.target_col].mean().round(3))
-                        print ('VALID target mean: ', df_filter_column[df_filter_column.index.isin(valid_sets_ix[valid_fold])][self.target_col].mean().round(3))
-
+                        for train_ix, valid_ix in sss.split(self.np.zeros(len(y)), y):
+                            train_sets_ix.append( iy[iy.index.isin(train_ix)]['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
+                            valid_sets_ix.append( iy[iy.index.isin(valid_ix)]['index'].tolist() )       # can't use train_ix, valid_ix directly because they refer to new index reset during shuffling
+                    else:
+                        train_y, valid_y = train_test_split(iy, test_size=params['random_valid_size'])
+                        train_sets_ix.append( train_y['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
+                        valid_sets_ix.append( valid_y['index'].tolist() )       # train_test_split produces data sets, so just access previously saved column with indexes
+                                            
+                    print ('TRAIN target mean: ', df_filter_column[df_filter_column.index.isin(train_sets_ix[valid_fold])][self.target_col].mean().round(3))
+                    print ('VALID target mean: ', df_filter_column[df_filter_column.index.isin(valid_sets_ix[valid_fold])][self.target_col].mean().round(3))
+                    
             # save indexes used for splits
             self.dicts_agent['train_sets_ix']    = train_sets_ix
             self.dicts_agent['remainder_set_ix'] = remainder_set_indexes
@@ -1092,7 +1100,8 @@ class cls_ev_agent_{id}:
                         result = predictor.best_score['valid_0']['multi_logloss']
                         result_roc_auc = f1_score(y_test, pred_classes, average='weighted')
                     else:
-                        result = sum(abs(y_test - pred)) / len(y_test)
+                        result         = sum(abs(y_test - pred)) / len(y_test)
+                        result_roc_auc = r2_score(y_test, pred)
                         # result = sqrt(mean_squared_error(y_test, pred))
 
                     print ("result: ", result)
@@ -1122,20 +1131,27 @@ class cls_ev_agent_{id}:
                 predicted_test_set  = predicted_test_set / (self.nfolds - self.start_fold)
             else:
                 # select folds using random shuffle and stratify
-                sss = StratifiedShuffleSplit(n_splits=self.nfolds, test_size=self.params['random_folds_size'])
                 y   = df[[self.target_col]]
-                iy  = y.reset_index(level=0)            # create copy, save existing index in 'index' column and reset index
-                y.reset_index(drop=True, inplace=True)  # reset index because StratifiedShuffleSplit will reset index anyway
-
+                iy  = y.reset_index(level=0)                                                    # create copy, save existing index in 'index' column and reset index 
+                y.reset_index(drop=True, inplace=True)                                          # reset index because StratifiedShuffleSplit will reset index anyway
+    
                 predictors = []
-                for train_ix, test_ix in sss.split(np.zeros(len(y)), y):
+                
+                for test_fld in range(0, self.nfolds):
                     fold_all += 1
                     print ()
-                    print (str(datetime.now()), " Train/Test FOLD: ", fold_all)
+                    print (str(datetime.now())," Train/Test FOLD: ", fold_all)
 
-                    train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()  # obtain original indexes from saved copy of labels with original indexes
-                    test_ix_orig  = iy[iy.index.isin(test_ix)]['index'].tolist()   # can't use train_ix, test_ix directly because they refer to new index reset during shuffling
-
+                    if self.is_binary or self.is_set(self.objective_multiclass):
+                        sss = StratifiedShuffleSplit(n_splits=1, test_size=params['random_folds_size'])
+                        for train_ix, test_ix in sss.split(self.np.zeros(len(y)), y):
+                            train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()       # obtain original indexes from saved copy of labels with original indexes
+                            test_ix_orig  = iy[iy.index.isin(test_ix)]['index'].tolist()        # can't use train_ix, test_ix directly because they refer to new index reset during shuffling
+                    else:
+                        train_y, test_y = train_test_split(iy, test_size=params['random_folds_size'])  # use train_test_split for regression tasks with non-stratified shuffling
+                        train_ix_orig   = train_y['index'].tolist()        # obtain original indexes from saved copy of labels with original indexes
+                        test_ix_orig    =  test_y['index'].tolist()        # train_test_split produces data sets, so just access previously saved column with indexes
+                                            
                     # ------ balance train set -----------------------------------------------------------------------------------------------------
                     if self.params['binary_balancing']:
                         bal_y = df[[self.target_col]]
@@ -1221,6 +1237,7 @@ class cls_ev_agent_{id}:
 
                         else:
                             result = sum(abs(y_test - pred)) / len(y_test)
+                            result_roc_auc = r2_score(y_test, pred)
                             # result = sqrt(mean_squared_error(y_test, pred))
 
                             # assign predictions to corresponding test records only
@@ -1375,11 +1392,15 @@ class cls_ev_agent_{id}:
                         result_roc_auc = f1_score(y_valid, predicted_valid_set, average='weighted')
 
                     else:
-                        # result = sum(abs(y_valid-predicted_valid_set))/len(y_valid)
-                        # print ("MAE: ", result)
-                        result = sqrt(mean_squared_error(y_valid, predicted_valid_set))
+                        result = mean_absolute_error(y_valid, predicted_valid_set)
+                        print ("MAE: ", result)
+                        result_rmse = sqrt(mean_squared_error(y_valid, predicted_valid_set))
+                        print ("RMSE: ", result_rmse)
+                        result_roc_auc = r2_score(y_valid, predicted_valid_set) 
+                        print ("R Squared: ", result_roc_auc)
+
                         valid_result_folds.append(result)
-                        print ("Root Mean Squared Error: ", result)
+                        valid_result_auc_folds.append(result_roc_auc)
                 except Exception as e:
                     print (e)
                     return  # no point to carry on with more folds
@@ -1460,13 +1481,13 @@ class cls_ev_agent_{id}:
             df_filter_column[[self.output_column]].to_csv(workdir + self.output_filename)
             print ("#add_field:" + self.output_column + ",N," + self.output_filename + "," + str(original_row_count))
 
-            print ("b_fitness="    + str(1 - self.list_mean(weighted_auc_folds) * self.list_mean(valid_result_auc_folds)))
+            print ("b_fitness="    + str(np.round(1 - self.list_mean(weighted_auc_folds) * self.list_mean(valid_result_auc_folds),4)))
             print ("b_result_1="   + str(self.list_mean(weighted_result_folds)))
             print ("b_result_2="   + str(self.list_mean(weighted_auc_folds)))
             print ("b_result_3="   + str(self.list_mean(valid_result_folds)))
             print ("b_result_4="   + str(self.list_mean(valid_result_auc_folds)))
         else:
-            print ("fitness="      + str(1 - self.list_mean(weighted_auc_folds) * self.list_mean(valid_result_auc_folds)))  # main fitness metric
+            print ("fitness="      + str(np.round(1 - self.list_mean(weighted_auc_folds) * self.list_mean(valid_result_auc_folds),4)))  # main fitness metric
             print ("out_result_1=" + str(self.list_mean(weighted_result_folds)))                                            # Log Loss in train/test CV
             print ("out_result_2=" + str(self.list_mean(weighted_auc_folds)))                                               # ROC AUC in train/test CV
             print ("out_result_3=" + str(self.list_mean(valid_result_folds)))                                               # main fitness on Validation
