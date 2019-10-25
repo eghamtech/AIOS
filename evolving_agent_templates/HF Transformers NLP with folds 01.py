@@ -979,7 +979,7 @@ class cls_ev_agent_{id}:
                     if self.is_binary or self.is_set(self.objective_multiclass):
                         sss = StratifiedShuffleSplit(n_splits=1, test_size=self.params['random_valid_size'])
 
-                        for train_ix, valid_ix in sss.split(self.np.zeros(len(y)), y):
+                        for train_ix, valid_ix in sss.split(np.zeros(len(y)), y):
                             train_sets_ix.append( iy[iy.index.isin(train_ix)]['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
                             valid_sets_ix.append( iy[iy.index.isin(valid_ix)]['index'].tolist() )       # can't use train_ix, valid_ix directly because they refer to new index reset during shuffling
                     else:
@@ -1146,7 +1146,7 @@ class cls_ev_agent_{id}:
 
                     if self.is_binary or self.is_set(self.objective_multiclass):
                         sss = StratifiedShuffleSplit(n_splits=1, test_size=self.params['random_folds_size'])
-                        for train_ix, test_ix in sss.split(self.np.zeros(len(y)), y):
+                        for train_ix, test_ix in sss.split(np.zeros(len(y)), y):
                             train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()       # obtain original indexes from saved copy of labels with original indexes
                             test_ix_orig  = iy[iy.index.isin(test_ix)]['index'].tolist()        # can't use train_ix, test_ix directly because they refer to new index reset during shuffling
                     else:
