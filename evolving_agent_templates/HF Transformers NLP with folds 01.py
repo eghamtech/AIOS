@@ -47,7 +47,7 @@
 #key=max_grad_norm;  type=random_float;  from=0;  to=2;  step=0.01
 #key=fp16; type=random_from_set;  set=False
 #key=fp16_opt_level;  type=random_from_set;  set='O0','O1','O2','O3'
-#key=logging_steps;  type=random_int;  from=10;  to=10;  step=1
+#key=logging_steps;  type=random_float;  from=0.1;  to=0.1;  step=0.1
 #key=tokenizer_do_lower_case; type=random_from_set;  set=True,False
 #key=clean_text_v;  type=random_int;  from=0;  to=3;  step=1
 #key=start_fold;  type=random_from_set;  set=0
@@ -409,7 +409,7 @@ class cls_ev_agent_{id}:
         self.params['algo']['fp16']                         = {fp16}
         self.params['algo']['fp16_opt_level']               = {fp16_opt_level}
 
-        self.params['algo']['logging_steps']                = {logging_steps}
+        self.params['algo']['logging_steps']                = {logging_steps}            # fraction of t_total steps to log output at
         self.params['algo']['random_seed']                  = self.rn_seed_init
 
         self.params['algo']['thread_count']                 = {num_threads}
@@ -664,13 +664,15 @@ class cls_ev_agent_{id}:
                 raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
             ml_model, optimizer = amp.initialize(ml_model, optimizer, opt_level=self.params['algo']['fp16_opt_level'])
 
+        logging_block = int(round(t_total*self.params['algo']['logging_steps']))
+            
         self.logger.info("***** Running training *****")
         self.logger.info("  Num examples = %d",                len(dataset_train))
         self.logger.info("  Num Epochs   = %d",                self.params['algo']['num_train_epochs'])
         self.logger.info("  Total train batch size      = %d", self.params['algo']['train_batch_size'] * self.params['algo']['gradient_accumulation_steps'])
         self.logger.info("  Gradient Accumulation steps = %d", self.params['algo']['gradient_accumulation_steps'])
         self.logger.info("  Total optimization steps    = %d", t_total)
-
+        self.logger.info("  output loss after steps     = %d", logging_block)
 
         global_step  = 0
         tr_loss      = 0.0 
@@ -714,11 +716,11 @@ class cls_ev_agent_{id}:
                     ml_model.zero_grad()
                     global_step += 1
 
-                    if self.params['algo']['logging_steps'] > 0 and global_step % self.params['algo']['logging_steps'] == 0:
+                    if self.params['algo']['logging_steps'] > 0 and global_step % logging_block == 0:
                         # Log metrics
                         self.logger.info('\n')
                         self.logger.info(' global_step = %s, lrate = %s', global_step, scheduler.get_lr()[0])
-                        self.logger.info(' global_step = %s, loss  = %s', global_step, (tr_loss - logging_loss)/self.params['algo']['logging_steps'])
+                        self.logger.info(' global_step = %s, loss  = %s', global_step, (tr_loss - logging_loss)/logging_block)
                         logging_loss = tr_loss
 
                 if self.params['algo']['max_train_steps'] > 0 and global_step > self.params['algo']['max_train_steps']:
