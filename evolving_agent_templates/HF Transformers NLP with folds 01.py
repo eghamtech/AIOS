@@ -977,13 +977,13 @@ class cls_ev_agent_{id}:
                     y.reset_index(drop=True, inplace=True)                                          # reset index because StratifiedShuffleSplit will reset index anyway
                      
                     if self.is_binary or self.is_set(self.objective_multiclass):
-                        sss = StratifiedShuffleSplit(n_splits=1, test_size=params['random_valid_size'])
+                        sss = StratifiedShuffleSplit(n_splits=1, test_size=self.params['random_valid_size'])
 
                         for train_ix, valid_ix in sss.split(self.np.zeros(len(y)), y):
                             train_sets_ix.append( iy[iy.index.isin(train_ix)]['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
                             valid_sets_ix.append( iy[iy.index.isin(valid_ix)]['index'].tolist() )       # can't use train_ix, valid_ix directly because they refer to new index reset during shuffling
                     else:
-                        train_y, valid_y = train_test_split(iy, test_size=params['random_valid_size'])
+                        train_y, valid_y = train_test_split(iy, test_size=self.params['random_valid_size'])
                         train_sets_ix.append( train_y['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
                         valid_sets_ix.append( valid_y['index'].tolist() )       # train_test_split produces data sets, so just access previously saved column with indexes
                                             
@@ -1145,12 +1145,12 @@ class cls_ev_agent_{id}:
                     print (str(datetime.now())," Train/Test FOLD: ", fold_all)
 
                     if self.is_binary or self.is_set(self.objective_multiclass):
-                        sss = StratifiedShuffleSplit(n_splits=1, test_size=params['random_folds_size'])
+                        sss = StratifiedShuffleSplit(n_splits=1, test_size=self.params['random_folds_size'])
                         for train_ix, test_ix in sss.split(self.np.zeros(len(y)), y):
                             train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()       # obtain original indexes from saved copy of labels with original indexes
                             test_ix_orig  = iy[iy.index.isin(test_ix)]['index'].tolist()        # can't use train_ix, test_ix directly because they refer to new index reset during shuffling
                     else:
-                        train_y, test_y = train_test_split(iy, test_size=params['random_folds_size'])  # use train_test_split for regression tasks with non-stratified shuffling
+                        train_y, test_y = train_test_split(iy, test_size=self.params['random_folds_size'])  # use train_test_split for regression tasks with non-stratified shuffling
                         train_ix_orig   = train_y['index'].tolist()        # obtain original indexes from saved copy of labels with original indexes
                         test_ix_orig    =  test_y['index'].tolist()        # train_test_split produces data sets, so just access previously saved column with indexes
                                             
