@@ -980,7 +980,12 @@ class cls_ev_agent_{id}:
         # combine feature importance results from all folds into one table
         fi_cols = [col for col in self.fi_total.columns if 'Importance' in col] 
         self.fi_total['Importance_AVG']      = self.np.round(self.fi_total[fi_cols].sum(axis=1)/fold_all, decimals=2)  
-        self.fi_total['Importance_AVG_perc'] = self.np.round(100 * self.fi_total['Importance_AVG'] / self.fi_total['Importance_AVG'].sum(axis=0), decimals=2)
+        
+        imp_avg_sum = self.fi_total['Importance_AVG'].sum(axis=0)
+        if imp_avg_sum != 0:
+        	self.fi_total['Importance_AVG_perc'] = self.np.round(100 * self.fi_total['Importance_AVG'] / imp_avg_sum, decimals=2)
+        else:
+            self.fi_total['Importance_AVG_perc'] = 0
 
         print ('\nFEATURE Importance Overall:')
         self.print_html( self.fi_total[['Feature','Importance_AVG','Importance_AVG_perc']].sort_values(by=['Importance_AVG'], ascending=False), max_rows=200, max_cols=4 )
