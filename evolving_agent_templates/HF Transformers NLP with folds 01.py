@@ -624,7 +624,7 @@ class cls_ev_agent_{id}:
         all_segment_ids = torch.tensor(all_segment_ids,  dtype=torch.long)
 
         if y_data is not None:
-            all_label_ids = torch.tensor(y_data.to_list(), dtype=torch.long)
+            all_label_ids = torch.tensor(y_data.tolist(), dtype=torch.long)
             dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
         else:
             dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids)
@@ -987,8 +987,8 @@ class cls_ev_agent_{id}:
                         train_sets_ix.append( train_y['index'].tolist() )       # obtain original indexes from saved copy of labels with original indexes
                         valid_sets_ix.append( valid_y['index'].tolist() )       # train_test_split produces data sets, so just access previously saved column with indexes
                                             
-                    print ('TRAIN target mean: ', df_filter_column[df_filter_column.index.isin(train_sets_ix[valid_fold])][self.target_col].mean().round(3))
-                    print ('VALID target mean: ', df_filter_column[df_filter_column.index.isin(valid_sets_ix[valid_fold])][self.target_col].mean().round(3))
+                    print ('TRAIN target mean: ', round(df_filter_column[df_filter_column.index.isin(train_sets_ix[valid_fold])][self.target_col].mean(),3))
+                    print ('VALID target mean: ', round(df_filter_column[df_filter_column.index.isin(valid_sets_ix[valid_fold])][self.target_col].mean(),3))
                     
             # save indexes used for splits
             self.dicts_agent['train_sets_ix']    = train_sets_ix
@@ -1186,8 +1186,8 @@ class cls_ev_agent_{id}:
                     y_test = x_test[self.target_col]
                     x_test = x_test.drop(self.target_col, 1)
 
-                    print ('Y_TEST  Target mean: ', y_test.mean().round(3))
-                    print ('Y_TRAIN Target mean: ', y_train.mean().round(3))
+                    print ('Y_TEST  Target mean: ', round(y_test.mean(),3))
+                    print ('Y_TRAIN Target mean: ', round(y_train.mean(),3))
 
                     predictor = self.model_init()
                     predictor = self.model_train(predictor, x_train, y_train, x_test, y_test, fold_all)
