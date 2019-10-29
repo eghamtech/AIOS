@@ -359,7 +359,7 @@ class cls_ev_agent_{id}:
 
     def model_env_init(self):   
         torch.set_num_threads(self.num_threads)
-        torch.set_num_interop_threads(self.num_threads)
+        #torch.set_num_interop_threads(self.num_threads)   # causes kernel crash on repeat class init
         
         if self.n_gpu > 0:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
