@@ -335,7 +335,7 @@ class cls_ev_agent_{id}:
         self.params['algo']['min_data']                     = {min_data}
         self.params['algo']['max_bin']                      = {max_bin}
         
-        self.params['algo']['min_data_in_bin']              = {min_data_in_binl}
+        self.params['algo']['min_data_in_bin']              = {min_data_in_bin}
         self.params['algo']['min_gain_to_split']            = {min_gain_to_split}
         
         self.params['algo']['feature_fraction_seed']        = {feature_fraction_seed}
