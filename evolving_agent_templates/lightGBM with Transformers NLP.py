@@ -80,9 +80,15 @@ import random   as rn
 import numpy    as np
 import lightgbm as lgb
 
-import math, os.path, bz2, pickle, logging
+import math, os, bz2, pickle, logging
 import dateutil, calendar
 import shap, json, re
+
+# torch/transformers want to load GPU with context even when asked to use CPU only
+# force it ignore GPU
+if {n_gpu} == 0:
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" 
+    os.environ["CUDA_VISIBLE_DEVICES"]=""
 
 from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
 from sklearn.metrics import confusion_matrix, f1_score
