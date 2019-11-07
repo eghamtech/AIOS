@@ -91,7 +91,7 @@ class cls_agent_{id}:
             # go through each column individually as specified previously
             for col_name in self.dicts_agent['dict_cols']:
 
-                values_list = row['dict_'+col_name]                        # get string value which may consist of multiple values separated by comma
+                values_list = str(row['dict_'+col_name])                   # get string value which may consist of multiple values separated by comma
                 values_list = [x.strip() for x in values_list.split(',')]  # split by comma and also strip whitespaces
 
                 for value in values_list:
@@ -124,7 +124,7 @@ class cls_agent_{id}:
                 self.df['dict_'+col_name]  = self.df[col_name].map(dict_temp)
                               
                 for rowTuple in self.df[['dict_'+col_name]].itertuples(index=False):
-                    row = rowTuple[0]                             # df should be just one column dataframe
+                    row = str(rowTuple[0])                        # df should be just one column dataframe
                     row = [x.strip() for x in row.split(',')]     # split by comma but also strip whitespaces
                     all_values.extend(row)                        # build up a list of all possible string values
                        
