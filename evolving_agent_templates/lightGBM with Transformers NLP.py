@@ -450,6 +450,7 @@ class cls_ev_agent_{id}:
         torch.manual_seed(seed_init)
         if self.n_gpu > 0:
             torch.cuda.manual_seed_all(seed_init)
+            torch.cuda.empty_cache()
     
     def is_set(self, s):
         return len(s)>0 and s!="0"
