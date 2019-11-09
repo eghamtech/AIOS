@@ -86,6 +86,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# torch/transformers want to load GPU with context even when asked to use CPU only
+# force it ignore GPU
+if {n_gpu} == 0:
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID" 
+    os.environ["CUDA_VISIBLE_DEVICES"]=""
+    
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -209,6 +215,7 @@ class cls_ev_agent_{id}:
         torch.manual_seed(seed_init)
         if self.n_gpu > 0:
             torch.cuda.manual_seed_all(seed_init)
+            torch.cuda.empty_cache()
    
     def __init__(self):        
         self.set_seed(self.rn_seed_init)        # set same seed for every run of this agent's instance
