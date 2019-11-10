@@ -156,6 +156,7 @@ class cls_ev_agent_{id}:
     start_fold    = {start_fold}
     nfolds        = {nfolds}
     
+    logging_steps = {logging_steps}                      # fraction of total steps to log output of nlp conversion at
     num_threads   = {num_threads}
     rn_seed_init  = {random_seed_init}
     n_gpu         = {n_gpu}
@@ -356,8 +357,7 @@ class cls_ev_agent_{id}:
         self.params['algo']['lambda_l1']                    = {lambda_l1}
         self.params['algo']['lambda_l2']                    = {lambda_l2}
         
-        self.params['algo']['random_seed']                  = self.rn_seed_init
-        self.params['algo']['logging_steps']                = {logging_steps}            # fraction of t_total steps to log output at
+        self.params['algo']['random_seed']                  = self.rn_seed_init     
         self.params['algo']['num_threads']                  = {num_threads}
         self.params['algo']['verbose']                      = 1
         
@@ -664,7 +664,7 @@ class cls_ev_agent_{id}:
         print (str(datetime.now()), " start applying NLP model")
         block_progress = 0
         total          = len(df_x)
-        block          = int(round(total * self.params['algo']['logging_steps']))
+        block          = int(round(total * self.logging_steps))
 
         for i, rowTuple in enumerate(df_x.itertuples(index=False)):
             row = ''
