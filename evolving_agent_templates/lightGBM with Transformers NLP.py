@@ -62,6 +62,7 @@
 #key=num_threads;  type=random_int;  from=4;  to=4;  step=1
 #key=use_float32_dtype; type=random_from_set;  set=True
 #key=clean_text_v;  type=random_int;  from=0;  to=3;  step=1
+#key=logging_steps;  type=random_float;  from=0.1;  to=0.1;  step=0.1
 #key=min_perf_criteria;  type=random_float;  from=0.6;  to=0.6;  step=0.1
 #key=use_thresholds_train; type=random_from_set;  set=True
 #key=shap_data_limit;  type=random_int;  from=25000;  to=25000;  step=1
@@ -356,6 +357,7 @@ class cls_ev_agent_{id}:
         self.params['algo']['lambda_l2']                    = {lambda_l2}
         
         self.params['algo']['random_seed']                  = self.rn_seed_init
+        self.params['algo']['logging_steps']                = {logging_steps}            # fraction of t_total steps to log output at
         self.params['algo']['num_threads']                  = {num_threads}
         self.params['algo']['verbose']                      = 1
         
@@ -662,14 +664,14 @@ class cls_ev_agent_{id}:
         print (str(datetime.now()), " start applying NLP model")
         block_progress = 0
         total          = len(df_x)
-        block          = int(round(total/20))
+        block          = int(round(total * self.params['algo']['logging_steps']))
 
         for i, rowTuple in enumerate(df_x.itertuples(index=False)):
             row = ''
             for col in rowTuple:
-                row += ' ' + str(col)
+                row += ' ' + str(col)                       # concatenate columns into one string
 
-            row = row[1:]
+            row = row[1:]                                   # remove space added during columns concatenation
             context_tokens = self.nlp_tknzr.encode(row)
             
             self.set_seed(self.rn_seed_init)
@@ -685,6 +687,13 @@ class cls_ev_agent_{id}:
             if (block_progress >= block):
                 block_progress = 0
                 print (str(datetime.now()), " records processed: ", round((i+1)/total*100,0), "%")
+                
+                pred_txt          = self.nlp_tknzr.decode(pred_tokens, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+                pred_txt_str_toks = self.nlp_tknzr.convert_ids_to_tokens(pred_tokens)
+                
+                print("CONTEXT   :", row)
+                print("PREDICTION:", pred_txt)
+                print("PRED  TOKS:", pred_txt_str_toks)
        
         new_cols = []
         for n in range(length):
