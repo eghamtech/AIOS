@@ -1354,7 +1354,7 @@ class cls_ev_agent_{id}:
         
         imp_avg_sum = self.fi_total['Importance_AVG'].sum(axis=0)
         if imp_avg_sum != 0:
-            self.fi_total['Importance_AVG_perc'] = round(100 * self.fi_total['Importance_AVG'] / imp_avg_sum, decimals=2)
+            self.fi_total['Importance_AVG_perc'] = round(100 * self.fi_total['Importance_AVG'] / imp_avg_sum, 2)
         else:
             self.fi_total['Importance_AVG_perc'] = 0
 
