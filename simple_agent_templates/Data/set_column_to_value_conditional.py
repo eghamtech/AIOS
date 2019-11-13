@@ -43,7 +43,7 @@ class cls_agent_{id}:
     agent_name       = 'agent_' + str(result_id)
    
     def is_set(self, s):
-        return len(s)>0 and s!="0"
+        return len(str(s))>0 and s!="0"
     
 
     def run_on(self, df_run):
