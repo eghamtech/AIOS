@@ -2,6 +2,7 @@
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv','dict_field1|dict_field1.csv','dict_field2|dict_field2.csv']
 #key=max_unique_values;  type=constant;  value=50
 #key=col_max_length;  type=constant;  value=200
+#key=clean_text_v;  type=constant;  value=0
 #key=new_field_prefix;  type=constant;  value=onehe_mult_flds_
 #key=include_columns_type;  type=constant;  set=is_dict_only
 #key=include_columns_containing;  type=constant;  set=
@@ -14,8 +15,11 @@
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 #
 # this agent creates new columns from given fields by hot encoding every unique value as 0 or 1
-# all source fields expected to be dictionary fields and values may consist if multiple values seperated by comma
-# composite values will be split by comma and treated as multi-valued records
+# all source fields expected to be dictionary fields and values may consist if multiple values 
+# seperated by comma and other symbols
+# 
+# depending on value of clean_text_v composite values will be split only by comma or by more symbols and 
+# treated as multi-valued records
 #
 # number of new columns created will be the same as number of unique values across all source fields
 # if it is no larger than "max_unique_values"
@@ -44,6 +48,7 @@ class cls_agent_{id}:
     new_field_prefix  = "{new_field_prefix}"
     max_unique_values = {max_unique_values}
     col_max_length    = {col_max_length}
+    clean_text_v      = {clean_text_v}
     agent_name        = 'agent_' + str(result_id)
 
     dicts_agent = {}
@@ -58,6 +63,14 @@ class cls_agent_{id}:
         a1 = [x for x in a1 if str(x) != 'nan']
         keys1 = range(1, len(a1)+1)
         return dict(zip(a1, keys1))
+    
+    def clean_tokenize_text(self, str):
+        if self.clean_text_v == 0:
+            str = [x.strip() for x in re.split(',|,\s', str)]    # split by comma
+        elif self.clean_text_v == 1:
+            str = ''.join([i for i in str if not i.isdigit()])                    # strip numbers
+            str = [x.strip() for x in re.split(';|,|-|\s|,\s|-\s|\s-\s', str)]    # split by comma and other chars and also strip whitespaces        
+        return str
 
     def __init__(self):
         #if not self.is_set(self.data_defs):
@@ -92,7 +105,7 @@ class cls_agent_{id}:
             for col_name in self.dicts_agent['dict_cols']:
 
                 values_list = str(row['dict_'+col_name])                   # get string value which may consist of multiple values separated by comma
-                values_list = [x.strip() for x in values_list.split(',')]  # split by comma and also strip whitespaces
+                values_list = self.clean_tokenize_text(values_list)
 
                 for value in values_list:
                     if self.dicts_agent['all_dicts'].get(value) != None:
@@ -125,7 +138,7 @@ class cls_agent_{id}:
                               
                 for rowTuple in self.df[['dict_'+col_name]].itertuples(index=False):
                     row = str(rowTuple[0])                        # df should be just one column dataframe
-                    row = [x.strip() for x in row.split(',')]     # split by comma but also strip whitespaces
+                    row = self.clean_tokenize_text(row)
                     all_values.extend(row)                        # build up a list of all possible string values
                        
                 self.dict_cols.append(col_name)
