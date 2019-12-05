@@ -1,15 +1,16 @@
 #start_of_parameters
 #key=input_json;  type=constant;  value=enter_input_json
 #key=meta_json;  type=constant;  value=enter_meta
+#key=predictor_agent;  type=constant;  value=ev_agent_11111
+#key=debug_out;  type=constant;  value=0
 #end_of_parameters
 
 global DEBUG
-DEBUG = 0
-res_agent = ev_agent_{enter_agent_id}
+DEBUG     = {debug_out}
+res_agent = {predictor_agent}
     
 import pandas as pd
 import json
-from sklearn.externals import joblib
 
 import gc
 gc.collect()
@@ -31,6 +32,9 @@ try:
 
     df_add = pd.DataFrame().from_dict(json_data["training_data"])
     printlog (df_add)
+    if DEBUG == 1:
+        df_add.to_csv(workdir + str(res_agent) + '_debug.csv')
+        printlog ('live debug data file saved')
     
     i = 0
     # apply each required agent on df_add which will be extended by each agent until it reaches return_column
@@ -42,7 +46,7 @@ try:
         # convert all spurious text into numeric as after the 1st agent all fields should be numeric or NaN
         # this should be applied after the 1st agent i.e., after all dictionaries have been created
         if i==1:
-            df_add = df_add.apply(pd.to_numeric, errors='coerse')
+            df_add = df_add.apply(pd.to_numeric, errors='coerce')
 
     # select the app id and score
     output_columns = [scoring_meta["output_primary_field"]]
