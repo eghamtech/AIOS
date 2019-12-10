@@ -116,7 +116,7 @@ from math import sqrt
 from datetime import datetime
 
 #from tqdm import tqdm, trange
-from __future__ import absolute_import, division, print_function
+#from __future__ import absolute_import, division, print_function
 
 import torch
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler, TensorDataset)
@@ -461,7 +461,7 @@ class cls_ev_agent_{id}:
     def model_predict(self, ml_model, xt):
         try:
             dataset_eval    = self.convert_df_to_dataset(xt, None, self.tokenizer)
-            eval_batch_size = len(dataset_eval)
+            eval_batch_size = self.params['algo']['train_batch_size']              #len(dataset_eval)
 
             eval_sampler    = SequentialSampler(dataset_eval)
             eval_dataloader = DataLoader(dataset_eval, sampler=eval_sampler, batch_size=eval_batch_size)
