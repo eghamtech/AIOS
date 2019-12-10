@@ -371,6 +371,7 @@ class cls_ev_agent_{id}:
         if self.n_gpu > 0:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.n_gpu  = torch.cuda.device_count()
+            torch.cuda.empty_cache()
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                               
@@ -1266,6 +1267,8 @@ class cls_ev_agent_{id}:
 
                     if result_roc_auc < self.min_perf_criteria:
                         print ("Minimum performance criteria: " + str(self.min_perf_criteria) + " not met! result_roc_auc: " + str(result_roc_auc))
+                        if self.n_gpu > 0:
+                            torch.cuda.empty_cache()
                         return
 
                     if self.params['binary_eval_fun'] == 'PRCAUC':
@@ -1447,6 +1450,9 @@ class cls_ev_agent_{id}:
         #############################################################
         #fi_total_dict = dict(zip(self.fi_total['Feature'],self.fi_total['Importance_AVG_perc']))
         #print ("#feature_importance="+json.dumps(fi_total_dict))
+        
+        if self.n_gpu > 0:
+            torch.cuda.empty_cache()
         
         if mode == 1:
             # save dictionary of all auxiliry data and params into file
