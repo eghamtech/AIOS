@@ -54,7 +54,7 @@ class cls_agent_{id}:
         s = s.replace('+', '_plus_')
         s = s.replace('-', '_dash_')
         s = s.replace('/', '_fsl_')
-        s = s.replace('\\', '_bsl_')
+        #s = s.replace('\\', '_bsl_')
         s = s.replace('?', '_qm_')
         s = s.replace('!', '_em_')
 
