@@ -2,8 +2,8 @@
 #key=fields_source;  type=constant;  value=['f0|f0.csv','f1|f1.csv','f2|f2.csv']
 #key=fields_source_group_map;  type=constant;  value=[(f0_value1,1),(f0_value2,2)]
 #key=map_name;  type=constant;  value=class07_map
-#key=field_prefix;  type=constant;  set=map_class07_
-#key=output_str_type;  type=constant;  value=True
+#key=field_prefix;  type=constant;  value=map_class07_
+#key=output_str_type;  type=constant;  value=False
 #end_of_parameters
 
 # AICHOO OS Simple Agent 
