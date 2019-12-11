@@ -1082,9 +1082,9 @@ class cls_ev_agent_{id}:
                             
                         if mode == 1:
                             if fold == 0:
-                                valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
+                                valid_set_shap_values  = shap.TreeExplainer(predictors[fold]['ml_model']).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
                             else:
-                                valid_set_shap_values += shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
+                                valid_set_shap_values += shap.TreeExplainer(predictors[fold]['ml_model']).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
                 # ------------------ end of predicting remaining and validation samples ---------------------------------
                                                        
                 prediction = prediction / len(predictors)
