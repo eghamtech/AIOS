@@ -237,12 +237,12 @@ class cls_ev_agent_{id}:
     
     def model_save(self, predictor, file_path):
         predictor['ml_model'].save_model(file_path)
-        joblib.dump(predictor['text_model'], file_path + '_text')
+        joblib.dump(predictor['text_model'], file_path + '_nlp')
 
     def model_load(self, file_path):
         predictor = {}
         predictor['ml_model']   = lgb.Booster(model_file=file_path)
-        predictor['text_model'] = joblib.load(file_path + '_text')
+        predictor['text_model'] = joblib.load(file_path + '_nlp')
             
         return predictor
     
