@@ -87,15 +87,14 @@ import lightgbm as lgb
 import math, os, bz2, pickle, logging
 import dateutil, calendar
 import shap, json, re
+import joblib
 
 from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
 from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
-
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.externals import joblib
 
 import warnings
 warnings.filterwarnings("ignore")
