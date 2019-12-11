@@ -265,7 +265,7 @@ class cls_ev_agent_{id}:
             
         
     def model_train(self, ml_model, x_train, y_train, x_test, y_test, current_fold):
-        tfidf = TfidfVectorizer(stop_words='english',
+        tfidf = TfidfVectorizer(stop_words    ='english',
                                 strip_accents = self.params['tfidf_strip_accents'], 
                                 lowercase     = self.params['tfidf_lowercase'], 
                                 analyzer      = self.params['tfidf_analyzer'],
@@ -625,15 +625,15 @@ class cls_ev_agent_{id}:
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
              
         # prepare all parameters
-        self.params['random_valid']       = True
-        self.params['random_valid_size']  = 0.3
-        self.params['random_valid_folds'] = 3
-        self.params['random_folds']       = True
-        self.params['random_folds_size']  = 0.3
-        self.params['binary_balancing']   = False
-        self.params['binary_balancing_0'] = 0.74
-        self.params['binary_balancing_1'] = 1    
-        self.params['binary_eval_fun']    = 'ROCAUC'
+        self.params['random_valid']       = {random_valid}
+        self.params['random_valid_size']  = {random_valid_size}
+        self.params['random_valid_folds'] = {random_valid_folds}
+        self.params['random_folds']       = {random_folds}
+        self.params['random_folds_size']  = {random_folds_size}
+        self.params['binary_balancing']   = {binary_balancing}
+        self.params['binary_balancing_0'] = {binary_balancing_0}
+        self.params['binary_balancing_1'] = {binary_balancing_1}    
+        self.params['binary_eval_fun']    = {binary_eval_fun}
               
         # obtain indexes for train and remainder sets
         # load target column as it may be needed for filtering and removing NaN targets from training
