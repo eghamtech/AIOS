@@ -51,7 +51,7 @@ class cls_agent_{id}:
     pos_tags = {
         '$'  : 'DLR',  # dollar
                        # $ -$ --$ A$ C$ HK$ M$ NZ$ S$ U.S.$ US$
-                       # "''" : 'QM',   # closing quotation mark  ' ''
+        "''" : 'QM',   # closing quotation mark  ' ''
         '('  : 'OB',   # opening parenthesis ( [ {
         ')'  : 'CB',   # closing parenthesis ) ] }
         ','  : 'COMA', # comma ,
@@ -173,7 +173,7 @@ class cls_agent_{id}:
         'WP$': 'WPD',  # WH-pronoun, possessive whose
         'WRB': 'WRB',  # Wh-adverb
                        # how however whence whenever where whereby whereever wherein whereof why
-                       # "``" : 'OQM',  # opening quotation mark ` ``
+        "``" : 'OQM',  # opening quotation mark ` ``
         'NAN': 'NAN'   # Unknown Tag
     }
     
