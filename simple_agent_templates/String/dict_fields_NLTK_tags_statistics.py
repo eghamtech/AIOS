@@ -173,7 +173,7 @@ class cls_agent_{id}:
         'WP$': 'WPD',  # WH-pronoun, possessive whose
         'WRB': 'WRB',  # Wh-adverb
                        # how however whence whenever where whereby whereever wherein whereof why
-        "``" : 'OQM',  # opening quotation mark ` ``
+                       #"``" : 'OQM',  # opening quotation mark ` ``
         'NAN': 'NAN'   # Unknown Tag
     }
     
