@@ -278,13 +278,15 @@ class cls_ev_agent_{id}:
                                 smooth_idf    = self.params['tfidf_smooth_idf'], 
                                 sublinear_tf  = self.params['tfidf_sublinear_tf'] )
         
+        print (str(datetime.now()), " Tfidf train data Fit Transform")
         x_train_tfidf = self.convert_df_to_str_list(x_train)
         x_train_tfidf = tfidf.fit_transform(x_train_tfidf)    
         
+        print (str(datetime.now()), " Tfidf test data Transform")
         x_test_tfidf  = self.convert_df_to_str_list(x_test)
         x_test_tfidf  = tfidf.transform(x_test_tfidf)
         
-        
+        print (str(datetime.now()), " ML model Training")
         x_train    =  lgb.Dataset(x_train_tfidf, label=y_train, feature_name=tfidf.get_feature_names())    # convert DF to lgb.Dataset as required by LGBM            
         watchlist  = [lgb.Dataset(x_test_tfidf,  label=y_test,  feature_name=tfidf.get_feature_names())]
                     
@@ -298,11 +300,13 @@ class cls_ev_agent_{id}:
         return {'ml_model':ml_model, 'text_model':tfidf}
 
     
-    def model_predict(self, predictor, xt):
+    def model_predict(self, predictor, xt, fold=-1, mode=0):
         try:
+            print (str(datetime.now()), " Tfidf predict data transform")
             xt_tfidf  = self.convert_df_to_str_list(xt)
             xt_tfidf  = predictor['text_model'].transform(xt_tfidf)
             
+            print (str(datetime.now()), " ML model predict data")
             pred      = predictor['ml_model'].predict(xt_tfidf)
         except Exception as e:
             print ('lGBM Predict error: ', e)
