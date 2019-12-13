@@ -285,8 +285,8 @@ class cls_ev_agent_{id}:
         x_test_tfidf  = tfidf.transform(x_test_tfidf)
         
         
-        x_train    =  lgb.Dataset(x_train_tfidf, label=y_train)    # convert DF to lgb.Dataset as required by LGBM            
-        watchlist  = [lgb.Dataset(x_test_tfidf,  label=y_test)]
+        x_train    =  lgb.Dataset(x_train_tfidf, label=y_train, feature_name=tfidf.get_feature_names())    # convert DF to lgb.Dataset as required by LGBM            
+        watchlist  = [lgb.Dataset(x_test_tfidf,  label=y_test,  feature_name=tfidf.get_feature_names())]
                     
         if self.params['binary_eval_fun'] == 'PRCAUC':
             ml_model = lgb.train( self.params['algo'], x_train, self.params['algo']['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100, feval=self.f_eval_prc_auc)
