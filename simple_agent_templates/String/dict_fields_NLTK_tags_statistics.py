@@ -49,7 +49,7 @@ class cls_agent_{id}:
     
     # All Part of Speech tags to be identified and counted
     pos_tags = {
-        '$'  : 'DLR',  # dollar
+        "$"  : 'DLR',  # dollar
                        # $ -$ --$ A$ C$ HK$ M$ NZ$ S$ U.S.$ US$
         "''" : 'QM',   # closing quotation mark  ' ''
         '('  : 'OB',   # opening parenthesis ( [ {
@@ -117,7 +117,7 @@ class cls_agent_{id}:
         'PRP':'PRP',   # pronoun, personal
                        # hers herself him himself hisself it itself me myself one oneself ours
                        # ourselves ownself self she thee theirs them themselves they thou thy us
-        'PRP$':'PRPD', # pronoun, possessive
+        "PRP$":'PRPD', # pronoun, possessive
                        # her his mine my our ours their thy your
         'RB' : 'RB',   # adverb
                        # occasionally unabatingly maddeningly adventurously professedly
@@ -170,7 +170,7 @@ class cls_agent_{id}:
                        # that what whatever which whichever
         'WP' : 'WP',   # WH-pronoun
                        # that what whatever whatsoever which who whom whosoever
-        'WP$': 'WPD',  # WH-pronoun, possessive whose
+        "WP$": 'WPD',  # WH-pronoun, possessive whose
         'WRB': 'WRB',  # Wh-adverb
                        # how however whence whenever where whereby whereever wherein whereof why
         "``" : 'OQM',  # opening quotation mark ` ``
