@@ -2,6 +2,7 @@
 #key=data;  type=random_array_of_fields;  length=13
 #key=fields_to_use;  type=random_int;  from=13;  to=13;  step=1
 #key=field_ev_prefix;  type=random_from_set;  set=ev_field_lgbm_
+#key=field_ev_prefix_use_target_name;  type=random_from_set;  set=True
 #key=nfolds;  type=random_int;  from=10;  to=10;  step=1
 #key=random_folds;  type=random_from_set;  set=True
 #key=random_folds_size;  type=random_float;  from=0.3;  to=0.3;  step=0.1
@@ -77,19 +78,24 @@ class cls_ev_agent_{id}:
     import calendar
 
     # obtain a unique ID for the current instance
-    result_id = {id}
-    # create new field name based on "field_ev_prefix" with unique instance ID
-    # and filename to save new field data
-    field_ev_prefix = "{field_ev_prefix}"
-    output_column   = field_ev_prefix + str(result_id)
-    output_filename = output_column + ".csv"
-
+    result_id   = {id}
+    
     # obtain random field (same for all instances within the evolution) which will be the prediction target for this instance/evolution
     target_definition = "{field_to_predict}"
     # field definition received from the kernel contains two parts: name of the field and CSV filename that holds the actual data
     # load these two parts into variables
     target_col  = target_definition.split("|")[0]
     target_file = target_definition.split("|")[1]
+    
+    # create new field name based on "field_ev_prefix" with unique instance ID
+    # and filename to save new field data
+    field_ev_prefix = "{field_ev_prefix}"
+    if {field_ev_prefix_use_target_name}:
+        output_column = field_ev_prefix + target_definition + '_' + str(result_id)
+    else:
+        output_column = field_ev_prefix + str(result_id)
+    
+    output_filename = output_column + ".csv"
 
     # obtain random selection of fields; number of fields to be selected specified in data:length gene for this instance
     data_defs     = {data}
