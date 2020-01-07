@@ -290,7 +290,7 @@ class cls_ev_agent_{id}:
         x_train    =  lgb.Dataset(x_train_tfidf, label=y_train, feature_name=tfidf.get_feature_names())    # convert DF to lgb.Dataset as required by LGBM            
         watchlist  = [lgb.Dataset(x_test_tfidf,  label=y_test,  feature_name=tfidf.get_feature_names())]
                     
-        if self.params['binary_eval_fun'] == 'PRCAUC':
+        if self.is_binary and self.params['binary_eval_fun'] == 'PRCAUC':
             ml_model = lgb.train( self.params['algo'], x_train, self.params['algo']['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100, feval=self.f_eval_prc_auc)
         else:
             ml_model = lgb.train( self.params['algo'], x_train, self.params['algo']['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100)          
@@ -916,7 +916,7 @@ class cls_ev_agent_{id}:
                         test_ix_orig    =  test_y['index'].tolist()        # train_test_split produces data sets, so just access previously saved column with indexes
                         
                     #------ balance train set -----------------------------------------------------------------------------------------------------
-                    if self.params['binary_balancing']:                                           
+                    if self.is_binary and self.params['binary_balancing']:                                           
                         bal_y    = df[[self.target_col]]
                         
                         bal_cond = np.logical_and( bal_y.index.isin(train_ix_orig), bal_y[self.target_col]==0 )                                      
@@ -1024,7 +1024,7 @@ class cls_ev_agent_{id}:
                         print ("Minimum performance criteria: " + str(self.min_perf_criteria) + " not met! result_roc_auc: " + str(result_roc_auc))
                         return
 
-                    if self.params['binary_eval_fun'] == 'PRCAUC':
+                    if self.is_binary and self.params['binary_eval_fun'] == 'PRCAUC':
                         predictors.append([predictor, result, result_prc_auc])
                         predictors_all.append([predictor, result ,result_prc_auc])    # add predictors to global list across all validation folds
                     else:
@@ -1089,10 +1089,11 @@ class cls_ev_agent_{id}:
                         #    else:
                         #        valid_set_shap_values += shap.TreeExplainer(predictors[fold]['ml_model']).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
                 # ------------------ end of predicting remaining and validation samples ---------------------------------
-                                                       
-                prediction = prediction / len(predictors)
-                predicted_test_set  = predicted_test_set  / len(predictors)
-                predicted_valid_set = predicted_valid_set / len(predictors)
+                  
+                if self.params['algo']['objective'] != self.objective_multiclass:
+                    prediction          = prediction / len(predictors)
+                    predicted_test_set  = predicted_test_set  / len(predictors)
+                    predicted_valid_set = predicted_valid_set / len(predictors)
 
                 df_filter_column[self.output_column+'_folds_pred_avg'] = df_filter_column[self.output_column+'_folds_pred'] / df_filter_column[self.output_column+'_folds_pred_count']
             #------------ end of train test CV method selection ---------------------------------------------------------
@@ -1155,6 +1156,9 @@ class cls_ev_agent_{id}:
 
                         result         = 1 - result_prec_score
                         result_roc_auc = f1_score(y_valid, predicted_valid_set, average='weighted')
+                        
+                        valid_result_folds.append(result)
+                        valid_result_auc_folds.append(result_roc_auc)
                         
                     else:
                         result = mean_absolute_error(y_valid, predicted_valid_set)
