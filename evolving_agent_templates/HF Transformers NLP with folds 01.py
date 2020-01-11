@@ -234,7 +234,7 @@ class cls_ev_agent_{id}:
         # and filename to save new field data    
         self.field_ev_prefix = "{field_ev_prefix}"
         if self.field_ev_prefix_use_target_name:
-            self.field_ev_prefix = self.field_ev_prefix + '_' + target_col
+            self.field_ev_prefix = self.field_ev_prefix + '_' + self.target_col
         
         if self.field_ev_prefix_use_source_names:                   
             # concatenate all source column names into new field prefix

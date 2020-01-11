@@ -3,6 +3,7 @@
 #key=fields_to_use;  type=random_int;  from=1;  to=3;  step=1
 #key=map_dict;  type=random_from_set;  set=True
 #key=field_ev_prefix;  type=random_from_set;  set=ev_field_lgbm_tfidf_
+#key=field_ev_prefix_use_target_name;  type=random_from_set;  set=True
 #key=field_ev_prefix_use_source_names;  type=random_from_set;  set=True
 #key=nfolds;  type=random_int;  from=3;  to=3;  step=1
 #key=random_folds;  type=random_from_set;  set=True
@@ -89,6 +90,9 @@ import dateutil, calendar
 import shap, json, re
 import joblib
 
+from datetime import datetime
+from math     import sqrt
+
 from sklearn.metrics import roc_auc_score, precision_score, accuracy_score, log_loss
 from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.metrics import classification_report
@@ -99,9 +103,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import warnings
 warnings.filterwarnings("ignore")
 
-from datetime import datetime
-from math     import sqrt
-
+import gc
+gc.collect()
 
 class cls_ev_agent_{id}:
     # obtain a unique ID for the current instance
@@ -128,6 +131,7 @@ class cls_ev_agent_{id}:
     
     field_ev_prefix                  = "{field_ev_prefix}"
     field_ev_prefix_use_source_names = {field_ev_prefix_use_source_names}
+    field_ev_prefix_use_target_name  = {field_ev_prefix_use_target_name}
     
     params        = {}         # all parameters
     params['algo']= {}         # ML algo parameters
@@ -165,6 +169,9 @@ class cls_ev_agent_{id}:
         if self.target_definition in self.data_defs:
             self.data_defs.remove(self.target_definition)
             
+        if self.field_ev_prefix_use_target_name:
+            self.field_ev_prefix = self.field_ev_prefix + '_' + self.target_col
+
         # create new field name based on "field_ev_prefix" with unique instance ID
         # and filename to save new field data      
         if self.field_ev_prefix_use_source_names:                   
