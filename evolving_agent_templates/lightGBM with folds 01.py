@@ -91,7 +91,7 @@ class cls_ev_agent_{id}:
     # and filename to save new field data
     field_ev_prefix = "{field_ev_prefix}"
     if {field_ev_prefix_use_target_name}:
-        output_column = field_ev_prefix + target_definition + '_' + str(result_id)
+        output_column = field_ev_prefix + target_col + '_' + str(result_id)
     else:
         output_column = field_ev_prefix + str(result_id)
     
