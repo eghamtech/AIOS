@@ -3,6 +3,7 @@
 #key=fields_to_use;  type=random_int;  from=13;  to=13;  step=1
 #key=map_dict;  type=random_from_set;  set=True
 #key=field_ev_prefix;  type=random_from_set;  set=ev_field_trnlp
+#key=field_ev_prefix_use_target_name;  type=random_from_set;  set=True
 #key=field_ev_prefix_use_source_names;  type=random_from_set;  set=True
 #key=n_gpu;  type=random_int;  from=0;  to=0;  step=1
 #key=nfolds;  type=random_int;  from=3;  to=3;  step=1
@@ -85,6 +86,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import os
+import gc
+gc.collect()
 
 # torch/transformers want to load GPU with context even when asked to use CPU only
 # force it ignore GPU
@@ -180,6 +185,7 @@ class cls_ev_agent_{id}:
     map_dict      = {map_dict}
     clean_text_v  = {clean_text_v}
     field_ev_prefix_use_source_names = {field_ev_prefix_use_source_names}
+    field_ev_prefix_use_target_name  = {field_ev_prefix_use_target_name}
     
     num_threads   = {num_threads}
     rn_seed_init  = {random_seed_init}
@@ -213,9 +219,9 @@ class cls_ev_agent_{id}:
         rn.seed(seed_init)
         np.random.seed(seed_init)
         torch.manual_seed(seed_init)
-        if self.n_gpu > 0:
-            torch.cuda.manual_seed_all(seed_init)
-            torch.cuda.empty_cache()
+        #if self.n_gpu > 0:
+        torch.cuda.manual_seed_all(seed_init)
+        torch.cuda.empty_cache()
    
     def __init__(self):        
         self.set_seed(self.rn_seed_init)        # set same seed for every run of this agent's instance
@@ -227,6 +233,9 @@ class cls_ev_agent_{id}:
         # create new field name based on "field_ev_prefix" with unique instance ID
         # and filename to save new field data    
         self.field_ev_prefix = "{field_ev_prefix}"
+        if self.field_ev_prefix_use_target_name:
+            self.field_ev_prefix = self.field_ev_prefix + '_' + target_col
+        
         if self.field_ev_prefix_use_source_names:                   
             # concatenate all source column names into new field prefix
             col_max_length = int(200 / self.fields_to_use)             # allow 200 characters max combined col name length
