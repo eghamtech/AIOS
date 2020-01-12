@@ -1,12 +1,11 @@
 #start_of_parameters
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv','dict_field1|dict_field1.csv','dict_field2|dict_field2.csv']
 #key=col_max_length;  type=constant;  value=200
-#key=new_field_prefix;  type=constant;  value=spacy_vecs
+#key=new_field_prefix;  type=constant;  value=spacy_ner_stats_
 #key=field_prefix_use_source_names;  type=constant;  value=True
 #key=include_columns_type;  type=constant;  value=is_dict_only
 #key=include_columns_containing;  type=constant;  value=
 #key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
-#key=random_seed_init;  type=random_int;  from=1;  to=10000000;  step=1
 #end_of_parameters
 
 # AICHOO OS Simple Agent
@@ -14,10 +13,12 @@
 # https://github.com/eghamtech/AIOS/wiki/Simple-Agents
 # https://github.com/eghamtech/AIOS/wiki/AI-OS-Introduction
 #
-# this agent creates new columns from given fields by concatenating text and vectorising words
+# this agent creates new columns from given fields by concatenating text and 
+# recognising Named Entities in the text using SpaCy pre-trained model
+#
 # all source fields expected to be dictionary fields
 #
-# number of new columns created will be equal to embedding vector size
+# number of new columns created will be the same as number of unique Named Entities in ner_tags map 
 #
 # if "fields_source" parameter not specified then 2 fields will be obtained randomly
 # according to normal AIOS logic
@@ -28,12 +29,11 @@ import gc
 gc.collect()
 
 import pandas as pd
-import numpy  as np
 import spacy
 import os.path, bz2, pickle, re
 
 from datetime import datetime
-from sklearn.decomposition import TruncatedSVD
+from collections import Counter
 
 class cls_agent_{id}:
     # spacy_nlp = spacy.load('en_core_web_md')
@@ -45,19 +45,40 @@ class cls_agent_{id}:
     result_id         = {id}
     # create new field name based on "new_field_prefix" with unique instance ID
     # and filename to save new field data
-    new_field_prefix              = "{new_field_prefix}"
-    field_prefix_use_source_names = {field_prefix_use_source_names}
-
+    new_field_prefix  = "{new_field_prefix}"
     col_max_length    = {col_max_length}
     agent_name        = 'agent_' + str(result_id)
-    rn_seed_init      = {random_seed_init}
 
-    dicts_agent    = {}
-    new_columns    = []
-    dict_cols      = []
-    dict_cols_full = []
+    field_prefix_use_source_names = {field_prefix_use_source_names}
+
+    dicts_agent = {}
+    new_columns = []
+    dict_cols   = []
     
- 
+    # All NER tags to be identified and counted
+    ner_tags = {
+        'CARDINAL'   : 'CARDINAL',
+        'DATE'       : 'DATE',
+        'EVENT'      : 'EVENT',
+        'FAC'        : 'FAC',
+        'GPE'        : 'GPE',
+        'LANGUAGE'   : 'LANGUAGE',
+        'LAW'        : 'LAW',
+        'LOC'        : 'LOC',
+        'MONEY'      : 'MONEY',
+        'NORP'       : 'NORP',
+        'ORDINAL'    : 'ORDINAL',
+        'ORG'        : 'ORG',
+        'PERCENT'    : 'PERCENT',
+        'PERSON'     : 'PERSON',
+        'PRODUCT'    : 'PRODUCT',
+        'QUANTITY'   : 'QUANTITY',
+        'TIME'       : 'TIME',
+        'WORK_OF_ART': 'WORK_OF_ART',
+        'NAN'        : 'NAN'
+    }
+    
+
     def is_set(self, s):
         return len(s)>0 and s!="0"
 
@@ -85,7 +106,7 @@ class cls_agent_{id}:
             rfile = bz2.BZ2File(sfile, 'r')
             self.dicts_agent = pickle.load(rfile)
             rfile.close()
-            print (str(datetime.now()), self.agent_name + ': SpaCy Vectors agent dictionaries model loaded')
+            print (str(datetime.now()), self.agent_name + ': SpaCy NER Stats agent dictionaries model loaded')
 
 
     def run_on(self, df_run, apply_fun=False):
@@ -94,57 +115,40 @@ class cls_agent_{id}:
         if apply_fun:
             for col_name in self.dicts_agent['dict_cols']:
                 df_run['dict_'+col_name] = df_run[col_name]   # .map( self.dicts_agent[col_name] )   - new data should come as text, not dictionary key
-        
-        doc          = self.spacy_nlp('test')
-        num_new_cols = len(doc[0].vector)                     # establish length of SpaCy token vector 
 
-        for i in range(0,num_new_cols):
-            new_col_name = self.new_field_prefix + '_vel_' + str(i) + '_' + str(self.result_id)
+        for k,v in self.dicts_agent['ner_dicts'].items():
+            # all NER Names should be stored in this dictionary as values, so just iterate over them
+            new_col_name = self.new_field_prefix + '_' + str(self.result_id) + '_v_' + re.sub('[^0-9a-zA-Z]+', '_', str(v))
             self.new_columns.append(new_col_name)
+            df_run[new_col_name] = 0
+
         
         block_progress = 0
-        total          = len(df_run)
-        block          = int(total/50)
-        df_new         = []
-
-        for i, rowTuple in enumerate(df_run[self.dicts_agent['dict_cols_full']].itertuples(index=False)):
-            row = ''
-            for col in rowTuple:
-                row += ' ' + str(col)
-            row = row[1:]                 # remove trailing space after concatenations
+        total = len(df_run)
+        block = int(total/50)
         
-            doc   = self.spacy_nlp(row)   # tokenize row using SpaCy
-            row_v = []
-            for t in doc:
-                row_v.append(t.vector)    # extract embedding vector for each token
-            row_v = np.array(row_v)       # and convert list of embedding vectors into array
+        for index, row in df_run.iterrows():
+            row_str = ''
+            for col_name in self.dicts_agent['dict_cols']:
+                row_str += ' ' + str(row['dict_'+col_name])   # concatenate columns into one string
 
-            svd = TruncatedSVD(n_components=1, random_state=self.rn_seed_init)
-            svd.fit(row_v)                # get principal components 
-            svd = svd.components_
-
-            row_v = row_v - row_v.dot(svd.transpose()) * svd   # subtract principal component
-            row_v = np.mean(row_v, axis=0)                     # mean by columns creating single aggreggate vector of the whole row of fields
-
-            df_new.append(list(row_v))
+            row_str = row_str[1:]                             # remove space added during columns concatenation
+            
+            # NER
+            doc = self.spacy_nlp(row_str)   # tokenize row using SpaCy
+            
+            # count NER tags and save the number in corresponding column
+            row_pstags_counts = Counter( x.label_ for x in doc.ents )
+            for tag in row_pstags_counts:
+                tag_str      = self.dicts_agent['ner_dicts'].get(tag,'NAN')
+                new_col_name = self.new_field_prefix + '_' + str(self.result_id) + '_v_' + re.sub('[^0-9a-zA-Z]+', '_', str(tag_str))
+                
+                df_run.at[index, new_col_name] = row_pstags_counts[tag]
 
             block_progress += 1
             if (block_progress >= block):
                 block_progress = 0
-                print (str(datetime.now()), " rows processed: ", round((i+1)/total*100,0), "%")
-
-        df_new = pd.DataFrame(df_new, columns=self.new_columns)
-
-        if apply_fun:
-            df_run[self.new_columns] = df_new
-        else:
-            # save and register each new column
-            nrow = len(df_new)
-            for i in range(0,len(self.new_columns)):
-                fld   = self.new_columns[i]
-                fname = fld + '.csv'
-                df_new[[fld]].to_csv(workdir+fname)
-                print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
+                print (str(datetime.now()), " rows processed: ", round((index+1)/total*100,0), "%")
                     
 
     def run(self, mode):
@@ -167,10 +171,10 @@ class cls_agent_{id}:
                 self.df['dict_'+col_name]  = self.df[col_name].map(dict_temp)
 
                 self.dict_cols.append(col_name)
-                self.dict_cols_full.append('dict_'+col_name)
 
-        self.dicts_agent['dict_cols']      = self.dict_cols
-        self.dicts_agent['dict_cols_full'] = self.dict_cols_full
+
+        self.dicts_agent['dict_cols'] = self.dict_cols
+        self.dicts_agent['ner_dicts'] = self.ner_tags
 
         self.run_on(self.df)
         nrow = len(self.df)
@@ -180,6 +184,13 @@ class cls_agent_{id}:
         sfile = bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
         pickle.dump(self.dicts_agent, sfile)
         sfile.close()
+
+        # save and register each new column
+        for i in range(0,len(self.new_columns)):
+            fld   = self.new_columns[i]
+            fname = fld + '.csv'
+            self.df[[fld]].to_csv(workdir+fname)
+            print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
 
     def apply(self, df_add):
