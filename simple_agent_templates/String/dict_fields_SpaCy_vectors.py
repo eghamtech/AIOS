@@ -127,7 +127,7 @@ class cls_agent_{id}:
             row_v = row_v - row_v.dot(svd.transpose()) * svd   # subtract principal component
             row_v = np.mean(row_v, axis=0)                     # mean by columns creating single aggreggate vector of the whole row of fields
 
-            df_new.append(list(row_v_np))
+            df_new.append(list(row_v))
 
             block_progress += 1
             if (block_progress >= block):
