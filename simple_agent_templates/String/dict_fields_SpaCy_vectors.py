@@ -144,7 +144,7 @@ class cls_agent_{id}:
             for i in range(0,len(self.new_columns)):
                 fld   = self.new_columns[i]
                 fname = fld + '.csv'
-                self.df_new[[fld]].to_csv(workdir+fname)
+                df_new[[fld]].to_csv(workdir+fname)
                 print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
                     
 
