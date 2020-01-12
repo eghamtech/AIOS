@@ -2,10 +2,10 @@
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv','dict_field1|dict_field1.csv','dict_field2|dict_field2.csv']
 #key=col_max_length;  type=constant;  value=200
 #key=new_field_prefix;  type=constant;  value=spacy_vecs
-#key=field_prefix_use_source_names;  type=constant;  set=True
-#key=include_columns_type;  type=constant;  set=is_dict_only
-#key=include_columns_containing;  type=constant;  set=
-#key=ignore_columns_containing;  type=constant;  set='%ev_field%' and '%onehe_%'
+#key=field_prefix_use_source_names;  type=constant;  value=True
+#key=include_columns_type;  type=constant;  value=is_dict_only
+#key=include_columns_containing;  type=constant;  value=
+#key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
 #key=random_seed_init;  type=random_int;  from=1;  to=10000000;  step=1
 #end_of_parameters
 
@@ -34,7 +34,7 @@ import spacy
 import os.path, bz2, pickle, re
 
 from datetime import datetime
-from collections import Counter
+from sklearn.decomposition import TruncatedSVD
 
 class cls_agent_{id}:
     # spacy_nlp = spacy.load('en_core_web_md')
