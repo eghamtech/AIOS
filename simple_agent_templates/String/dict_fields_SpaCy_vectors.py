@@ -132,7 +132,7 @@ class cls_agent_{id}:
             block_progress += 1
             if (block_progress >= block):
                 block_progress = 0
-                print (str(datetime.now()), " rows processed: ", round((index+1)/total*100,0), "%")
+                print (str(datetime.now()), " rows processed: ", round((i+1)/total*100,0), "%")
 
         df_new = pd.DataFrame(df_new, columns=self.new_columns)
 
