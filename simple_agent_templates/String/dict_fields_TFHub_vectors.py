@@ -31,13 +31,15 @@ gc.collect()
 
 import pandas as pd
 import numpy  as np
+import tensorflow as tf
 import tensorflow_hub as hub
 import os.path, bz2, pickle, re
 
 from datetime import datetime
 
 class cls_agent_{id}:
-    tfhub_nlp = hub.load({tfhub_model})
+    with tf.device('CPU'):
+        tfhub_nlp = hub.load({tfhub_model})
 
     data_defs = {fields_source}
 
@@ -95,7 +97,8 @@ class cls_agent_{id}:
             for col_name in self.dicts_agent['dict_cols']:
                 df_run['dict_'+col_name] = df_run[col_name]   # .map( self.dicts_agent[col_name] )   - new data should come as text, not dictionary key
         
-        doc          = self.tfhub_nlp(['The quick brown fox jumps over the lazy dog.'])
+        with tf.device('CPU'):
+            doc = self.tfhub_nlp(['The quick brown fox jumps over the lazy dog.'])
         num_new_cols = len(doc[0])                     # establish length of TF model embeddings vector 
 
         for i in range(0,num_new_cols):
@@ -113,8 +116,9 @@ class cls_agent_{id}:
                 row += ' ' + str(col)
             row = row[1:]                   # remove trailing space after concatenations
         
-            doc   = self.tfhub_nlp([row])   # vectorise row using TF Hub model
-            row_v = list(doc.numpy()[0])    # convert tensor to numpy and put it to list
+            with tf.device('CPU'):
+                doc = self.tfhub_nlp([row])   # vectorise row using TF Hub model
+            row_v = list(doc.numpy()[0])      # convert tensor to numpy and put it to list
 
             df_new.append(row_v)
 
