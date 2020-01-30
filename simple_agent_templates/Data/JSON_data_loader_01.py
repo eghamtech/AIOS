@@ -205,7 +205,7 @@ class cls_agent_{id}:
             if item["analysis"]=='outcome':
                 print (i, item["analysis"], "---------", item["heading"], "---------", item["data_type"])
                 self.target_cols.append(cname)
-                self.df[cname] = self.df[cname].astype(int)
+                #self.df[cname] = self.df[cname].astype(int)                  # only may be needed if target is integer
             elif item["analysis"]=='data':
                 self.use_for_models.append(cname)
                 if cname in self.date_cols:
