@@ -1,6 +1,6 @@
 #start_of_genes_definitions
-#key=data;  type=random_array_of_fields;  length=3
-#key=fields_to_use;  type=random_int;  from=1;  to=3;  step=1
+#key=data;  type=random_array_of_fields;  length=2
+#key=fields_to_use;  type=random_int;  from=2;  to=2;  step=1
 #key=map_dict;  type=random_from_set;  set=True
 #key=field_ev_prefix;  type=random_from_set;  set=ev_field_lgbm_tfidf_
 #key=field_ev_prefix_use_target_name;  type=random_from_set;  set=True
@@ -24,7 +24,7 @@
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=include_columns_type;  type=random_from_set;  set=is_dict_only
-#key=include_columns_containing;  type=random_from_set;  set=
+#key=include_columns_containing;  type=random_from_set;  set=Competency_%
 #key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
 #key=objective_multiclass;  type=random_from_set;  set='multiclass','multiclassova'
 #key=objective_regression;  type=random_from_set;  set='regression_l1','regression_l2','huber','fair','poisson','quantile','mape','gamma','tweedie'
@@ -58,8 +58,8 @@
 #key=lambda_l1;  type=random_float;  from=0;  to=1;  step=0.01
 #key=lambda_l2;  type=random_float;  from=0;  to=1;  step=0.01
 #key=binary_balancing;  type=random_from_set;  set=True,False
-#key=binary_balancing_0;  type=random_float;  from=0.5;  to=1;  step=0.02
-#key=binary_balancing_1;  type=random_float;  from=1;  to=1;  step=0.02
+#key=binary_balancing_0;  type=random_float;  from=0.2;  to=1;  step=0.02
+#key=binary_balancing_1;  type=random_float;  from=0.2;  to=1;  step=0.02
 #key=binary_eval_fun;  type=random_from_set;  set='ROCAUC','PRCAUC'
 #key=start_fold;  type=random_from_set;  set=0
 #key=max_depth;  type=random_int;  from=-1;  to=10;  step=1
@@ -294,8 +294,10 @@ class cls_ev_agent_{id}:
         x_test_tfidf  = tfidf.transform(x_test_tfidf)
         
         print (str(datetime.now()), " ML model Training")
-        x_train    =  lgb.Dataset(x_train_tfidf, label=y_train, feature_name=tfidf.get_feature_names())    # convert DF to lgb.Dataset as required by LGBM            
-        watchlist  = [lgb.Dataset(x_test_tfidf,  label=y_test,  feature_name=tfidf.get_feature_names())]
+        tfidf_feature_names = self.rename_list_duplicates_and_symbols(tfidf.get_feature_names())
+       
+        x_train    =  lgb.Dataset(x_train_tfidf, label=y_train, feature_name=tfidf_feature_names)    # convert DF to lgb.Dataset as required by LGBM            
+        watchlist  = [lgb.Dataset(x_test_tfidf,  label=y_test,  feature_name=tfidf_feature_names)]
                     
         if self.is_binary and self.params['binary_eval_fun'] == 'PRCAUC':
             ml_model = lgb.train( self.params['algo'], x_train, self.params['algo']['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100, feval=self.f_eval_prc_auc)
@@ -443,7 +445,22 @@ class cls_ev_agent_{id}:
             s = self.clean_text_v2(s)
 
         return s
-    
+             
+    def rename_list_duplicates_and_symbols(self, dlist):       
+        nl = ["".join (c if c.isalnum() else "_" for c in str(x)) for x in dlist]
+        items  = []
+        nl_new = []
+        
+        for item in nl:
+            items.append(item)
+            items_count = items.count(item)
+            
+            if items_count==1:
+                nl_new.append(item)
+            else:
+                nl_new.append(item+"_dpl"+str(items_count))
+        
+        return nl_new            
     
     def set_seed(self, seed_init):
         rn.seed(seed_init)
