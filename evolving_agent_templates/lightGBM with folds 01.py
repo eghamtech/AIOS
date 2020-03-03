@@ -179,8 +179,8 @@ class cls_ev_agent_{id}:
         # determine whether given column should be ignored
 #         s = s.replace('%','')           # remove % used for pattern matching as now required to filter column by AIOS itself
         
-        if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
-            return False 
+#        if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
+#            return False 
 #         # ignore other columns containing specified ignore parameter value
 #         if self.is_set(self.ignore_columns_containing) and s.find(self.ignore_columns_containing.replace('%',''))>=0:
 #             return False
@@ -484,7 +484,12 @@ class cls_ev_agent_{id}:
         weighted_auc_folds           = []
         valid_result_folds           = []
         valid_result_auc_folds       = []
-        valid_set_shap_values        = None
+        #valid_set_shap_values        = None
+
+        self.dicts_agent['fi_valid_shap'] = []
+        self.dicts_agent['fi_valid_x']    = []
+        self.dicts_agent['fi_valid_y']    = []
+        self.dicts_agent['fi_valid_expl'] = []
         
         fold_all = 0
         # repeat cross-validation multiple times with different validation set each time
@@ -888,11 +893,15 @@ class cls_ev_agent_{id}:
                             df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred']       += pred
                             df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column+'_folds_pred_count'] += 1
                             
-                        if mode == 1:
-                            if fold == 0:
-                                valid_set_shap_values  = shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
-                            else:
-                                valid_set_shap_values += shap.TreeExplainer(predictors[fold]).shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
+                        if mode == 1 and valid_fold == 0 and fold == len(predictors) - 1:
+                            # save SHAP values only for the best predictor from the first validation set
+                            explainer = shap.TreeExplainer(predictors[fold])
+                            valid_set_shap_values = explainer.shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
+                                
+                            self.dicts_agent['fi_valid_shap'].append(valid_set_shap_values)
+                            self.dicts_agent['fi_valid_x'].append(df_valid_x[0:self.shap_data_limit])
+                            self.dicts_agent['fi_valid_y'].append(pred[0:self.shap_data_limit])
+                            self.dicts_agent['fi_valid_expl'].append(explainer)
 
                 if params['objective'] != self.objective_multiclass:
                     prediction          = prediction / len(predictors)
@@ -1010,8 +1019,8 @@ class cls_ev_agent_{id}:
         
         # save performance summaries across all validation folds
         self.dicts_agent['fi_total']                               = self.fi_total
-        self.dicts_agent['fi_valid_shap']                          = valid_set_shap_values
-        self.dicts_agent['fi_valid_x']                             = df_valid_x[0:self.shap_data_limit]
+        #self.dicts_agent['fi_valid_shap']                          = valid_set_shap_values
+        #self.dicts_agent['fi_valid_x']                             = df_valid_x[0:self.shap_data_limit]
         
         #############################################################
         #                   OUTPUT
