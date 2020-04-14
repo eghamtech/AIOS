@@ -380,24 +380,24 @@ class cls_ev_agent_{id}:
             else:
                 self.params['algo']['metric']   = ['auc', 'binary_logloss']
            
-            self.params['num_class']            = 1
-            self.params['prediction_type']      = 'Probability'
+            self.params['algo']['num_class']            = 1
+            self.params['algo']['prediction_type']      = 'Probability'
  
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(self.target_classes)) + " classes")
             self.params['algo']['objective']    = self.objective_multiclass
             self.params['algo']['metric']       = ['multi_logloss','multi_error']
             
-            self.params['num_class']            = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
-            self.params['prediction_type']      = 'Probability'
+            self.params['algo']['num_class']            = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
+            self.params['algo']['prediction_type']      = 'Probability'
 
         else:
             print ("detected regression target: use RMSE/MAE")
             self.params['algo']['objective']    = self.objective_regression
             self.params['algo']['metric']       = ['rmse','mae']
             
-            self.params['num_class']            = 1
-            self.params['prediction_type']      = 'RawFormulaVal'
+            self.params['algo']['num_class']            = 1
+            self.params['algo']['prediction_type']      = 'RawFormulaVal'
 
            
 
@@ -620,7 +620,7 @@ class cls_ev_agent_{id}:
         if self.dicts_agent['params']['algo']['objective'] == self.objective_multiclass:
             # create a list of lists depending on number of classes used for training 
             # as each prediction is a list of values against each class
-            pred = [np.zeros(self.dicts_agent['params']['num_class']) for i in range(len(df))]
+            pred = [np.zeros(self.dicts_agent['params']['algo']['num_class']) for i in range(len(df))]
          
         # apply model from each fold created during training and sum their predictions
         if self.dicts_agent['params']['random_folds'] == False:
@@ -707,7 +707,7 @@ class cls_ev_agent_{id}:
         self.model_params()
 
         # initialise temp df holding multi-class predictions for entire data set
-        df_filter_column_mc = pd.DataFrame([np.zeros(self.params['num_class']) for i in range(len(df_filter_column))])
+        df_filter_column_mc = pd.DataFrame([np.zeros(self.params['algo']['num_class']) for i in range(len(df_filter_column))])
 
         self.dicts_agent['params']   = self.params
             
@@ -791,7 +791,7 @@ class cls_ev_agent_{id}:
                 # Multi-class case: initialise prediction list of lists depending on number of classes 
                 # as each prediction is a list of values against each class
                 if self.params['algo']['objective'] == self.objective_multiclass:
-                    predicted_valid_set = [np.zeros(self.params['num_class']) for i in range(len(df_valid))]
+                    predicted_valid_set = [np.zeros(self.params['algo']['num_class']) for i in range(len(df_valid))]
 
             df      = df[df.index.isin(train_sets_ix[valid_fold])]
 
@@ -802,8 +802,8 @@ class cls_ev_agent_{id}:
             # Multi-class case: initialise prediction list of lists depending on number of classes 
             # as each prediction is a list of values against each class
             if self.params['algo']['objective'] == self.objective_multiclass:
-                prediction         = [np.zeros(params['num_class']) for i in range(len(df))]
-                predicted_test_set = [np.zeros(params['num_class']) for i in range(len(df_test))]           
+                prediction         = [np.zeros(self.params['algo']['num_class']) for i in range(len(df))]
+                predicted_test_set = [np.zeros(self.params['algo']['num_class']) for i in range(len(df_test))]           
 
             #############################################################
             #                   MAIN LOOP
@@ -884,7 +884,7 @@ class cls_ev_agent_{id}:
                             print ("Accuracy  score: ", result_acc_score)
                             print ("Confusion Matrix:\n",      result_cm)
                             print ("Classification Report:\n", result_cr)
-                        result         = predictor.best_score['valid_0']['multi_logloss']
+                        result         = predictor['ml_model'].best_score['valid_0']['multi_logloss']
                         result_roc_auc = f1_score(y_test, pred_classes, average='weighted')
                     else:
                         result         = sum(abs(y_test-pred))/len(y_test)
@@ -1013,7 +1013,7 @@ class cls_ev_agent_{id}:
                                 print ("Confusion Matrix:\n",      result_cm)
                                 print ("Classification Report:\n", result_cr)
 
-                            result         = predictor.best_score['valid_0']['multi_logloss']
+                            result         = predictor['ml_model'].best_score['valid_0']['multi_logloss']
                             result_roc_auc = f1_score(y_test, pred_classes, average='weighted')
 
                             # assign predictions to corresponding test records only
