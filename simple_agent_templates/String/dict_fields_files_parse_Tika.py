@@ -27,6 +27,7 @@ import pandas as pd
 import numpy  as np
 import os, bz2, pickle, re
 import tika
+from tika import parser
 
 from datetime import datetime
 
