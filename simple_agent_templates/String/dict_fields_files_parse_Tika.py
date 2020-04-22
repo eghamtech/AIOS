@@ -1,7 +1,7 @@
 #start_of_parameters
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv']
 #key=col_max_length;  type=constant;  value=200
-#key=new_field_prefix;  type=constant;  value=files_parsed_Tika_
+#key=new_field_prefix;  type=constant;  value=parsed_Tika_
 #key=field_prefix_use_source_names;  type=constant;  value=True
 #key=include_columns_type;  type=constant;  value=is_dict_only
 #key=include_columns_containing;  type=constant;  value=
@@ -25,7 +25,7 @@ gc.collect()
 
 import pandas as pd
 import numpy  as np
-import os.path, bz2, pickle, re
+import os, bz2, pickle, re
 import tika
 
 from datetime import datetime
@@ -72,20 +72,23 @@ class cls_agent_{id}:
         df_new         = []
         block_progress = 0
         total          = len(df_run)
-        block          = int(total/50)
+        block          = int(total/100)
 
         col_name  = self.data_defs[0].split("|")[0]
 
         for i, rowTuple in enumerate(df_run[[col_name]].itertuples(index=False)):
             sfile = rowTuple[0]
 
-            parsed_file = {}
-            if os.path.isfile(sfile):
-                parsed_file = tika.parser.from_file(sfile)            # read the file and parse it  
+            if pd.isnull(sfile):
+                df_new.append(np.nan)
             else:
-                parsed_file = tika.parser.from_buffer(sfile)          # parse the given string, if it is not a file reference
-            
-            df_new.append(parsed_file.get('content',''))
+                parsed_file = {}
+                if os.path.isfile(sfile):
+                    parsed_file = tika.parser.from_file(sfile)            # read the file and parse it  
+                else:
+                    parsed_file = tika.parser.from_buffer(sfile)          # parse the given string, if it is not a file reference
+                
+                df_new.append(parsed_file.get('content',''))
 
             block_progress += 1
             if (block_progress >= block):
@@ -122,8 +125,10 @@ class cls_agent_{id}:
         fld   = self.new_col_name
         fname = fld + '.csv'
 
+        print (str(datetime.now()), " creating dictionary...")
         fld_dict     = self.make_dict(self.df[fld].fillna(''))         # create dictionary of given text column  
         self.df[fld] = self.df[fld].fillna('').map(fld_dict)           # replace column values with corresponding values from dictionary
+        print (str(datetime.now()), " dictionary created and mapped.")
 
         # save dictionary for each text column into separate file
         pd.DataFrame(list(fld_dict.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+fld+'.csv', encoding='utf-8')
