@@ -84,10 +84,14 @@ class cls_agent_{id}:
                 df_new.append(np.nan)
             else:
                 parsed_file = {}
-                if os.path.isfile(sfile):
-                    parsed_file = tika.parser.from_file(sfile)            # read the file and parse it  
-                else:
-                    parsed_file = tika.parser.from_buffer(sfile)          # parse the given string, if it is not a file reference
+                try:
+                    if os.path.isfile(sfile):
+                        parsed_file = tika.parser.from_file(sfile, headers = {'X-Tika-PDFextractInlineImages': 'true'})            # read the file and parse it  
+                    else:
+                        parsed_file = tika.parser.from_buffer(sfile)          # parse the given string, if it is not a file reference
+                except Exception as e:
+                    print (str(datetime.now()), ' file:', sfile, 'i:', str(i))
+                    print (e)
                 
                 df_new.append(parsed_file.get('content',''))
 
