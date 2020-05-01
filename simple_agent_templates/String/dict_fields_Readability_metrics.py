@@ -62,12 +62,12 @@ class cls_agent_{id}:
         'linsear_write'         :'r.linsear_write().score',
         'smog'                  :'r.smog().score',
         'spache'                :'r.spache().score',
-        'num_letters'           :'r.statistics().num_letters',
-        'num_words'             :'r.statistics().num_words',
-        'num_sentences'         :'r.statistics().num_sentences',
-        'num_polysyllabic_words':'r.statistics().num_polysyllabic_words',
-        'avg_words_per_sentence':'r.statistics().avg_words_per_sentence',
-        'avg_syllables_per_word':'r.statistics().avg_syllables_per_word'          
+        'num_letters'           :"r.statistics()['num_letters']",
+        'num_words'             :"r.statistics()['num_words']",
+        'num_sentences'         :"r.statistics()['num_sentences']",
+        'num_polysyllabic_words':"r.statistics()['num_polysyllabic_words']",
+        'avg_words_per_sentence':"r.statistics()['avg_words_per_sentence']",
+        'avg_syllables_per_word':"r.statistics()['avg_syllables_per_word']"          
     }   
 
     def is_set(self, s):
