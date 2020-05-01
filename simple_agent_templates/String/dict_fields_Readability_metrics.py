@@ -1,5 +1,6 @@
 #start_of_parameters
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv','dict_field1|dict_field1.csv','dict_field2|dict_field2.csv']
+#key=duplicate_text_times;  type=constant;  value=1
 #key=col_max_length;  type=constant;  value=200
 #key=new_field_prefix;  type=constant;  value=read_metrics_
 #key=field_prefix_use_source_names;  type=constant;  value=True
@@ -16,8 +17,8 @@
 # this agent creates new columns from given fields by concatenating text and 
 # calculating readability metrics described in https://py-readability-metrics.readthedocs.io/en/latest/
 #
-# all source fields expected to be dictionary fields
-#
+# all source fields expected to be dictionary fields, but non-dictionary fields will be converted to text
+# concatenated text could be repeated by specified number of times separated by space to deal with texts smaller than 100 words
 # number of new columns created will be the same as number of metrics 
 #
 # if "fields_source" parameter not specified then 2 fields will be obtained randomly
@@ -46,6 +47,7 @@ class cls_agent_{id}:
     agent_name        = 'agent_' + str(result_id)
 
     field_prefix_use_source_names = {field_prefix_use_source_names}
+    duplicate_text_times          = {duplicate_text_times}
 
     #dicts_agent = {}
     new_columns = []
@@ -126,7 +128,8 @@ class cls_agent_{id}:
             for col_name in self.dict_cols:
                 row_str += ' ' + str(row[col_name])   # concatenate columns into one string
 
-            row_str = row_str[1:]                     # remove space added during columns concatenation
+            row_str = row_str * self.duplicate_text_times   # repeat text number of times - may be needed if data is typically less than 100 words
+            row_str = row_str[1:]                           # remove space added during columns concatenation
             
             r = Readability(row_str)
 
