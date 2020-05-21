@@ -93,9 +93,10 @@ class cls_agent_{id}:
     def run_on(self, df_run, apply_fun=False):
         self.new_columns = []
 
-        if apply_fun:
-            for col_name in self.dicts_agent['dict_cols']:
-                df_run['dict_'+col_name] = df_run[col_name]   # .map( self.dicts_agent[col_name] )   - new data should come as text, not dictionary key
+        # commented out because new data should already come with 'dict_' colums used by this agent
+        # if apply_fun:
+        #     for col_name in self.dicts_agent['dict_cols']:
+        #         df_run['dict_'+col_name] = df_run[col_name]   # .map( self.dicts_agent[col_name] )   - new data should come as text, not dictionary key
         
         with tf.device('CPU'):
             doc = self.tfhub_nlp(['The quick brown fox jumps over the lazy dog.'])
