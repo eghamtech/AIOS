@@ -131,7 +131,8 @@ class cls_agent_{id}:
         df_new = pd.DataFrame(df_new, columns=self.new_columns)
 
         if apply_fun:
-            df_run[self.new_columns] = df_new
+            for cname in self.new_columns:
+                df_run[cname] = df_new[cname].tolist()
         else:
             # save and register each new column
             nrow = len(df_new)
