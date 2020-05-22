@@ -625,7 +625,7 @@ class cls_ev_agent_{id}:
         # apply model from each fold created during training and sum their predictions
         if self.dicts_agent['params']['random_folds'] == False:
             for fold in range(self.start_fold, self.nfolds):
-                pred += self.model_predict(predictors[fold - self.start_fold], df)
+                pred += self.model_predict(self.predictors[fold - self.start_fold], df)
 
             if self.dicts_agent['params']['algo']['objective'] == self.objective_multiclass:
                 # select class with largest total value in case of multiclass
@@ -635,7 +635,7 @@ class cls_ev_agent_{id}:
                 pred = pred / (self.nfolds - self.start_fold)
         else:
             for fold in range(0, len(self.predictors)):
-                pred += self.model_predict(predictors[fold], df)
+                pred += self.model_predict(self.predictors[fold], df)
 
             if self.dicts_agent['params']['algo']['objective'] == self.objective_multiclass:
                 # select class with largest total value in case of multiclass
