@@ -205,9 +205,10 @@ class cls_agent_{id}:
         
         stop_words = set(nltk.corpus.stopwords.words('english'))
 
-        if apply_fun:
-            for col_name in self.dicts_agent['dict_cols']:
-                df_run['dict_'+col_name] = df_run[col_name]   # .map( self.dicts_agent[col_name] )   - new data should come as text, not dictionary key
+        # commented out because new data should already come with 'dict_' colums used by this agent
+        # if apply_fun:
+        #     for col_name in self.dicts_agent['dict_cols']:
+        #         df_run['dict_'+col_name] = df_run[col_name]   # .map( self.dicts_agent[col_name] )   - new data should come as text, not dictionary key
 
         new_col_name = self.new_field_prefix + '_' + str(self.result_id) + '_v_NumTokens'
         new_col_name = new_col_name[:self.col_max_length]
