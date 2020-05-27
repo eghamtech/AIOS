@@ -59,6 +59,11 @@ class cls_agent_{id}:
     dict_cols      = []
     dict_cols_full = []
     
+    def printlog(self, mesg):
+        from datetime import datetime
+        global DEBUG
+        if DEBUG == 1:
+            print (str(datetime.now()), mesg)
  
     def is_set(self, s):
         return len(s)>0 and s!="0"

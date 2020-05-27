@@ -32,6 +32,9 @@ class cls_agent_{id}:
         a1 = [x for x in a1 if str(x) != 'nan']
         keys1 = range(1, len(a1)+1)
         return dict(zip(a1, keys1))
+
+    def reverse_dict_any_key(self, dt): 
+        return {v:k for k,v in dt.items()}
     
     def reverse_dict_int_key(self, dt): 
         return {v:int(k) for k,v in dt.items()}
@@ -74,6 +77,21 @@ class cls_agent_{id}:
 
         s = self.re.sub('[^0-9a-zA-Z]+', '_', s)
         return  s
+
+    def _map_column_value(self, value, cname):
+        global dicts
+
+        cname_dict  = dicts[cname]         
+        cname_value = str(value) if value != None else ''
+
+        if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
+            self.printlog ("JSON Loader: text column: " + cname + "; value: " + cname_value + "; Not in dictionary")
+            new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
+            dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
+
+        self.printlog ("JSON Loader: text column: " + cname + "; value: " + cname_value + "; Mapped to value: " + str(dicts[cname][cname_value]))
+        
+        return dicts[cname][cname_value]
     
     def __init__(self):
         global dicts
@@ -191,7 +209,7 @@ class cls_agent_{id}:
                     for key in json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"].keys():
                         dict_lookup[key] = json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"][key]["value"]
                     
-                    dicts[cname] = dict_lookup
+                    dicts[cname] = self.reverse_dict_any_key(dict_lookup)              # lookup columns supplied with reversed dictionary, reverse it before saving
                     self.pd.DataFrame(list(dict_lookup.items()), columns=['key', 'value']).to_csv(workdir+'dict_'+self.colmap[item["heading"]]+'.csv', encoding='utf-8')    #save new column dict
         # print ("lookup columns:", self.lookup_cols)
          
@@ -287,29 +305,33 @@ class cls_agent_{id}:
             df_add[cname+'_TS'] = df_add[cname].apply(lambda x: self.calendar.timegm(self.dateutil.parser.parse(x).timetuple()) if x!=None and self.pd.notnull(x) else 0)
             df_add.drop(cname, axis=1, inplace=True)
         self.printlog ("JSON Loader: date columns processed")
+
+        for cname in df_add.columns:                                              # iterate over each column in df_add
+            if cname in self.char_cols:
+                df_add[cname] = df_add[cname].apply(self._map_column_value, cname=cname)
         
-        for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
-            for cname in df_add.columns:                                          # iterate over each column in df_add row
-                if (cname in self.char_cols):
-                    cname_dict  = dicts[cname]         
-                    cname_value = str(row[cname]) if row[cname] != None else ''
-                    self.printlog ("JSON Loader: text column " + cname + "; value: " + cname_value)
+        # for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
+        #     for cname in df_add.columns:                                          # iterate over each column in df_add row
+        #         if (cname in self.char_cols):
+        #             cname_dict  = dicts[cname]         
+        #             cname_value = str(row[cname]) if row[cname] != None else ''
+        #             self.printlog ("JSON Loader: text column " + cname + "; value: " + cname_value)
                     
-                    if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
-                        self.printlog ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
-                        new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
-                        dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
-                        df_add.at[index, cname]   = new_key
+        #             if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
+        #                 self.printlog ("JSON Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
+        #                 new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
+        #                 dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
+        #                 df_add.at[index, cname]   = new_key
                         
-                        # since global dictionary is modified it needs to be saved to avoid issues with future predictions
-                        # of columns with text not in dictionary
-                        # uncomment this functionality if needed (could be slow due to file ops during scoring)
-                        #sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
-                        #self.pickle.dump(dicts, sfile) 
-                        #sfile.close()
-                    else:    
-                        df_add.at[index, cname] = cname_dict[cname_value]
+        #                 # since global dictionary is modified it needs to be saved to avoid issues with future predictions
+        #                 # of columns with text not in dictionary
+        #                 # uncomment this functionality if needed (could be slow due to file ops during scoring)
+        #                 #sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
+        #                 #self.pickle.dump(dicts, sfile) 
+        #                 #sfile.close()
+        #             else:    
+        #                 df_add.at[index, cname] = cname_dict[cname_value]
                     
-                    self.printlog ("JSON Loader: column " + cname + "; value: " + cname_value + " mapped")
+        #             self.printlog ("JSON Loader: column " + cname + "; value: " + cname_value + " mapped")
                     
 agent_{id} = cls_agent_{id}()
