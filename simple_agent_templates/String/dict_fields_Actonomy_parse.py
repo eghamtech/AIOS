@@ -12,6 +12,7 @@
 #key=include_columns_type;  type=constant;  value=is_dict_only
 #key=include_columns_containing; type=constant;  value=
 #key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
+#key=out_file_extension;  type=constant;  value=.csv.bz2
 #end_of_parameters
 
 # AICHOO OS Simple Agent
@@ -43,18 +44,18 @@ from lxml import etree as etree_lxml
 from datetime import datetime
 
 class cls_agent_{id}:
-    data_defs = {fields_source}
-
+    data_defs          = {fields_source}
     # obtain a unique ID for the current instance
-    result_id         = {id}
+    result_id          = {id}
     # create new field name based on "new_field_prefix" with unique instance ID
     # and filename to save new field data
-    new_field_prefix  = "{new_field_prefix}"
-    col_max_length    = {col_max_length}
-    agent_name        = 'agent_' + str(result_id)
+    new_field_prefix   = "{new_field_prefix}"
+    out_file_extension = "{out_file_extension}"
+    col_max_length     = {col_max_length}
+    agent_name         = 'agent_' + str(result_id)
 
     field_prefix_use_source_names = {field_prefix_use_source_names}
-
+    
     new_columns = []
     dict_cols   = []
 
@@ -64,7 +65,7 @@ class cls_agent_{id}:
     }
 
     auth_str       = "{actonomy_user}:{actonomy_pass}"
-    actonomy_url   = {actonomy_url}
+    actonomy_url   = "{actonomy_url}"
     
     body_candidate_daxtra_native = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xmp="http://xmp.actonomy.com">
             <soapenv:Header/>
@@ -207,17 +208,22 @@ class cls_agent_{id}:
                     print (str(datetime.now()), 'Error API request at row: ', row_index, '; FATAL no more attempts')
                     return False  
         
-        root = ET.fromstring(r.text)
-        
-        content = root.find(
-            '{http://schemas.xmlsoap.org/soap/envelope/}Body'
-        ).find(
-            '{http://xmp.actonomy.com}parseResponse'
-        ).find('return').find(
-            'documents'
-        ).find('content').text
-        
-        base64_message = base64.b64decode(content).decode('utf-8')
+        try:
+            root = ET.fromstring(r.text)
+
+            content = root.find(
+                '{http://schemas.xmlsoap.org/soap/envelope/}Body'
+            ).find(
+                '{http://xmp.actonomy.com}parseResponse'
+            ).find('return').find(
+                'documents'
+            ).find('content').text
+
+            base64_message = base64.b64decode(content).decode('utf-8')
+        except Exception as e:
+            print (e)
+            print (str(datetime.now()), 'Error in Actonomy returned XML at row: ', row_index)
+            return False
         
         return base64_message
 
@@ -286,13 +292,13 @@ class cls_agent_{id}:
         # all columns are dictionary fields
         for i in range(0,len(self.new_columns)):
             fld   = self.new_columns[i]
-            fname = fld + '.csv'
+            fname = fld + self.out_file_extension
 
             fld_dict     = self.make_dict(self.df[fld].fillna(''))         # create dictionary of given text column  
             self.df[fld] = self.df[fld].fillna('').map(fld_dict)           # replace column values with corresponding values from dictionary
 
             # save dictionary for each text column into separate file
-            pd.DataFrame(list(fld_dict.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+fld+'.csv', encoding='utf-8')
+            pd.DataFrame(list(fld_dict.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+fname, encoding='utf-8')
 
             # save column of indexes
             self.df[[fld]].to_csv(workdir+fname)
