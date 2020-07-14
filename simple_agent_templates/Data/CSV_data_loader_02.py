@@ -4,6 +4,7 @@
 #key=primary_field;  type=constant;  value=enter_primary_field|its_filename
 #key=field_prefix;  type=constant;  value=csv02
 #key=target;  type=constant;  value=enter_target
+#key=out_file_extension;  type=constant;  value=.csv.bz2
 #end_of_parameters
 
 # This script will scan your CSV file for string columns, convert them to dictionaries
@@ -15,20 +16,23 @@
 # this version of the loader will scan existing data and will append new columns from "source_filename"
 # where "source_primary_field" == "primary_field" column already in the AIOS Memory
 
+import warnings
+warnings.filterwarnings("ignore")
+import pandas as pd
+import re, bz2, pickle, os.path
+from datetime import datetime
+
 if 'dicts' not in globals():
     dicts = {}  # dict of dicts. each of dicts has structure: key=string, value=number
 
-class cls_agent_{id}:
-    import warnings
-    warnings.filterwarnings("ignore")
-    import pandas as pd
-    import re, bz2, pickle, os.path
-    
+class cls_agent_{id}:    
     source_filename      = "{source_filename}"             # file in workdir where additional data is
     source_primary_field = "{source_primary_field}"        # name of the field which can be used to link to existing data
+    out_file_extension   = "{out_file_extension}"
+    
     primary_field    = "{primary_field}"                   # name of the link field in the existing data
     new_field_prefix = "{field_prefix}"
-    target = "{target}"
+    target           = "{target}"
    
     # obtain a unique ID for the current instance
     result_id  = {id}
@@ -38,7 +42,6 @@ class cls_agent_{id}:
     char_cols = []
     
     def printlog(self, mesg):
-        from datetime import datetime
         global DEBUG
         if DEBUG == 1:
             print (str(datetime.now()), mesg)
@@ -64,7 +67,7 @@ class cls_agent_{id}:
         s = s.replace('+', '_plus_')
         s = s.replace('-', '_dash_')
         s = s.replace('/', '_fsl_')
-        s = s.replace('\\', '_bsl_')
+        #s = s.replace('\\', '_bsl_')
         s = s.replace('?', '_qm_')
         s = s.replace('!', '_em_')
 
@@ -73,19 +76,37 @@ class cls_agent_{id}:
         s = s.replace(':', '_cln_')
         s = s.replace(';', '_scln_')
 
-        s = self.re.sub('[^0-9a-zA-Z]+', '_', s)
+        s = re.sub('[^0-9a-zA-Z]+', '_', s)
         return  s
         
+    def _map_column_value(self, value, cname):
+        global dicts
+
+        cname_dict  = dicts[cname]         
+        cname_value = str(value) if value != None else ''
+
+        if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
+            self.printlog ("CSV Loader: text column: " + cname + "; value: " + cname_value + "; Not in dictionary")
+            new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
+            dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
+
+        self.printlog ("CSV Loader: text column: " + cname + "; value: " + cname_value + "; Mapped to value: " + str(dicts[cname][cname_value]))
+        
+        return dicts[cname][cname_value]
+
+
     def __init__(self):
         global dicts
         # if saved model for dictionaries already exists then load it from filesystem
-        if self.os.path.isfile(workdir + self.agent_name + '.model'):
-            rfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'r')
-            dicts = self.pickle.load(rfile)
+        model_file = workdir + self.agent_name + '.model'
+        if os.path.isfile(model_file):
+            rfile = bz2.BZ2File(model_file, 'r')
+            dicts = pickle.load(rfile)
             rfile.close()
             
             self.colmap    = dicts[self.agent_name + '.colmap']
             self.char_cols = dicts[self.agent_name + '.char_cols']
+
 
     def make_dict(self, col):
         a1 = col.unique()
@@ -94,11 +115,11 @@ class cls_agent_{id}:
         return dict(zip(a1, keys1))
 
     def run(self, mode):
-        from datetime import datetime
         global dicts
         print ("enter run mode " + str(mode))
+
         print (str(datetime.now()), " creating dataframe...")
-        self.df = self.pd.read_csv(workdir+self.source_filename, encoding='utf8', engine='python', error_bad_lines=False)
+        self.df = pd.read_csv(workdir+self.source_filename, encoding='utf8', engine='python', error_bad_lines=False)
         
         # rename all new columns by removing non alfa-numeric symbols
         cols            = self.df.columns
@@ -130,9 +151,9 @@ class cls_agent_{id}:
         # so dataframe can be joined on that field
         self.df[col_name] = self.df[self.colmap[self.source_primary_field]]
         
-        df_primary = self.pd.read_csv(workdir+file_name, encoding='utf8')[[col_name]]
+        df_primary = pd.read_csv(workdir+file_name, encoding='utf8')[[col_name]]
         
-        df_primary = self.pd.merge(df_primary, self.df, how='left', on=col_name, sort=False)
+        df_primary = pd.merge(df_primary, self.df, how='left', on=col_name, sort=False)
         df_primary.drop(col_name, axis=1, inplace=True)              # remove primary field as it is a duplicate previously created
         
         print (str(datetime.now()), " processing TEXT columns")
@@ -144,18 +165,19 @@ class cls_agent_{id}:
             dict_char         = self.make_dict(df_primary[cname].fillna(''))
             dicts[cname]      = dict_char
             df_primary[cname] = df_primary[cname].fillna('').map(dict_char)
+
             # save dictionary for each text column into separate file
-            self.pd.DataFrame(list(dict_char.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+cname+'.csv', encoding='utf-8')
+            out_file = workdir + 'dict_' + cname + self.out_file_extension
+            pd.DataFrame(list(dict_char.items()), columns=['value', 'key'])[['key','value']].to_csv(out_file, encoding='utf-8')
             print ("text column: " + cname + " processed")
         
         print (str(datetime.now()), " saving dicts...")           
         dicts[self.agent_name + '.colmap']    = self.colmap
         dicts[self.agent_name + '.char_cols'] = self.char_cols
        
-        sfile = self.bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
-        self.pickle.dump(dicts, sfile) 
+        sfile = bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
+        pickle.dump(dicts, sfile) 
         sfile.close()
-        
         print (str(datetime.now()), " ...dicts saved.")
         
         nrow = len(df_primary)
@@ -173,7 +195,7 @@ class cls_agent_{id}:
                 
             # save each column into separate file and register new field
             output_column   = cname
-            output_filename = output_column + ".csv"
+            output_filename = output_column + self.out_file_extension
             df_primary[[output_column]].to_csv(workdir+output_filename)           
             print ("#add_field:"+output_column+","+is_dict+","+output_filename+","+is_target+","+str(nrow)+","+is_use_for_models)
            
@@ -197,21 +219,11 @@ class cls_agent_{id}:
                 df_add[cshort].fillna('', inplace=True)
         self.printlog ("CSV Loader: columns renamed")
                 
-        for index, row in df_add.iterrows():                                      # iterate over each row in df_add 
-            for cname in df_add.columns:                                          # iterate over each column in df_add row
-                if (cname in self.char_cols):
-                    cname_dict = dicts[cname]         
-                    cname_value = str(row[cname]) if row[cname] != None else ''
-                    self.printlog ("CSV Loader: text column " + cname + "; value: " + cname_value)
-                    
-                    if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
-                        self.printlog ("CSV Loader: column " + cname + "; value: " + cname_value + " not in dictionary")
-                        new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
-                        dicts[cname][cname_value] = new_key                       # add text:key to original dictionary
-                        df_add.at[index, cname] = new_key
-                    else:    
-                        df_add.at[index, cname] = cname_dict[cname_value]
-                    
-                    self.printlog ("CSV Loader: column " + cname + "; value: " + cname_value + " mapped")
+        for cname in df_add.columns:                                                      # iterate over each column in df_add looking for recorded text fields
+            if (cname in self.char_cols):
+                df_add['dict_'+cname] = df_add[cname]                                     # text columns come with original text - copy those to 'dict_' fields
+                df_add[cname] = df_add[cname].apply(self._map_column_value, cname=cname)  # map text column to its ID
+        
+        return df_add
 
 agent_{id} = cls_agent_{id}()
