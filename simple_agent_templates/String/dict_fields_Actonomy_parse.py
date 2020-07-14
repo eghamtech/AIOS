@@ -1,6 +1,7 @@
 #start_of_parameters
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv','dict_field1|dict_field1.csv','dict_field2|dict_field2.csv']
 #key=xml_template; type=constant;  value=candidate_actonomy | candidate_daxtra_native | vacancy_actonomy | vacancy_daxtra_native
+#key=replace_bbtags;  type=constant;  value=True
 #key=col_max_length;   type=constant;  value=200
 #key=new_field_prefix; type=constant;  value=parsed_Actonomy_
 #key=field_prefix_use_source_names;  type=constant;  value=True
@@ -51,6 +52,7 @@ class cls_agent_{id}:
     # and filename to save new field data
     new_field_prefix   = "{new_field_prefix}"
     out_file_extension = "{out_file_extension}"
+    replace_bbtags     = {replace_bbtags}
     col_max_length     = {col_max_length}
     agent_name         = 'agent_' + str(result_id)
 
@@ -248,6 +250,9 @@ class cls_agent_{id}:
             for col_name in self.dict_cols:
                 row_str += ' ' + str(row['dict_'+col_name])   # concatenate columns into one string
             row_str = row_str[1:]                             # remove space added during columns concatenation
+
+            if self.replace_bbtags:
+                row_str = row_str.replace('[','<').replace(']','>').replace(u'\xa0', u' ')
             
             if row_str == '' or row_str == 'nan' or row_str == 'NaN' or row_str == 'None' or row_str.replace("\n",' ').replace("\r",' ').strip() == '':
                 xml_parsed = ''
