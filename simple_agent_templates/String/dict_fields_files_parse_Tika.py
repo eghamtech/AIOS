@@ -3,6 +3,7 @@
 #key=col_max_length;  type=constant;  value=200
 #key=new_field_prefix;  type=constant;  value=parsed_Tika_
 #key=field_prefix_use_source_names;  type=constant;  value=True
+#key=out_file_extension;  type=constant;  value=.csv.bz2
 #key=include_columns_type;  type=constant;  value=is_dict_only
 #key=include_columns_containing;  type=constant;  value=
 #key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
@@ -40,6 +41,7 @@ class cls_agent_{id}:
     # and filename to save new field data
     new_field_prefix              = "{new_field_prefix}"
     field_prefix_use_source_names = {field_prefix_use_source_names}
+    out_file_extension            = "{out_file_extension}"
 
     col_max_length    = {col_max_length}
     agent_name        = 'agent_' + str(result_id)    
@@ -128,7 +130,7 @@ class cls_agent_{id}:
 
         # save and register each new column    
         fld   = self.new_col_name
-        fname = fld + '.csv'
+        fname = fld + self.out_file_extension
 
         print (str(datetime.now()), " creating dictionary...")
         fld_dict     = self.make_dict(self.df[fld].fillna(''))         # create dictionary of given text column  
@@ -136,7 +138,8 @@ class cls_agent_{id}:
         print (str(datetime.now()), " dictionary created and mapped.")
 
         # save dictionary for each text column into separate file
-        pd.DataFrame(list(fld_dict.items()), columns=['value', 'key'])[['key','value']].to_csv(workdir+'dict_'+fld+'.csv', encoding='utf-8')
+        out_file = workdir + 'dict_' + fname
+        pd.DataFrame(list(fld_dict.items()), columns=['value', 'key'])[['key','value']].to_csv(out_file, encoding='utf-8')
 
         self.df[[fld]].to_csv(workdir+fname)
         print ("#add_field:"+fld+",Y,"+fname+","+str(nrow))
