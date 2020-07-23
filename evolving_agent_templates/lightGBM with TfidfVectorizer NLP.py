@@ -73,6 +73,7 @@
 #key=shap_tree_limit;  type=random_int;  from=-1;  to=-1;  step=1
 #key=print_to_html;  type=random_from_set;  set=True
 #key=print_tables;  type=random_from_set;  set=True
+#key=out_file_extension;  type=constant;  value=.csv.bz2
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
@@ -111,7 +112,8 @@ class cls_ev_agent_{id}:
     result_id = {id}
 
     # obtain random field (same for all instances within the evolution) which will be the prediction target for this instance/evolution
-    target_definition = "{field_to_predict}"
+    target_definition  = "{field_to_predict}"
+    out_file_extension = "{out_file_extension}"
     # field definition received from the kernel contains two parts: name of the field and CSV filename that holds the actual data
     # load these two parts into variables
     target_col  = target_definition.split("|")[0]
@@ -183,7 +185,7 @@ class cls_ev_agent_{id}:
                 self.field_ev_prefix = self.field_ev_prefix + '_' + col_name
         
         self.output_column   = self.field_ev_prefix + '_' + str(self.result_id)
-        self.output_filename = self.output_column + ".csv"
+        self.output_filename = self.output_column + self.out_file_extension
         
         self.model_env_init()
         
