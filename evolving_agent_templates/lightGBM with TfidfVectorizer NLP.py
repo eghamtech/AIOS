@@ -535,7 +535,7 @@ class cls_ev_agent_{id}:
                 df_col = pd.read_csv(workdir+file_name, usecols=[col_name])[[col_name]]       # read column from csv file
                 
                 # if column has associated dictionary csv then it's a text column, replace column with actual text
-                dict_file_name = workdir+'dict_'+col_name+'.csv'
+                dict_file_name = workdir+'dict_'+file_name
                 if os.path.isfile(dict_file_name) and map_dict:
                     dict1 = pd.read_csv(dict_file_name, dtype={'value': object}).set_index('key')["value"].to_dict()       # load dictionary
                     df_col[col_name] = df_col[col_name].map(dict1)                                                         # map and replace
