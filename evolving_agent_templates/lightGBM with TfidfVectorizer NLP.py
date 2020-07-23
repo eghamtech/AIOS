@@ -73,7 +73,7 @@
 #key=shap_tree_limit;  type=random_int;  from=-1;  to=-1;  step=1
 #key=print_to_html;  type=random_from_set;  set=True
 #key=print_tables;  type=random_from_set;  set=True
-#key=out_file_extension;  type=random_from_set;  value=.csv.bz2
+#key=out_file_extension;  type=random_from_set;  value='.csv.bz2'
 #end_of_genes_definitions
 
 # AICHOO OS Evolving Agent 
