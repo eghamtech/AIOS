@@ -5,7 +5,7 @@
 #key=include_columns_type;  type=constant;  set=is_dict_only
 #key=include_columns_containing;  type=constant;  set=
 #key=ignore_columns_containing;  type=constant;  set='%ev_field%' and '%onehe_%'
-#key=out_file_extension;  type=random_from_set;  set=.csv.bz2
+#key=out_file_extension;  type=constant;  set=.csv.bz2
 #end_of_parameters
 
 # AICHOO OS Simple Agent
