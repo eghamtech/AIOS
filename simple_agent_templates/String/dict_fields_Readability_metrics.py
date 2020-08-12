@@ -7,6 +7,7 @@
 #key=include_columns_type;  type=constant;  value=is_dict_only
 #key=include_columns_containing;  type=constant;  value=
 #key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
+#key=out_file_extension;  type=constant;  value=.csv.bz2
 #end_of_parameters
 
 # AICHOO OS Simple Agent
@@ -48,6 +49,7 @@ class cls_agent_{id}:
 
     field_prefix_use_source_names = {field_prefix_use_source_names}
     duplicate_text_times          = {duplicate_text_times}
+    out_file_extension            = "{out_file_extension}"
 
     #dicts_agent = {}
     new_columns = []
@@ -188,7 +190,7 @@ class cls_agent_{id}:
         # save and register each new column
         for i in range(0,len(self.new_columns)):
             fld   = self.new_columns[i]
-            fname = fld + '.csv'
+            fname = fld + self.out_file_extension
             self.df[[fld]].to_csv(workdir+fname)
             print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
