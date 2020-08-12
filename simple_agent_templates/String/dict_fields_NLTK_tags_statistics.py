@@ -3,9 +3,9 @@
 #key=col_max_length;  type=constant;  value=200
 #key=new_field_prefix;  type=constant;  value=nltk_pos_stats_
 #key=include_columns_type;  type=constant;  set=is_dict_only
-#key=include_columns_containing;  type=constant;  set=
-#key=ignore_columns_containing;  type=constant;  set='%ev_field%' and '%onehe_%'
-#key=out_file_extension;  type=constant;  set=.csv.bz2
+#key=include_columns_containing;  type=constant;  value=
+#key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
+#key=out_file_extension;  type=constant;  value=.csv.bz2
 #end_of_parameters
 
 # AICHOO OS Simple Agent
