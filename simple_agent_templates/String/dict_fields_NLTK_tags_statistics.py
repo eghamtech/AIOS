@@ -5,6 +5,7 @@
 #key=include_columns_type;  type=constant;  set=is_dict_only
 #key=include_columns_containing;  type=constant;  set=
 #key=ignore_columns_containing;  type=constant;  set='%ev_field%' and '%onehe_%'
+#key=out_file_extension;  type=random_from_set;  set=.csv.bz2
 #end_of_parameters
 
 # AICHOO OS Simple Agent
@@ -36,12 +37,13 @@ class cls_agent_{id}:
     data_defs = {fields_source}
 
     # obtain a unique ID for the current instance
-    result_id         = {id}
+    result_id          = {id}
     # create new field name based on "new_field_prefix" with unique instance ID
     # and filename to save new field data
-    new_field_prefix  = "{new_field_prefix}"
-    col_max_length    = {col_max_length}
-    agent_name        = 'agent_' + str(result_id)
+    new_field_prefix   = "{new_field_prefix}"
+    out_file_extension = "{out_file_extension}"
+    col_max_length     = {col_max_length}
+    agent_name         = 'agent_' + str(result_id)
 
     dicts_agent = {}
     new_columns = []
@@ -306,7 +308,7 @@ class cls_agent_{id}:
         # save and register each new column
         for i in range(0,len(self.new_columns)):
             fld   = self.new_columns[i]
-            fname = fld + '.csv'
+            fname = fld + self.out_file_extension
             self.df[[fld]].to_csv(workdir+fname)
             print ("#add_field:"+fld+",N,"+fname+","+str(nrow))
 
