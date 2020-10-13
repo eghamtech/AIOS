@@ -1,5 +1,6 @@
 #start_of_parameters
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv','dict_field1|dict_field1.csv','dict_field2|dict_field2.csv']
+#key=fields_source_file_or_text;  type=constant;  value=False
 #key=xml_template; type=constant;  value=candidate_actonomy | candidate_daxtra_native | vacancy_actonomy | vacancy_daxtra_native
 #key=replace_bbtags;  type=constant;  value=True
 #key=col_max_length;   type=constant;  value=200
@@ -57,6 +58,7 @@ class cls_agent_{id}:
     agent_name         = 'agent_' + str(result_id)
 
     field_prefix_use_source_names = {field_prefix_use_source_names}
+    fields_source_file_or_text    = {fields_source_file_or_text}     # if True then source fields contain path to file to load content from
     
     new_columns = []
     dict_cols   = []
@@ -257,7 +259,7 @@ class cls_agent_{id}:
             if row_str == '' or row_str == 'nan' or row_str == 'NaN' or row_str == 'None' or row_str.replace("\n",' ').replace("\r",' ').strip() == '':
                 xml_parsed = ''
             else:
-                xml_parsed = self.send_to_actonomy(row_str, self.xml_template, index, file_or_text=False)
+                xml_parsed = self.send_to_actonomy(row_str, self.xml_template, index, file_or_text=self.fields_source_file_or_text)
 
                 if xml_parsed == False:
                     xml_parsed = ''
