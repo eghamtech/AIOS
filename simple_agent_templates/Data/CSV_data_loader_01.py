@@ -126,7 +126,7 @@ class cls_agent_{id}:
                 str1 = str1 + "_dpl" + str(ncol_count) + "_" + str(self.result_id)
             
             new_cols_unique.append(str1)                      
-            self.colmap[c] = str1                                # a map from old column names to new ones
+            self.colmap[cname] = str1                                # a map from old column names to new ones
         
         self.df.columns = new_cols_unique                        # assign new unique column names to the dataframe
         
