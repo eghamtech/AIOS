@@ -47,7 +47,11 @@ class cls_agent_{id}:
     agent_name        = 'agent_' + str(result_id)    
  
     def is_set(self, s):
-        return len(s)>0 and s!="0"
+        try:
+            not_empty = (len(s)>0 and s!="0")
+        except:
+            not_empty = True
+        return not_empty
 
     def make_dict(self, col):
         a1 = col.unique()
