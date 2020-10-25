@@ -111,6 +111,8 @@ class cls_agent_{id}:
         
     def replace_xml_tags(self, xml_tag):
         xml_tag = str(xml_tag).replace('{http://actonomy.com/hrxml/2.5}', '')
+        xml_tag = xml_tag.replace('{http://schemas.xmlsoap.org/soap/envelope/}', '')
+        xml_tag = xml_tag.replace('{http://xmp.actonomy.com}', '')
         xml_tag = xml_tag.replace('StructuredXMLResume', '')
         xml_tag = xml_tag.replace('ContactInfo', 'CI')
         xml_tag = xml_tag.replace('ContactMethod', 'CM')
