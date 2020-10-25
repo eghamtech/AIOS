@@ -53,7 +53,11 @@ class cls_agent_{id}:
     dict_cols   = []
 
     def is_set(self, s):
-        return len(s)>0 and s!="0"
+        try:
+            not_empty = (len(s)>0 and s!="0")
+        except:
+            not_empty = True
+        return not_empty
 
     def make_dict(self, col):
         a1 = col.unique()
@@ -127,16 +131,20 @@ class cls_agent_{id}:
     def xml_actonomy_2json(self, xml_str, tag_prefix='hrx'):
         jout = {}
 
-        def recusiv(children, tag_prefix):
+        def recursive_parse(children, tag_prefix):
 
             for child in list(children):
 
                 child_text = str(child.text).replace("\n",' ').replace("\r",' ').strip()
+                child_tag_clean = self.replace_xml_tags(child.tag)
                 
                 if tag_prefix == '':
-                    child_tag = self.replace_xml_tags(child.tag)
+                    child_tag = child_tag_clean
                 else:
-                    child_tag = tag_prefix + "_" + self.replace_xml_tags(child.tag)
+                    child_tag = tag_prefix + "_" + child_tag_clean
+                    
+                    if child.attrib.get('type') is not None:
+                        child_tag = child_tag + '_' + child.attrib.get('type', '')
 
                 if child.attrib.get('name') is not None:
                     if child_text == '' or child_text == 'None':
@@ -149,28 +157,36 @@ class cls_agent_{id}:
                         jout[child_tag] = []
 
                     jout[child_tag].append(child_text)
-                    
+
                     # extract "weight" attribute and add it as separate json item
                     if child.attrib.get('weight') is not None:
-                        w_tag = child_tag + '_' + child.attrib.get('type', '') + '_' + self.clean_text(child_text) 
+                        w_tag = child_tag + '_' + self.clean_text(child_text)
 
                         if jout.get(w_tag) is None:
                             jout[w_tag] = []
 
-                        jout[w_tag].append(float(child.attrib.get('weight')))
-                    
+                        jout[w_tag].append(float(child.attrib.get('weight')))                    
+
                 # apply same function recursively for all children
                 if len(list(child)) > 0:                    
-                    recusiv(child, child_tag)     
+                    recursive_parse(child, child_tag)   
+                else:               
+                    # if no children exist for StartDate or EndDate tag then add empty YearMonth tag to make sure it is recorded
+                    if child_tag_clean == 'EndDate' or child_tag_clean == 'StartDate' or child_tag_clean == 'DegreeDate':
+                        child_tag_ym = child_tag + '_YearMonth'
+                        if jout.get(child_tag_ym) is None:
+                            jout[child_tag_ym] = []
+                        jout[child_tag_ym].append('1600-01')
+                        
 
         try:         
             root = etree_lxml.fromstring(xml_str.encode('utf-8'))
-            recusiv(root, tag_prefix)
+            recursive_parse(root, tag_prefix)
         except Exception as e:
             print (e)
             print (str(datetime.now()), 'Error in XML')
             return {}
-            
+
         return jout
 
 
