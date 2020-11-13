@@ -223,15 +223,9 @@ class cls_ev_agent_{id}:
 
     
     def convert_df_to_str_list(self, df_data):
-        # concatenate all fields in df_data into one string
-        df_data_l = []
-        for i, rowTuple in enumerate(df_data.itertuples(index=False)):
-            row = ''
-            for col in rowTuple:
-                row += ' ' + str(col)
-
-            row = row[1:]
-            df_data_l.append(row)
+        # concatenate all fields in df_data into one string for each row
+        df_data_l = df_data.applymap(str)                      # convert all columns to strings
+        df_data_l = df_data_l.agg(' '.join, axis=1).to_list()  # concatenate all columns in each row and convert to list
         
         return df_data_l
     
