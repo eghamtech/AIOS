@@ -112,7 +112,10 @@ class cls_agent_{id}:
         self.dict_cols = []
         for i in range(0,len(self.data_defs)):
             col_name  = self.data_defs[i].split("|")[0]
-            self.dict_cols.append(col_name)
+            if apply_fun:
+                self.dict_cols.append('dict_'+col_name)   # new data must have dictionary fields mapped to dict_fields
+            else:
+            	self.dict_cols.append(col_name)
 
         self.new_columns = []
         for key in self.metrics:
