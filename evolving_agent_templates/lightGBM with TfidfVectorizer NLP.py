@@ -12,6 +12,8 @@
 #key=random_valid;  type=random_from_set;  set=True
 #key=random_valid_size;  type=random_float;  from=0.3;  to=0.3;  step=0.1
 #key=random_valid_folds;  type=random_int;  from=3;  to=3;  step=1
+#key=models_to_save;  type=random_int;  from=-1;  to=-1;  step=1
+#key=models_apply_on_all_data;  type=random_from_set;  set=True
 #key=random_seed_init;  type=random_int;  from=1;  to=10000000;  step=1
 #key=filter_column;  type=random_from_set;  set=
 #key=train_set_from;  type=random_from_set;  set=
@@ -120,24 +122,27 @@ class cls_ev_agent_{id}:
     target_file = target_definition.split("|")[1]
 
     # obtain random selection of fields; number of fields to be selected specified in data:length gene for this instance
-    data_defs     = {data}
-    fields_to_use = {fields_to_use}
-    start_fold    = {start_fold}
-    nfolds        = {nfolds}
+    data_defs      = {data}
+    fields_to_use  = {fields_to_use}
+    start_fold     = {start_fold}
+    nfolds         = {nfolds}
     
-    num_threads   = {num_threads}
-    rn_seed_init  = {random_seed_init}
+    models_to_save           = {models_to_save}
+    models_apply_on_all_data = {models_apply_on_all_data}
     
-    map_dict      = {map_dict}
-    clean_text_v  = {clean_text_v}
+    num_threads    = {num_threads}
+    rn_seed_init   = {random_seed_init}
+    
+    map_dict       = {map_dict}
+    clean_text_v   = {clean_text_v}
     
     field_ev_prefix                  = "{field_ev_prefix}"
     field_ev_prefix_use_source_names = {field_ev_prefix_use_source_names}
     field_ev_prefix_use_target_name  = {field_ev_prefix_use_target_name}
     
-    params        = {}         # all parameters
-    params['algo']= {}         # ML algo parameters
-    dicts_agent   = {}         # various dictionary to be saved as part of model
+    params         = {}         # all parameters
+    params['algo'] = {}         # ML algo parameters
+    dicts_agent    = {}         # various dictionary to be saved as part of model
     
     # if filter columns are specified then training and validation sets will be selected based on filter criteria
     # based on filter criteria training + validation sets will not necessarily constitute all data, the remainder will be called "test set"
@@ -203,7 +208,7 @@ class cls_ev_agent_{id}:
                 to_fold   = self.nfolds
             else:
                 from_fold = 0
-                to_fold   = 3                                        # use fixed 3 saved models to make any prediction
+                to_fold   = self.dicts_agent['models_saved']                     # use all saved models to make predictions
 
             for fold in range(from_fold, to_fold):
                 sfile = workdir + self.output_column + "_fold" + str(fold) + ".model"
@@ -365,7 +370,7 @@ class cls_ev_agent_{id}:
         
         self.params['algo']['random_seed']                  = self.rn_seed_init     
         self.params['algo']['num_threads']                  = {num_threads}
-        self.params['algo']['verbose']                      = 1
+        self.params['algo']['verbose']                      = -1
         
         if self.is_binary:
             print ("detected binary target: use AUC/LOGLOSS and Binary Cross Entropy loss evaluation")
@@ -377,7 +382,7 @@ class cls_ev_agent_{id}:
                 self.params['algo']['metric']   = ['auc', 'binary_logloss']
            
             self.params['algo']['num_class']            = 1
-            self.params['algo']['prediction_type']      = 'Probability'
+            #self.params['algo']['prediction_type']      = 'Probability'
  
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(self.target_classes)) + " classes")
@@ -385,7 +390,7 @@ class cls_ev_agent_{id}:
             self.params['algo']['metric']       = ['multi_logloss','multi_error']
             
             self.params['algo']['num_class']            = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
-            self.params['algo']['prediction_type']      = 'Probability'
+            #self.params['algo']['prediction_type']      = 'Probability'
 
         else:
             print ("detected regression target: use RMSE/MAE")
@@ -393,7 +398,7 @@ class cls_ev_agent_{id}:
             self.params['algo']['metric']       = ['rmse','mae']
             
             self.params['algo']['num_class']            = 1
-            self.params['algo']['prediction_type']      = 'RawFormulaVal'
+            #self.params['algo']['prediction_type']      = 'RawFormulaVal'
 
            
 
@@ -468,9 +473,8 @@ class cls_ev_agent_{id}:
     def is_use_column(self, s):
         # AIOS Kernel now selects columns using agent parameters
         # so no need to filter inside the agent
-        if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
-            return False 
-
+        #if s.find(self.target_col)>=0:  # ignore columns that contain target_col as they are a derivative of the target
+        #    return False 
         return True
         
     def timestamp(self, x):
@@ -1056,24 +1060,28 @@ class cls_ev_agent_{id}:
                 print ('\nFolds Performance Overall:')
                 self.print_html( predictors, max_rows=50, max_cols=5 )
 
-                predictors['result_roc_auc_mean']      = predictors['result_roc_auc'].mean()
-                predictors['result_roc_auc_mean_diff'] = abs(predictors['result_roc_auc'] - predictors['result_roc_auc_mean'])
-                
-                best_predictor_idx  = predictors['result_roc_auc'].idxmax()
-                worst_predictor_idx = predictors['result_roc_auc'].idxmin()
-                avg_predictor_idx   = predictors['result_roc_auc_mean_diff'].idxmin()
-                
-                predictors = [predictors['predictor'][worst_predictor_idx], 
-                              predictors['predictor'][avg_predictor_idx], 
-                              predictors['predictor'][best_predictor_idx]]
-                                                       
-                print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
-                
+                if self.models_to_save == 3:
+                    predictors['result_roc_auc_mean']      = predictors['result_roc_auc'].mean()
+                    predictors['result_roc_auc_mean_diff'] = abs(predictors['result_roc_auc'] - predictors['result_roc_auc_mean'])
+                    
+                    best_predictor_idx  = predictors['result_roc_auc'].idxmax()
+                    worst_predictor_idx = predictors['result_roc_auc'].idxmin()
+                    avg_predictor_idx   = predictors['result_roc_auc_mean_diff'].idxmin()
+                    
+                    predictors = [predictors['predictor'][worst_predictor_idx], 
+                                  predictors['predictor'][avg_predictor_idx], 
+                                  predictors['predictor'][best_predictor_idx]]
+                                                        
+                    print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
+                else:
+                    # use all models
+                    predictors = predictors['predictor'].to_list()
+                    print('Selected predictor ids: ', predictors)
                 
                 #------------------ predict remaining and validation samples --------------------------------------------
                 for fold in range(0, len(predictors)):             
                     # predict remainder set in the column output mode
-                    if len(df_test) > 0 and mode==1:
+                    if len(df_test) > 0 and mode==1 and self.models_apply_on_all_data==False:
                         pred = self.model_predict(predictors[fold], df_test.drop(self.target_col, axis=1))
                         predicted_test_set  += pred
                         
@@ -1234,12 +1242,7 @@ class cls_ev_agent_{id}:
         #fi_total_dict = dict(zip(self.fi_total['Feature'],self.fi_total['Importance_AVG_perc']))
         #print ("#feature_importance="+json.dumps(fi_total_dict))
         
-        if mode==1:
-            # save dictionary of all auxiliry data and params into file
-            sfile = bz2.BZ2File(workdir + self.output_column + '_dicts.model', 'w')
-            pickle.dump(self.dicts_agent, sfile) 
-            sfile.close()
-            
+        if mode==1:  
             if self.params['random_folds'] == False:          
                 df_filter_column[self.output_column] = float('nan')
                 df_filter_column.loc[train_sets_ix[valid_fold], self.output_column] = prediction
@@ -1248,32 +1251,68 @@ class cls_ev_agent_{id}:
                 if self.use_validation_set:
                     df_filter_column.loc[valid_sets_ix[valid_fold], self.output_column] = predicted_valid_set
             else:
-                # select 3 models from all train/test/valid folds
-                predictors_all['result_roc_auc_mean']      = predictors_all['result_roc_auc'].mean()
-                predictors_all['result_roc_auc_mean_diff'] = abs(predictors_all['result_roc_auc'] - predictors_all['result_roc_auc_mean'])
+                if self.models_to_save == 3:
+                    # select 3 models from all train/test/valid folds
+                    predictors_all['result_roc_auc_mean']      = predictors_all['result_roc_auc'].mean()
+                    predictors_all['result_roc_auc_mean_diff'] = abs(predictors_all['result_roc_auc'] - predictors_all['result_roc_auc_mean'])
+                    
+                    best_predictor_idx  = predictors_all['result_roc_auc'].idxmax()
+                    worst_predictor_idx = predictors_all['result_roc_auc'].idxmin()
+                    avg_predictor_idx   = predictors_all['result_roc_auc_mean_diff'].idxmin()
+                    
+                    predictors = [predictors_all['predictor'][worst_predictor_idx], 
+                                  predictors_all['predictor'][avg_predictor_idx], 
+                                  predictors_all['predictor'][best_predictor_idx]]
+                                                        
+                    print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
+                else:
+                    # use all models
+                    predictors = predictors_all['predictor'].to_list()
+                    print('Selected predictor ids: ', predictors)
                 
-                best_predictor_idx  = predictors_all['result_roc_auc'].idxmax()
-                worst_predictor_idx = predictors_all['result_roc_auc'].idxmin()
-                avg_predictor_idx   = predictors_all['result_roc_auc_mean_diff'].idxmin()
-                
-                predictors = [predictors_all['predictor'][worst_predictor_idx], 
-                              predictors_all['predictor'][avg_predictor_idx], 
-                              predictors_all['predictor'][best_predictor_idx]]
-                                                       
-                print('Selected predictor ids: ', [worst_predictor_idx, avg_predictor_idx, best_predictor_idx])
-                
+                # save models to files
+                self.dicts_agent['models_saved'] = len(predictors)
                 for fold in range(0, len(predictors)):
                     self.model_save(predictors[fold], workdir + self.output_column + "_fold" + str(fold) + ".model")
+       
+                if self.models_apply_on_all_data:
+                    print (str(datetime.now())," --- Applying all models to all data --- ")
+                    pred = np.zeros(len(df_all))
+                    if self.params['algo']['objective'] == self.objective_multiclass:
+                        # create a list of lists depending on number of classes used for training 
+                        # as each prediction is a list of values against each class
+                        pred = [np.zeros(self.params['algo']['num_class']) for i in range(len(df_all))]
+                    
+                    # apply model from each fold created during training and sum their predictions              
+                    for fold in range(0, len(predictors)):
+                        pred += self.model_predict(predictors[fold], df_all.drop(self.target_col, axis=1))
 
-                # if multiclass convert list of lists into list of predicted labels
-                if self.params['algo']['objective'] == self.objective_multiclass:             
-                    df_filter_column[self.output_column+'_folds_pred'] = np.argmax(np.array(df_filter_column_mc), axis=1)
-                    df_filter_column[self.output_column]               = df_filter_column[self.output_column+'_folds_pred'] 
-                    df_filter_column.loc[df_filter_column[self.output_column+'_folds_pred_count']==0,self.output_column] = float('nan')
+                    if self.params['algo']['objective'] == self.objective_multiclass:
+                        # select class with largest total value in case of multiclass
+                        pred = np.argmax(pred, axis=1)
+                    else:
+                        # average prediction over all folds in case of binary or regression
+                        pred = pred / len(predictors)
+                    
+                    df_all[self.output_column] = pred
+                    df_all[[self.output_column]].to_csv(workdir+self.output_filename)
                 else:
-                    df_filter_column[self.output_column] = df_filter_column[self.output_column+'_folds_pred'] / df_filter_column[self.output_column+'_folds_pred_count']
+                    # predictions have already been assembled during model folds testing
+                    # if multiclass convert list of lists into list of predicted labels
+                    if self.params['algo']['objective'] == self.objective_multiclass:             
+                        df_filter_column[self.output_column+'_folds_pred'] = np.argmax(np.array(df_filter_column_mc), axis=1)
+                        df_filter_column[self.output_column]               = df_filter_column[self.output_column+'_folds_pred'] 
+                        df_filter_column.loc[df_filter_column[self.output_column+'_folds_pred_count']==0,self.output_column] = float('nan')
+                    else:
+                        df_filter_column[self.output_column] = df_filter_column[self.output_column+'_folds_pred'] / df_filter_column[self.output_column+'_folds_pred_count']
             
-            df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
+                    df_filter_column[[self.output_column]].to_csv(workdir+self.output_filename)
+
+            # save dictionary of all auxiliry data and params into file
+            sfile = bz2.BZ2File(workdir + self.output_column + '_dicts.model', 'w')
+            pickle.dump(self.dicts_agent, sfile) 
+            sfile.close()                 
+            
             print ("#add_field:"+self.output_column+",N,"+self.output_filename+","+str(original_row_count))
             
             print ("b_fitness=" +str(round(1-self.list_mean(weighted_auc_folds)*self.list_mean(valid_result_auc_folds),4)))
