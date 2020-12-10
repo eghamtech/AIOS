@@ -184,7 +184,7 @@ class cls_agent_{id}:
 
                     # extract "weight" attribute and add it as separate json item
                     if child.attrib.get('weight') is not None:
-                        w_tag = child_tag + '_' + clean_text(child_text)
+                        w_tag = child_tag + '_' + self.clean_text(child_text)
 
                         if jout.get(w_tag) is None:
                             jout[w_tag] = []
