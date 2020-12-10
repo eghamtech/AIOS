@@ -109,10 +109,11 @@ class cls_agent_{id}:
         s = re.sub('[^0-9a-zA-Z]+', '_', s)
         return  s
         
-    def replace_xml_tags(self, xml_tag):
+    def replace_xml_tags(xml_tag):
         xml_tag = str(xml_tag).replace('{http://actonomy.com/hrxml/2.5}', '')
         xml_tag = xml_tag.replace('{http://schemas.xmlsoap.org/soap/envelope/}', '')
         xml_tag = xml_tag.replace('{http://xmp.actonomy.com}', '')
+        
         xml_tag = xml_tag.replace('StructuredXMLResume', '')
         xml_tag = xml_tag.replace('ContactInfo', 'CI')
         xml_tag = xml_tag.replace('ContactMethod', 'CM')
@@ -127,18 +128,39 @@ class cls_agent_{id}:
         xml_tag = xml_tag.replace('Competency', 'Skills')
         xml_tag = xml_tag.replace('LocationSummary', 'Location')
         xml_tag = xml_tag.replace('PositionHistory', 'Position')
-        
+        xml_tag = xml_tag.replace('AnyDate', 'YearMonth')
+
         return xml_tag
 
     def xml_actonomy_2json(self, xml_str, tag_prefix='hrx'):
         jout = {}
+        tags = {}
+        tc   = 0
+        
+        # missing tags to be filled with 'Unknown' in groups specified as keys in this dictionary
+        mtags = {
+            'EO'         : ['EOName'],
+            'Position'   : ['Title'],
+            'Location'   : ['Municipality', 'CountryCode']
+        }
+        
+        def recursive_parse(children, tag_prefix, tc):
 
-        def recursive_parse(children, tag_prefix):
-
+            tc = tc+1
+            tags[tc] = []
+            
             for child in list(children):
 
-                child_text = str(child.text).replace("\n",' ').replace("\r",' ').strip()
-                child_tag_clean = self.replace_xml_tags(child.tag)
+                child_text = str(child.text).replace("\n",' ').replace("\r",' ').strip()           
+                
+                child_tag_clean = self.replace_xml_tags(child.tag)          
+                tags[tc].append(child_tag_clean)
+
+                if self.replace_xml_tags(children.tag) == 'Position':
+                    child_count = tags[tc].count(child_tag_clean)
+                    if child_count > 1:
+                        child_tag_clean = child_tag_clean + "_alv" + str(child_count)
+                
                 
                 if tag_prefix == '':
                     child_tag = child_tag_clean
@@ -162,7 +184,7 @@ class cls_agent_{id}:
 
                     # extract "weight" attribute and add it as separate json item
                     if child.attrib.get('weight') is not None:
-                        w_tag = child_tag + '_' + self.clean_text(child_text)
+                        w_tag = child_tag + '_' + clean_text(child_text)
 
                         if jout.get(w_tag) is None:
                             jout[w_tag] = []
@@ -171,7 +193,7 @@ class cls_agent_{id}:
 
                 # apply same function recursively for all children
                 if len(list(child)) > 0:                    
-                    recursive_parse(child, child_tag)   
+                    recursive_parse(child, child_tag, tc)   
                 else:               
                     # if no children exist for StartDate or EndDate tag then add empty YearMonth tag to make sure it is recorded
                     if child_tag_clean == 'EndDate' or child_tag_clean == 'StartDate' or child_tag_clean == 'DegreeDate':
@@ -180,10 +202,22 @@ class cls_agent_{id}:
                             jout[child_tag_ym] = []
                         jout[child_tag_ym].append('1600-01')
                         
+            # add default value for missing children tags in specified groups        
+            for tag in mtags:
+                if self.replace_xml_tags(children.tag) == tag:
+                    for ctag in mtags[tag]:
+                        if ctag not in tags[tc]:
+                            child_tag = tag_prefix + "_" + ctag
+                            if jout.get(child_tag) is None:
+                                jout[child_tag] = []
 
+                            jout[child_tag].append('Unknown')
+                        
+        # - end of recursive function
+        
         try:         
             root = etree_lxml.fromstring(xml_str.encode('utf-8'))
-            recursive_parse(root, tag_prefix)
+            recursive_parse(root, tag_prefix, tc)
         except Exception as e:
             print (e)
             print (str(datetime.now()), 'Error in XML')
