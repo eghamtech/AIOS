@@ -79,7 +79,7 @@ import random   as rn
 import lightgbm as lgb
 import numpy    as np
 
-import math
+import math, json, shap
 import os.path, bz2, pickle
 import dateutil
 import calendar
