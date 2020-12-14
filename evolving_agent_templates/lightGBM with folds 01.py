@@ -114,13 +114,6 @@ class cls_ev_agent_{id}:
     field_ev_prefix_use_source_names = {field_ev_prefix_use_source_names}
     field_ev_prefix_use_target_name  = {field_ev_prefix_use_target_name}
     
-    if {field_ev_prefix_use_target_name}:
-        output_column = field_ev_prefix + target_col + '_' + str(result_id)
-    else:
-        output_column = field_ev_prefix + str(result_id)
-    
-    output_filename = output_column + out_file_extension
-
     # obtain random selection of fields; number of fields to be selected specified in data:length gene for this instance
     data_defs     = {data}
     fields_to_use = {fields_to_use}
