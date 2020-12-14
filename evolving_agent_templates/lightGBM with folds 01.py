@@ -162,8 +162,7 @@ class cls_ev_agent_{id}:
         self.set_seed(self.rn_seed_init)        # set same seed for every run of this agent's instance
         
         # remove the target field for this instance from the data used for training
-        if self.target_definition in self.data_defs:
-            self.data_defs.remove(self.target_definition)
+        self.data_defs = [field for field in self.data_defs if field != self.target_definition]
 
         if self.field_ev_prefix_use_target_name:
             self.field_ev_prefix = self.field_ev_prefix + '_' + self.target_col
