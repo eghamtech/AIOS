@@ -1,42 +1,42 @@
 #start_of_genes_definitions
-#key=data;  type=random_array_of_fields;  length=800
-#key=fields_to_use;  type=random_int;  from=200;  to=800;  step=1
-#key=field_ev_prefix;  type=random_from_set;  set=ev_field_mlp_
+#key=data;  type=random_array_of_fields;  length=783
+#key=fields_to_use;  type=random_int;  from=2;  to=783;  step=1
+#key=field_ev_prefix;  type=random_from_set;  set=ev_field_mlp_pixel_RR_
 #key=field_ev_prefix_use_target_name;  type=random_from_set;  set=True
 #key=field_ev_prefix_use_source_names;  type=random_from_set;  set=False
 #key=nfolds;  type=random_int;  from=3;  to=3;  step=1
 #key=random_folds;  type=random_from_set;  set=True
-#key=random_folds_size;  type=random_float;  from=0.3;  to=0.3;  step=0.1
+#key=random_folds_size;  type=random_float;  from=0.1;  to=0.1;  step=0.1
 #key=use_validation_set;  type=random_from_set;  set=True
 #key=random_valid;  type=random_from_set;  set=True
-#key=random_valid_size;  type=random_float;  from=0.3;  to=0.3;  step=0.1
-#key=random_valid_folds;  type=random_int;  from=10;  to=10;  step=1
+#key=random_valid_size;  type=random_float;  from=0.1;  to=0.1;  step=0.1
+#key=random_valid_folds;  type=random_int;  from=3;  to=3;  step=1
 #key=models_to_save;  type=random_int;  from=-1;  to=-1;  step=1
 #key=models_apply_on_all_data;  type=random_from_set;  set=True
 #key=random_seed_init;  type=random_int;  from=1;  to=10000000;  step=1
-#key=filter_column;  type=random_from_set;  set=field|field.csv
-#key=train_set_from;  type=random_from_set;  set=self.timestamp('2013-11-01')
-#key=train_set_to;  type=random_from_set;  set=self.timestamp('2014-11-01')
-#key=valid_set_from;  type=random_from_set;  set=self.timestamp('2014-11-01')
-#key=valid_set_to;  type=random_from_set;  set=self.timestamp('2016-11-01')
+#key=filter_column;  type=random_from_set;  set=Unnamed_cln_0_1|Unnamed_cln_0_1.csv
+#key=train_set_from;  type=random_from_set;  set=0
+#key=train_set_to;  type=random_from_set;  set=42000
+#key=valid_set_from;  type=random_from_set;  set=
+#key=valid_set_to;  type=random_from_set;  set=
 #key=filter_column_2;  type=random_from_set;  set=
 #key=train_set_from_2;  type=random_from_set;  set=
 #key=train_set_to_2;  type=random_from_set;  set=
 #key=valid_set_from_2;  type=random_from_set;  set=
 #key=valid_set_to_2;  type=random_from_set;  set=
 #key=include_columns_type;  type=random_from_set;  set=
-#key=include_columns_containing;  type=random_from_set;  set=scaled_%
+#key=include_columns_containing;  type=random_from_set;  set=
 #key=ignore_columns_containing;  type=random_from_set;  set=%ev_field%
-#key=objective_multiclass;  type=random_from_set;  set='multiclass'
+#key=objective_multiclass;  type=random_from_set;  set=''
 #key=objective_regression;  type=random_from_set;  set='regression_l1'
 #key=optimizer;  type=random_from_set;  set='sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam'
 #key=activation;  type=random_from_set;  set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
 #key=activation_output;  type=random_from_set;  set='relu','elu','selu','tanh','sigmoid','hard_sigmoid','softplus','softsign','softmax','linear'
-#key=layers;  type=random_int;  from=2;  to=10;  step=1
+#key=layers;  type=random_int;  from=2;  to=5;  step=1
 #key=neurons;  type=random_int;  from=4;  to=256;  step=1
-#key=batch_size;  type=random_int;  from=5;  to=256;  step=1
-#key=epochs;  type=random_int;  from=5;  to=100;  step=1
-#key=early_stopping_min_delta; type=random_float;  from=0.01;  to=0.04;  step=0.01
+#key=batch_size;  type=random_int;  from=5;  to=20;  step=1
+#key=epochs;  type=random_int;  from=1;  to=5;  step=1
+#key=early_stopping_min_delta;  type=random_float;  from=0.01;  to=0.04;  step=0.01
 #key=dropout;  type=random_float;  from=0.02;  to=0.7;  step=0.02
 #key=binary_balancing;  type=random_from_set;  set=False
 #key=binary_balancing_0;  type=random_float;  from=0.1;  to=1;  step=0.02
@@ -44,14 +44,14 @@
 #key=binary_eval_fun;  type=random_from_set;  set='ROCAUC','PRCAUC'
 #key=start_fold;  type=random_from_set;  set=0
 #key=num_threads;  type=random_int;  from=1;  to=1;  step=1
-#key=use_float32_dtype; type=random_from_set;  set=True
-#key=min_perf_criteria;  type=random_float;  from=0.6;  to=0.6;  step=0.1
+#key=use_float32_dtype;  type=random_from_set;  set=True
+#key=min_perf_criteria;  type=random_float;  from=0.55;  to=0.55;  step=0.1
 #key=shap_data_limit;  type=random_int;  from=25000;  to=25000;  step=1
 #key=shap_tree_limit;  type=random_int;  from=-1;  to=-1;  step=1
-#key=shap_save_rem; type=random_from_set;  set=False
-#key=shap_save_valid; type=random_from_set;  set=False
-#key=print_to_html; type=random_from_set;  set=True
-#key=print_tables; type=random_from_set;  set=False
+#key=shap_save_rem;  type=random_from_set;  set=False
+#key=shap_save_valid;  type=random_from_set;  set=False
+#key=print_to_html;  type=random_from_set;  set=True
+#key=print_tables;  type=random_from_set;  set=True
 #key=out_file_extension;  type=random_from_set;  set=.csv.bz2
 #end_of_genes_definitions
 
@@ -66,7 +66,22 @@ warnings.filterwarnings("ignore")
 import pandas     as pd
 import random     as rn
 import numpy      as np
-import tensorflow as tf
+
+#import tensorflow as tf          # uncomment if using TensorFlow v 1...
+#from keras import backend as K   # uncomment if using TensorFlow v 1...
+
+# ------------ if using TensorFlow 2 import compatibility with 1 ----
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
+import tensorflow.compat.v1.keras.backend as K
+import tensorflow.compat.v1.keras as keras
+# -------------------------------------------------------------------
+
+from keras.models    import Sequential
+from keras.layers    import Dense, Dropout
+from keras.models    import load_model
+from keras.callbacks import EarlyStopping
 
 import math
 import os.path, bz2, pickle
@@ -200,14 +215,12 @@ class cls_ev_agent_{id}:
 
     def tf_roc_auc(self,y_true, y_pred):
         with tf.device(self.s_tf_device):
-            from keras import backend as K
             auc = tf.metrics.auc(y_true, y_pred, curve='ROC', summation_method='careful_interpolation')[1]
             K.get_session().run(tf.local_variables_initializer())
             return auc
 
     def tf_prc_auc(self,y_true, y_pred):
         with tf.device(self.s_tf_device):
-            from keras import backend as K
             auc = tf.metrics.auc(y_true, y_pred, curve='PR', summation_method='careful_interpolation')[1]
             K.get_session().run(tf.local_variables_initializer())
             return auc
@@ -228,8 +241,6 @@ class cls_ev_agent_{id}:
                                            allow_soft_placement=True)
             # allocate only as much GPU memory as needed by runtime - otherwise all GPU memory is reserved and multiple processes cannot use GPU
             session_conf.gpu_options.allow_growth = True
-
-            from keras import backend as K
 
             # The below tf.set_random_seed() will make random number generation
             # in the TensorFlow backend have a well-defined initial state.
@@ -268,7 +279,7 @@ class cls_ev_agent_{id}:
         elif self.is_set(self.objective_multiclass):
             print ("detected multi-class target: use Multi-LogLoss/Error; " + str(len(self.target_classes)) + " classes")
             self.params['algo']['objective']                   = self.objective_multiclass
-            self.params['algo']['s_loss_function']             = 'categorical_crossentropy'
+            self.params['algo']['s_loss_function']             = 'sparse_categorical_crossentropy' #'categorical_crossentropy'
             self.params['algo']['num_class']                   = int(max(self.target_classes) + 1)  # requires all int numbers from 0 to max to be classes
             #self.params['metric']                      = ['accuracy']
             self.metric                                        = ['accuracy']
@@ -290,10 +301,7 @@ class cls_ev_agent_{id}:
         #                   MLP Model Compiling
         #############################################################
         with tf.device(self.s_tf_device):
-            from keras.models         import Sequential
-            from keras.layers         import Dense, Dropout
-
-            mlp_model     = Sequential()
+            mlp_model = Sequential()
 
             # add hidden layers
             for i in range(self.params['algo']['layers']):
@@ -316,9 +324,9 @@ class cls_ev_agent_{id}:
         try:
             print (str(datetime.now()), " ML model predict data")
             xt   = np.array(xt)
-            pred = predictor['ml_model'].predict(xt, verbose=0)
+            pred = predictor['ml_model'].predict(xt, verbose=self.params['verbose'])
 
-            if self.is_binary:
+            if not self.is_set(self.objective_multiclass):
                 # prediction is a list of lists by default convert to list of numbers
                 pred = [item for sublist in pred for item in sublist]
 
@@ -334,7 +342,6 @@ class cls_ev_agent_{id}:
     def model_load(self, file_path):
         predictor = {}
         with tf.device(self.s_tf_device):
-            from keras.models import load_model
             predictor['ml_model'] = load_model(file_path, custom_objects={'tf_roc_auc':self.tf_roc_auc, 'tf_prc_auc':self.tf_prc_auc})
 
         return predictor
@@ -342,16 +349,15 @@ class cls_ev_agent_{id}:
     def model_train(self, ml_model, x_train, y_train, x_test, y_test, current_fold):
         print (str(datetime.now()), " ML model Training")
         with tf.device(self.s_tf_device):
-            from keras.callbacks import EarlyStopping
 
             early_stopper = EarlyStopping( monitor   =self.params['algo']['early_stop_metric'],
-                                           min_delta =self.params['algo']['early_stopping_min_delta'], patience=2, verbose=0,
+                                           min_delta =self.params['algo']['early_stopping_min_delta'], patience=2, verbose=self.params['verbose'],
                                            mode      =self.params['algo']['early_stop_metric_direction'] )
 
             mlp_history   = ml_model.fit( x_train, y_train,
                                         batch_size      = self.params['algo']['batch_size'],
                                         epochs          = self.params['algo']['epochs'],
-                                        verbose         = 0,
+                                        verbose         = self.params['verbose'],
                                         validation_data = (x_test, y_test),
                                         callbacks       = [early_stopper] )
 
@@ -542,7 +548,7 @@ class cls_ev_agent_{id}:
         df_add[self.output_column] = pred
 
 
-def run(self, mode):
+    def run(self, mode):
         # this is main method called by AIOS with supplied DNA Genes to process data
         print ("enter run mode " + str(mode))  # 0=work for fitness only;  1=make new output field
              
@@ -596,7 +602,7 @@ def run(self, mode):
         self.target_classes = df_all[df_all[self.target_col].notnull()].sort_values(self.target_col)[self.target_col].unique().tolist()
         self.is_binary      = self.target_classes==[0, 1]
         
-        self.params['input_dim'] = len(df_all.columns) - 1  # need this for some models init; df.columns includes the target column, hence need to do -1
+        self.params['algo']['input_dim'] = len(df_all.columns) - 1  # need this for some models init; df.columns includes the target column, hence need to do -1
 
         # configure ML model specific parameters which will be saved in self.params dictionary
         self.model_params()
