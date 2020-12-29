@@ -241,13 +241,13 @@ class cls_ev_agent_{id}:
         predictor['ml_model'] = joblib.load(file_path)            
         return predictor
 
-    def model_feature_importance(self, predictor, n_top_features=25, col_idx=0, importance_type='gain', feat_names=[], print_table=True, to_html=True):
+    def model_feature_importance(self, predictor, n_top_features=25, col_idx=0, importance_type='gain', feat_names=[], round_digits=10, print_table=True, to_html=True):
         importance = predictor.coef_[0]
         features   = feat_names
         # join field names and their importance values
         col_name = 'Importance_' + str(col_idx)
         fi = pd.DataFrame({'Feature': features, col_name: importance})
-        fi[col_name] = round(fi[col_name],4)
+        fi[col_name] = round(fi[col_name],round_digits)
 
         if col_idx == 1:
             self.fi_total = fi
@@ -264,7 +264,7 @@ class cls_ev_agent_{id}:
 
         ml_model.fit(x_train, y_train)        
     
-        self.model_feature_importance(ml_model, n_top_features=25, col_idx=current_fold, importance_type='gain', feat_names=x_train.columns, print_table=self.print_tables, to_html=self.print_to_html)
+        self.model_feature_importance(ml_model, n_top_features=25, col_idx=current_fold, importance_type='gain', feat_names=x_train.columns, round_digits=10, print_table=self.print_tables, to_html=self.print_to_html)
 
         return {'ml_model':ml_model}
 
@@ -1101,16 +1101,17 @@ class cls_ev_agent_{id}:
                 
         # combine feature importance results from all folds into one table
         fi_cols = [col for col in self.fi_total.columns if 'Importance' in col] 
-        self.fi_total['Importance_AVG']      = np.round(self.fi_total[fi_cols].sum(axis=1)/fold_all, decimals=2)  
+        self.fi_total['Importance_AVG']      = np.round(self.fi_total[fi_cols].sum(axis=1)/fold_all, decimals=10)  
+        self.fi_total['Importance_AVG_ABS']  = self.fi_total['Importance_AVG'].abs()
         
-        imp_avg_sum = self.fi_total['Importance_AVG'].sum(axis=0)
+        imp_avg_sum = self.fi_total['Importance_AVG_ABS'].sum(axis=0)
         if imp_avg_sum != 0:
-            self.fi_total['Importance_AVG_perc'] = round(100 * self.fi_total['Importance_AVG'] / imp_avg_sum, 2)
+            self.fi_total['Importance_AVG_ABS_perc'] = round(100 * self.fi_total['Importance_AVG_ABS'] / imp_avg_sum, 2)
         else:
-            self.fi_total['Importance_AVG_perc'] = 0
+            self.fi_total['Importance_AVG_ABS_perc'] = 0
 
         print ('\nFEATURE Importance Overall:')
-        self.print_html( self.fi_total[['Feature','Importance_AVG','Importance_AVG_perc']].sort_values(by=['Importance_AVG'], ascending=False), max_rows=200, max_cols=4 )
+        self.print_html( self.fi_total[['Feature','Importance_AVG','Importance_AVG_ABS','Importance_AVG_ABS_perc']].sort_values(by=['Importance_AVG_ABS'], ascending=False), max_rows=200, max_cols=4 )
            
         #print ('\nFEATURE Importance SHAP last validation:')
         #shap.initjs()
@@ -1131,7 +1132,7 @@ class cls_ev_agent_{id}:
         #############################################################
         #                   OUTPUT
         #############################################################
-        fi_total_dict = dict(zip(self.fi_total['Feature'],self.fi_total['Importance_AVG_perc']))
+        fi_total_dict = dict(zip(self.fi_total['Feature'],self.fi_total['Importance_AVG_ABS_perc']))
         print ("#feature_importance="+json.dumps(fi_total_dict))
         
         if mode==1:  
