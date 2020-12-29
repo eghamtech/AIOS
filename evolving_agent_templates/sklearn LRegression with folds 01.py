@@ -40,6 +40,8 @@
 #key=lr_multi_class;  type=random_from_set;  set='auto','ovr','multinomial'
 #key=lr_warm_start;  type=random_from_set;  set=False
 #key=lr_l1_ratio;  type=random_float;  from=0.0;  to=1;  step=0.01
+#key=scaler_mean;  type=random_from_set;  set=True,False
+#key=scaler_std;  type=random_from_set;  set=True,False
 #key=binary_balancing;  type=random_from_set;  set=False
 #key=binary_balancing_0;  type=random_float;  from=0.1;  to=1;  step=0.02
 #key=binary_balancing_1;  type=random_float;  from=0.1;  to=1;  step=0.02
@@ -88,6 +90,8 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
 
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 import gc
 gc.collect()
@@ -215,7 +219,7 @@ class cls_ev_agent_{id}:
         return None
     
     def model_init(self):
-        ml_model = LogisticRegression( penalty           = self.params['algo']['penalty'], 
+        lr_model = LogisticRegression( penalty           = self.params['algo']['penalty'], 
                                        dual              = self.params['algo']['dual'], 
                                        tol               = self.params['algo']['tol'], 
                                        C                 = self.params['algo']['C'], 
@@ -231,6 +235,10 @@ class cls_ev_agent_{id}:
                                        n_jobs            = self.params['algo']['n_jobs'], 
                                        l1_ratio          = self.params['algo']['l1_ratio']
                                     )
+        
+        data_scaler = StandardScaler(with_mean=self.params['algo']['scaler_mean'], with_std=self.params['algo']['scaler_std'])
+        ml_model    = make_pipeline(data_scaler, lr_model)
+        
         return ml_model
     
     def model_save(self, predictor, file_path):
@@ -264,7 +272,7 @@ class cls_ev_agent_{id}:
 
         ml_model.fit(x_train, y_train)        
     
-        self.model_feature_importance(ml_model, n_top_features=25, col_idx=current_fold, importance_type='gain', feat_names=x_train.columns, round_digits=10, print_table=self.print_tables, to_html=self.print_to_html)
+        self.model_feature_importance(ml_model.named_steps['logisticregression'], n_top_features=25, col_idx=current_fold, importance_type='gain', feat_names=x_train.columns, round_digits=10, print_table=self.print_tables, to_html=self.print_to_html)
 
         return {'ml_model':ml_model}
 
@@ -298,6 +306,8 @@ class cls_ev_agent_{id}:
         self.params['algo']['warm_start']           = {lr_warm_start}
         
         self.params['algo']['l1_ratio']             = {lr_l1_ratio}
+        self.params['algo']['scaler_mean']          = {scaler_mean}
+        self.params['algo']['scaler_std']           = {scaler_std}
         
         self.params['algo']['random_state']         = self.rn_seed_init     
         self.params['algo']['n_jobs']               = self.num_threads
