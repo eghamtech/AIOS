@@ -982,7 +982,7 @@ class cls_ev_agent_{id}:
 
                         if mode == 1 and valid_fold == 0 and fold == len(predictors) - 1 and self.shap_save_rem:
                             # save SHAP values only for the best predictor from the first validation set
-                            explainer = shap.TreeExplainer(predictors[fold]['ml_model'])
+                            explainer = shap.LinearExplainer(predictors[fold]['ml_model'].named_steps['logisticregression'])
                             rem_set_shap_values = explainer.shap_values(df_test[0:self.shap_data_limit].drop(self.target_col, axis=1), tree_limit=self.shap_tree_limit)
                                 
                             self.dicts_agent['fi_rem_shap'].append(rem_set_shap_values)
@@ -1008,7 +1008,7 @@ class cls_ev_agent_{id}:
 
                         if mode == 1 and valid_fold == 0 and fold == len(predictors) - 1 and self.shap_save_valid:
                             # save SHAP values only for the best predictor from the first validation set
-                            explainer = shap.TreeExplainer(predictors[fold]['ml_model'])
+                            explainer = shap.LinearExplainer(predictors[fold]['ml_model'].named_steps['logisticregression'])
                             valid_set_shap_values = explainer.shap_values(df_valid_x[0:self.shap_data_limit], tree_limit=self.shap_tree_limit)
                                 
                             self.dicts_agent['fi_valid_shap'].append(valid_set_shap_values)
