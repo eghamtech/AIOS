@@ -4,13 +4,13 @@
 #key=field_ev_prefix;  type=random_from_set;  set=ev_field_logrr_
 #key=field_ev_prefix_use_target_name;  type=random_from_set;  set=True
 #key=field_ev_prefix_use_source_names;  type=random_from_set;  set=False
-#key=nfolds;  type=random_int;  from=10;  to=10;  step=1
+#key=nfolds;  type=random_int;  from=3;  to=3;  step=1
 #key=random_folds;  type=random_from_set;  set=True
 #key=random_folds_size;  type=random_float;  from=0.3;  to=0.3;  step=0.1
 #key=use_validation_set;  type=random_from_set;  set=True
 #key=random_valid;  type=random_from_set;  set=True
 #key=random_valid_size;  type=random_float;  from=0.3;  to=0.3;  step=0.1
-#key=random_valid_folds;  type=random_int;  from=10;  to=10;  step=1
+#key=random_valid_folds;  type=random_int;  from=3;  to=3;  step=1
 #key=models_to_save;  type=random_int;  from=-1;  to=-1;  step=1
 #key=models_apply_on_all_data;  type=random_from_set;  set=True
 #key=random_seed_init;  type=random_int;  from=1;  to=10000000;  step=1
@@ -40,9 +40,10 @@
 #key=lr_multi_class;  type=random_from_set;  set='auto','ovr','multinomial'
 #key=lr_warm_start;  type=random_from_set;  set=False
 #key=lr_l1_ratio;  type=random_float;  from=0.0;  to=1;  step=0.01
+#key=scaler_use;  type=random_from_set;  set=True,False
 #key=scaler_mean;  type=random_from_set;  set=True,False
 #key=scaler_std;  type=random_from_set;  set=True,False
-#key=binary_balancing;  type=random_from_set;  set=False
+#key=binary_balancing;  type=random_from_set;  set=True,False
 #key=binary_balancing_0;  type=random_float;  from=0.1;  to=1;  step=0.02
 #key=binary_balancing_1;  type=random_float;  from=0.1;  to=1;  step=0.02
 #key=binary_eval_fun;  type=random_from_set;  set='ROCAUC','PRCAUC'
@@ -56,9 +57,9 @@
 #key=shap_data_limit;  type=random_int;  from=25000;  to=25000;  step=1
 #key=shap_tree_limit;  type=random_int;  from=-1;  to=-1;  step=1
 #key=shap_save_rem; type=random_from_set;  set=False
-#key=shap_save_valid; type=random_from_set;  set=True
+#key=shap_save_valid; type=random_from_set;  set=False
 #key=print_to_html; type=random_from_set;  set=True
-#key=print_tables; type=random_from_set;  set=False
+#key=print_tables; type=random_from_set;  set=True
 #key=verbose;  type=random_from_set;  set=0
 #key=out_file_extension;  type=random_from_set;  set=.csv.bz2
 #end_of_genes_definitions
@@ -236,8 +237,11 @@ class cls_ev_agent_{id}:
                                        l1_ratio          = self.params['algo']['l1_ratio']
                                     )
         
-        data_scaler = StandardScaler(with_mean=self.params['algo']['scaler_mean'], with_std=self.params['algo']['scaler_std'])
-        ml_model    = make_pipeline(data_scaler, lr_model)
+        if self.params['algo']['scaler_use']:
+            dtscaler = StandardScaler(with_mean=self.params['algo']['scaler_mean'], with_std=self.params['algo']['scaler_std'])
+            ml_model = make_pipeline(dtscaler, lr_model)
+        else:
+            ml_model = make_pipeline(lr_model)
         
         return ml_model
     
@@ -306,6 +310,7 @@ class cls_ev_agent_{id}:
         self.params['algo']['warm_start']           = {lr_warm_start}
         
         self.params['algo']['l1_ratio']             = {lr_l1_ratio}
+        self.params['algo']['scaler_use']           = {scaler_use}
         self.params['algo']['scaler_mean']          = {scaler_mean}
         self.params['algo']['scaler_std']           = {scaler_std}
         
