@@ -246,7 +246,7 @@ class cls_ev_agent_{id}:
         return ml_model
     
     def model_save(self, predictor, file_path):
-        joblib.dump(['ml_model'], file_path)
+        joblib.dump(predictor['ml_model'], file_path)
 
     def model_load(self, file_path):
         predictor = {}
