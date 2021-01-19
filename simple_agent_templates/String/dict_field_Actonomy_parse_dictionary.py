@@ -279,7 +279,6 @@ class cls_agent_{id}:
             if (block_progress >= block):
                 block_progress = 0
                 print (str(datetime.now()), " keys processed: ", round((index)/total*100,0), "%")
-
         
         df_run['dict_' + new_col_name] = df_run[new_col_name].map(col_dict_new)
 
@@ -299,6 +298,10 @@ class cls_agent_{id}:
             dict_temp = pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
             # replace column with its mapped value from dictionary
             self.df['dict_'+col_name] = self.df[col_name].map(dict_temp)
+        else:
+            # no dictionary file found
+            raise ValueError('Aborting: No dictionary file found for the field: ', col_name)
+            return
 
         fld_dict = self.run_on(self.df, dict_temp)
         nrow = len(self.df)
