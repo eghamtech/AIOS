@@ -259,7 +259,7 @@ class cls_agent_{id}:
         block = int(total/50)
         
         for k,v in col_dict.items():
-            row_str = v
+            row_str = str(v)
 
             if self.replace_bbtags:
                 row_str = row_str.replace('[','<').replace(']','>').replace(u'\xa0', u' ')
@@ -308,7 +308,7 @@ class cls_agent_{id}:
         fname = fld + self.out_file_extension
 
         # save dictionary into separate file
-        pd.DataFrame(list(fld_dict.items())).to_csv(workdir+'dict_'+fname, encoding='utf-8')
+        pd.DataFrame(list(fld_dict.items()), columns=['key','value']).to_csv(workdir+'dict_'+fname, encoding='utf-8')
 
         # save column of indexes
         self.df[[fld]].to_csv(workdir+fname)
