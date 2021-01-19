@@ -1,6 +1,7 @@
 #start_of_parameters
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv.bz2']
 #key=tag_prefix;  type=constant;  value='CV'
+#key=replace_bbtags;  type=constant;  value=False
 #key=col_max_length;   type=constant;  value=200
 #key=new_field_prefix; type=constant;  value=parsed_Actonomy_JSON_
 #key=field_prefix_use_source_names;  type=constant;  value=True
@@ -43,6 +44,7 @@ class cls_agent_{id}:
     # and filename to save new field data
     new_field_prefix   = "{new_field_prefix}"
     out_file_extension = "{out_file_extension}"
+    replace_bbtags     = {replace_bbtags}
     tag_prefix         = {tag_prefix}
     col_max_length     = {col_max_length}
     agent_name         = 'agent_' + str(result_id)
