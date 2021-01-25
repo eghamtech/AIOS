@@ -232,7 +232,7 @@ class cls_agent_{id}:
                 not_successful = False
             except requests.exceptions.RequestException as e:
                 attempts += 1
-                print (e)
+                print (str(datetime.now()), e)
                 if attempts < 5:
                     print (str(datetime.now()), 'Error API request at row: ', row_index, '; retry attempt: ', attempts)
                     time.sleep(120)
@@ -253,8 +253,19 @@ class cls_agent_{id}:
 
             parsed_xml = base64.b64decode(content).decode('utf-8')
         except Exception as e:
-            print (e)
+            print (str(datetime.now()), e)
             print (str(datetime.now()), 'Error in Actonomy returned XML at row: ', row_index)
+            try:
+                error_msg = root.find(
+                    '{http://schemas.xmlsoap.org/soap/envelope/}Body'
+                ).find(
+                    '{http://xmp.actonomy.com}parseResponse'
+                ).find('return').find('errors').find('error').text
+
+                print (str(datetime.now()), 'Error in Actonomy: ', error_msg)
+            except Exception as e:
+                print (str(datetime.now()), e)
+
             return False
         
         if self.field_output_files_or_text:
