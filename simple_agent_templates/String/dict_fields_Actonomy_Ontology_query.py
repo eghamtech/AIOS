@@ -531,11 +531,11 @@ class cls_agent_{id}:
             nrow = len(self.df)
 
             # save and register new column with new dictionary
-            fld   = self.new_columns[0]
+            fld   = self.dicts_agent['new_columns'][0]
             fname = fld + self.out_file_extension
 
             # save dictionary into separate file
-            pd.DataFrame(list(self.dicts_agent['parsed_rows']), columns=['key','value']).to_csv(workdir+'dict_'+fname, encoding='utf-8')
+            pd.DataFrame(list(self.dicts_agent['parsed_rows'].items()), columns=['key','value']).to_csv(workdir+'dict_'+fname, encoding='utf-8')
 
             # save column of indexes
             self.df[[fld]].to_csv(workdir+fname)
