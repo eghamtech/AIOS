@@ -1,9 +1,11 @@
 #start_of_parameters
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv.bz2','dict_field2|dict_field2.csv.bz2']
-#key=tag_prefix;  type=constant;  value='CV'
+#key=tag_prefix;  type=constant;  value='ONT'
 #key=col_max_length;   type=constant;  value=200
-#key=new_field_prefix; type=constant;  value=parsed_Actonomy_JSON_
+#key=new_field_prefix; type=constant;  value=parsed_Act_ONT_JSON_
 #key=field_prefix_use_source_names;  type=constant;  value=True
+#key=fields_source_file_or_text;  type=constant;  value=False
+#key=field_output_files_or_text;  type=constant;  value=True
 #key=proxy_http;  type=constant;  value=http://127.0.0.1
 #key=proxy_https; type=constant;  value=http://127.0.0.1
 #key=actonomy_url;   type=constant;  value=https://127.0.0.1/v5_7/OntologyService
@@ -35,7 +37,7 @@ gc.collect()
 
 import pandas as pd
 import os.path, bz2, pickle, re, json, base64
-import requests
+import requests, time
 import xml.etree.ElementTree as ET
 
 from lxml import etree as etree_lxml
@@ -52,11 +54,11 @@ class cls_agent_{id}:
     tag_prefix         = {tag_prefix}
     col_max_length     = {col_max_length}
     agent_name         = 'agent_' + str(result_id)
+    dicts_agent        = {}
 
     field_prefix_use_source_names = {field_prefix_use_source_names}
-    
-    new_columns = []
-    dict_cols   = []
+    fields_source_file_or_text    = {fields_source_file_or_text}     # if True then source fields contain path to file to load content from
+    field_output_files_or_text    = {field_output_files_or_text}     # if True then parsed JSON will be saved to file and output field contains file path
 
     PROXIES = {
         "https" : "{proxy_https}",
@@ -128,6 +130,25 @@ class cls_agent_{id}:
                 col_name = col_name[:col_max_length]                   # only take first col_max_length chars from each column
                 self.new_field_prefix = self.new_field_prefix + '_' + col_name
 
+        self.new_col_name = self.new_field_prefix + '_' + str(self.result_id)
+        
+        self.dicts_agent['new_columns'] = [self.new_col_name]
+        self.dicts_agent['parsed_rows'] = {}                           # empty dictionary because input/output are dictionaries
+
+        # if saved dictionaries for the target field already exist then load them from filesystem
+        sfile = workdir + self.agent_name + '.model'
+        if os.path.isfile(sfile):
+            rfile = bz2.BZ2File(sfile, 'r')
+            self.dicts_agent = pickle.load(rfile)
+            rfile.close()
+            print (str(datetime.now()), self.agent_name + ': Actonomy parsing agent dictionaries model loaded')
+
+        try:
+            os.mkdir(workdir + self.new_col_name)
+        except FileExistsError:
+            print (str(datetime.now()), self.agent_name + ': directory ', workdir + self.new_col_name, ' already exists')
+
+
     def clean_text_full(self,s):
         # Replace symbols with language
         s = s.replace('&', ' and ')
@@ -167,7 +188,7 @@ class cls_agent_{id}:
         else:
             encoded_string = text
 
-        # replace content keyword in XML template with actual content encoded as base64
+        # replace content keyword in XML template with actual content
         body_subm = body.format(body_text=encoded_string)
         body_subm = body_subm.encode('utf-8')
 
@@ -190,9 +211,10 @@ class cls_agent_{id}:
                 not_successful = False
             except requests.exceptions.RequestException as e:
                 attempts += 1
-                print (e)
+                print (str(datetime.now()), e)
                 if attempts < 5:
                     print (str(datetime.now()), 'Error API request at dict key: ', row_index, '; retry attempt: ', attempts)
+                    time.sleep(120)
                 else:
                     print (str(datetime.now()), 'Error API request at dict key: ', row_index, '; FATAL no more attempts')
                     return False  
@@ -200,7 +222,7 @@ class cls_agent_{id}:
         try:
             out_json = self.xml_actonomy_2json(r.text, 'ONT')
         except Exception as e:
-            print (e)
+            print (str(datetime.now()), e)
             print (str(datetime.now()), 'Error in Actonomy returned XML at dict key: ', row_index)
             return False
         
@@ -349,7 +371,7 @@ class cls_agent_{id}:
             root = etree_lxml.fromstring(xml_str.encode('utf-8'))
             recursive_parse(root, tag_prefix, tc)
         except Exception as e:
-            print (e)
+            print (str(datetime.now()), e)
             print (str(datetime.now()), 'Error in XML')
             return {}
 
@@ -412,55 +434,70 @@ class cls_agent_{id}:
 
 
     def run_on(self, df_run, apply_fun=False):
-        self.new_columns = []
-        new_col_name = self.new_field_prefix + '_' + str(self.result_id)
-        self.new_columns.append(new_col_name)
+        if apply_fun:
+            self.dicts_agent['parsed_rows'] = {}
 
         col_name = self.data_defs[0].split("|")[0]
+        new_coln = self.dicts_agent['new_columns'][0]
 
         try:
-            col_name_add = self.data_defs.get[1].split("|")[0]
-            col_add_dict = dict( zip(df_run[col_name], df_run['dict_'+col_name_add]) )
+            col_name_add = self.data_defs[1].split("|")[0]
+            col_add_dict = dict( zip(df_run[col_name], df_run['dict_'+col_name_add]) )  # use same keys for additional field instead of its own dicitionary
         except:
             col_name_add = None
             col_add_dict = None
 
-        col_dict_new = {}
-
         if apply_fun:
             fld_dict = self.make_dict(df_run['dict'+col_name].fillna(''))             # create dictionary of given text column  
-            df_run[new_col_name] = df_run['dict'+col_name].fillna('').map(fld_dict)   # replace column values with corresponding values from dictionary
+            df_run[new_coln] = df_run['dict'+col_name].fillna('').map(fld_dict)       # replace column values with corresponding values from dictionary
             col_dict = {v:k for k,v in fld_dict.items()}                              # reverse new dictionary so it can be iterated over keys
         else:
-            df_run[new_col_name] = df_run[col_name]    # keys are the same as original column
-            col_dict = self.dicts_cols[0]
+            df_run[new_coln] = df_run[col_name]             # keys are the same as original column
+            col_dict = self.dicts_cols[0]                   # use existing dictionary of col_name
 
         block_progress = 0
         index = 0
         total = len(col_dict)
-        block = int(total/50)
+        block = int(total/100)
         
         json_item_title = 'JOB_PositionProfile_PositionDetail_PositionTitle'
-        json_items = ['JOB_PositionProfile_PositionDetail_PositionTitle', 'JOB_PositionProfile_PositionDetail_Skills']
+        json_items      = ['JOB_PositionProfile_PositionDetail_PositionTitle', 'JOB_PositionProfile_PositionDetail_Skills']
 
         for k,v in col_dict.items():
-            row_json = json.loads(v)
+            if k not in self.dicts_agent['parsed_rows']:
+                row_json = json.loads(v)
 
-            row_json[json_item_title] = row_json.get(json_item_title,[]) + [col_add_dict.get(k, '')]
+                row_json[json_item_title] = row_json.get(json_item_title,[]) + [col_add_dict.get(k, '')]        # combine specific field from both source fields
 
-            j_parsed = json.dumps(self.ontology_lists_from_json(row_json, json_items, json_item_title, k))
+                j_parsed = json.dumps(self.ontology_lists_from_json(row_json, json_items, json_item_title, k))
 
-            col_dict_new[k] = j_parsed
+                if self.field_output_files_or_text and j_parsed != '' and j_parsed != None:
+                    if self.fields_source_file_or_text:
+                        outfile_name = workdir + self.new_col_name + '/' + os.path.basename(row_str) + '.json.b64.bz2'
+                    else:
+                        outfile_name = workdir + self.new_col_name + '/row_key_' + str(k) + '.json.b64.bz2'
 
-            block_progress += 1
-            index += 1
-            if (block_progress >= block):
-                block_progress = 0
-                print (str(datetime.now()), " keys processed: ", round((index)/total*100,0), "%")
+                    with bz2.open(outfile_name, "wb") as f:
+                        f.write(base64.b64encode(j_parsed.encode('utf-8')))
+                
+                    j_parsed = outfile_name
 
-        df_run['dict_' + new_col_name] = df_run[new_col_name].map(col_dict_new)
+                self.dicts_agent['parsed_rows'][k] = j_parsed
 
-        return col_dict_new   
+                block_progress += 1
+                index += 1
+                if (block_progress >= block):
+                    block_progress = 0
+                    # save current state of dictionary of all auxiliary data into file
+                    # in case agent crashes and needs to be restarted from last saved state
+                    sfile = bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
+                    pickle.dump(self.dicts_agent, sfile)
+                    sfile.close()
+                    print (str(datetime.now()), " keys processed: ", round((index)/total*100,0), "%")
+
+        df_run['dict_' + new_coln] = df_run[new_coln].map(self.dicts_agent['parsed_rows'])
+
+        return 0
 
 
     def run(self, mode):
@@ -488,19 +525,27 @@ class cls_agent_{id}:
                 raise ValueError('Aborting: No dictionary file found for the field: ', col_name)
                 return
 
-        fld_dict = self.run_on(self.df)
-        nrow = len(self.df)
+        ret_status = self.run_on(self.df)
 
-        # save and register new column with new dictionary
-        fld   = self.new_columns[0]
-        fname = fld + self.out_file_extension
+        if ret_status == 0:
+            nrow = len(self.df)
 
-        # save dictionary into separate file
-        pd.DataFrame(list(fld_dict.items()), columns=['key','value']).to_csv(workdir+'dict_'+fname, encoding='utf-8')
+            # save and register new column with new dictionary
+            fld   = self.new_columns[0]
+            fname = fld + self.out_file_extension
 
-        # save column of indexes
-        self.df[[fld]].to_csv(workdir+fname)
-        print ("#add_field:"+fld+",Y,"+fname+","+str(nrow))
+            # save dictionary into separate file
+            pd.DataFrame(list(self.dicts_agent['parsed_rows']), columns=['key','value']).to_csv(workdir+'dict_'+fname, encoding='utf-8')
+
+            # save column of indexes
+            self.df[[fld]].to_csv(workdir+fname)
+            print ("#add_field:"+fld+",Y,"+fname+","+str(nrow))
+
+            # save dictionary of all auxiliary data into file
+            self.dicts_agent['parsed_rows'] = {}
+            sfile = bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
+            pickle.dump(self.dicts_agent, sfile)
+            sfile.close()
 
 
     def apply(self, df_add):
