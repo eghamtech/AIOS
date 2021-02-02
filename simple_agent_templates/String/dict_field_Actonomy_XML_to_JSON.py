@@ -5,6 +5,8 @@
 #key=col_max_length;   type=constant;  value=200
 #key=new_field_prefix; type=constant;  value=parsed_Actonomy_JSON_
 #key=field_prefix_use_source_names;  type=constant;  value=True
+#key=fields_source_file_or_text;  type=constant;  value=False
+#key=field_output_files_or_text;  type=constant;  value=True
 #key=include_columns_type;  type=constant;  value=is_dict_only
 #key=include_columns_containing; type=constant;  value=
 #key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
@@ -50,6 +52,8 @@ class cls_agent_{id}:
     agent_name         = 'agent_' + str(result_id)
 
     field_prefix_use_source_names = {field_prefix_use_source_names}
+    fields_source_file_or_text    = {fields_source_file_or_text}     # if True then source fields contain path to file to load content from
+    field_output_files_or_text    = {field_output_files_or_text}     # if True then parsed JSON will be saved to file and output field contains file path
     
     new_columns = []
     dict_cols   = []
@@ -181,6 +185,9 @@ class cls_agent_{id}:
                 if child_text != '' and child_text != 'None':
                     if jout.get(child_tag) is None:
                         jout[child_tag] = []
+                    
+                    if jout.get(child_tag + '_weighted') is None:                      # also create a list of items repeated according to its weight
+                        jout[child_tag + '_weighted'] = []
 
                     jout[child_tag].append(child_text)
 
@@ -191,7 +198,9 @@ class cls_agent_{id}:
                         if jout.get(w_tag) is None:
                             jout[w_tag] = []
 
-                        jout[w_tag].append(float(child.attrib.get('weight')))                    
+                        jout[w_tag].append(float(child.attrib.get('weight')))                   
+
+                        jout[child_tag + '_weighted'].extend([child_text]*int(round(10*float(child.attrib.get('weight')))))  # repeat item 10 times its weight 
 
                 # apply same function recursively for all children
                 if len(list(child)) > 0:                    
@@ -247,10 +256,15 @@ class cls_agent_{id}:
         block_progress = 0
         index = 0
         total = len(col_dict)
-        block = int(total/50)
+        block = int(total/100)
         
         for k,v in col_dict.items():
             row_str = str(v)
+
+            if self.fields_source_file_or_text:
+                with bz2.open(row_str, "rb") as f:
+                    row_str = f.read()
+                    row_str = base64.b64decode(row_str).decode('utf-8')
 
             if self.replace_bbtags:
                 row_str = row_str.replace('[','<').replace(']','>').replace(u'\xa0', u' ')
@@ -259,6 +273,17 @@ class cls_agent_{id}:
                 xml_parsed = json.dumps({})
             else:
                 xml_parsed = json.dumps(self.xml_actonomy_2json(row_str, self.tag_prefix))
+
+                if self.field_output_files_or_text and xml_parsed != '' and xml_parsed != None:
+                    if self.fields_source_file_or_text:
+                        outfile_name = workdir + self.new_col_name + '/' + os.path.basename(str(v)) + '.json.b64.bz2'
+                    else:
+                        outfile_name = workdir + self.new_col_name + '/row_key_' + str(k) + '.json.b64.bz2'
+
+                    with bz2.open(outfile_name, "wb") as f:
+                        f.write(base64.b64encode(xml_parsed.encode('utf-8')))
+                
+                    xml_parsed = outfile_name
 
             col_dict_new[k] = xml_parsed
 
@@ -281,9 +306,10 @@ class cls_agent_{id}:
 
         self.df = pd.read_csv(workdir+file_name)[[col_name]]
 
-        if os.path.isfile(workdir + 'dict_' + file_name):
+        dsfile = workdir + 'dict_' + file_name
+        if os.path.isfile(dsfile):
             # load dictionary if it exists
-            dict_temp = pd.read_csv(workdir + 'dict_' + file_name, dtype={'value': object}).set_index('key')["value"].to_dict()
+            dict_temp = pd.read_csv(dsfile, dtype={'value': object}).set_index('key')["value"].to_dict()
             # replace column with its mapped value from dictionary
             self.df['dict_'+col_name] = self.df[col_name].map(dict_temp)
         else:
