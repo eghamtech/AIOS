@@ -83,6 +83,16 @@ class cls_agent_{id}:
                 col_name = col_name[:col_max_length]                   # only take first col_max_length chars from each column
                 self.new_field_prefix = self.new_field_prefix + '_' + col_name
 
+        self.new_col_name = self.new_field_prefix + '_' + str(self.result_id)
+        self.new_columns = []
+        self.new_columns.append(self.new_col_name)
+
+        try:
+            os.mkdir(workdir + self.new_col_name)
+        except FileExistsError:
+            print (str(datetime.now()), self.agent_name + ': directory ', workdir + self.new_col_name, ' already exists')
+
+
     def clean_text(self, s):
         # Replace symbols with language
         s = s.replace('&', '_and_')
@@ -240,18 +250,14 @@ class cls_agent_{id}:
     def run_on(self, df_run, col_dict={}, apply_fun=False):
         col_name = self.data_defs[0].split("|")[0]
 
-        self.new_columns = []
-        new_col_name = self.new_field_prefix + '_' + str(self.result_id)
-        self.new_columns.append(new_col_name)
-
         col_dict_new = {}
 
         if apply_fun:
             fld_dict = self.make_dict(df_run['dict'+col_name].fillna(''))             # create dictionary of given text column  
-            df_run[new_col_name] = df_run['dict'+col_name].fillna('').map(fld_dict)   # replace column values with corresponding values from dictionary
+            df_run[self.new_col_name] = df_run['dict'+col_name].fillna('').map(fld_dict)   # replace column values with corresponding values from dictionary
             col_dict = {v:k for k,v in fld_dict.items()}                              # reverse new dictionary so it can be iterated over keys
         else:
-            df_run[new_col_name] = df_run[col_name]    # keys are the same as original column
+            df_run[self.new_col_name] = df_run[col_name]    # keys are the same as original column
 
         block_progress = 0
         index = 0
@@ -261,10 +267,13 @@ class cls_agent_{id}:
         for k,v in col_dict.items():
             row_str = str(v)
 
-            if self.fields_source_file_or_text:
-                with bz2.open(row_str, "rb") as f:
-                    row_str = f.read()
-                    row_str = base64.b64decode(row_str).decode('utf-8')
+            try:
+                if self.fields_source_file_or_text:
+                    with bz2.open(row_str, "rb") as f:
+                        row_str = f.read()
+                        row_str = base64.b64decode(row_str).decode('utf-8')
+            except:
+                row_str = ''
 
             if self.replace_bbtags:
                 row_str = row_str.replace('[','<').replace(']','>').replace(u'\xa0', u' ')
@@ -274,16 +283,16 @@ class cls_agent_{id}:
             else:
                 xml_parsed = json.dumps(self.xml_actonomy_2json(row_str, self.tag_prefix))
 
-                if self.field_output_files_or_text and xml_parsed != '' and xml_parsed != None:
-                    if self.fields_source_file_or_text:
-                        outfile_name = workdir + self.new_col_name + '/' + os.path.basename(str(v)) + '.json.b64.bz2'
-                    else:
-                        outfile_name = workdir + self.new_col_name + '/row_key_' + str(k) + '.json.b64.bz2'
+            if self.field_output_files_or_text and xml_parsed != '' and xml_parsed != None:
+                if self.fields_source_file_or_text:
+                    outfile_name = workdir + self.new_col_name + '/' + os.path.basename(str(v)) + '.json.b64.bz2'
+                else:
+                    outfile_name = workdir + self.new_col_name + '/row_key_' + str(k) + '.json.b64.bz2'
 
-                    with bz2.open(outfile_name, "wb") as f:
-                        f.write(base64.b64encode(xml_parsed.encode('utf-8')))
-                
-                    xml_parsed = outfile_name
+                with bz2.open(outfile_name, "wb") as f:
+                    f.write(base64.b64encode(xml_parsed.encode('utf-8')))
+            
+                xml_parsed = outfile_name
 
             col_dict_new[k] = xml_parsed
 
@@ -293,7 +302,7 @@ class cls_agent_{id}:
                 block_progress = 0
                 print (str(datetime.now()), " keys processed: ", round((index)/total*100,0), "%")
 
-        df_run['dict_' + new_col_name] = df_run[new_col_name].map(col_dict_new)
+        df_run['dict_' + self.new_col_name] = df_run[self.new_col_name].map(col_dict_new)
 
         return col_dict_new   
 

@@ -3,8 +3,8 @@
 #key=tag_prefix;  type=constant;  value='ONT'
 #key=col_max_length;   type=constant;  value=200
 #key=new_field_prefix; type=constant;  value=parsed_Act_ONT_JSON_
-#key=field_prefix_use_source_names;  type=constant;  value=True
-#key=fields_source_file_or_text;  type=constant;  value=False
+#key=field_prefix_use_source_names;  type=constant;  value=False
+#key=fields_source_file_or_text;  type=constant;  value=True
 #key=field_output_files_or_text;  type=constant;  value=True
 #key=proxy_http;  type=constant;  value=http://127.0.0.1
 #key=proxy_https; type=constant;  value=http://127.0.0.1
@@ -464,8 +464,17 @@ class cls_agent_{id}:
         json_items      = ['JOB_PositionProfile_PositionDetail_PositionTitle', 'JOB_PositionProfile_PositionDetail_Skills']
 
         for k,v in col_dict.items():
-            if k not in self.dicts_agent['parsed_rows']:
-                row_json = json.loads(v)
+            if k not in self.dicts_agent['parsed_rows']:       
+                if self.fields_source_file_or_text:
+                    try:
+                        with bz2.open(v, "rb") as f:
+                            row_json = f.read()
+                            row_json = base64.b64decode(row_json).decode('utf-8')
+                            row_json = json.loads(row_json)
+                    except:
+                        row_json= {}
+                else:                  
+                    row_json = json.loads(v)
 
                 row_json[json_item_title] = row_json.get(json_item_title,[]) + [col_add_dict.get(k, '')]        # combine specific field from both source fields
 
