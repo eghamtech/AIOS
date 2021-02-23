@@ -472,17 +472,18 @@ class cls_agent_{id}:
                             row_json = base64.b64decode(row_json).decode('utf-8')
                             row_json = json.loads(row_json)
                     except:
-                        row_json= {}
+                        row_json = {}
                 else:                  
                     row_json = json.loads(v)
 
-                row_json[json_item_title] = row_json.get(json_item_title,[]) + [col_add_dict.get(k, '')]        # combine specific field from both source fields
+                if col_add_dict != None:
+                    row_json[json_item_title] = row_json.get(json_item_title,[]) + [col_add_dict.get(k, '')]        # combine specific field from both source fields
 
                 j_parsed = json.dumps(self.ontology_lists_from_json(row_json, json_items, json_item_title, k))
 
                 if self.field_output_files_or_text and j_parsed != '' and j_parsed != None:
                     if self.fields_source_file_or_text:
-                        outfile_name = workdir + self.new_col_name + '/' + os.path.basename(row_str) + '.json.b64.bz2'
+                        outfile_name = workdir + self.new_col_name + '/' + os.path.basename(v) + '.json.b64.bz2'
                     else:
                         outfile_name = workdir + self.new_col_name + '/row_key_' + str(k) + '.json.b64.bz2'
 
