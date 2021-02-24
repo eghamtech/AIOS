@@ -205,7 +205,11 @@ class cls_agent_{id}:
         if file_or_text:
             # file parameter is file to be loaded
             with open(file, "rb") as image_file:
-                encoded_string = base64.b64encode(image_file.read())
+                fr = image_file.read()
+                if not check_valid_pdf or fr[0:4] == b'%PDF':                      # if check_valid_pdf is True then check that file starts with correct characters
+                    encoded_string = base64.b64encode(fr)
+                else:
+                    return False
         else:
             # file parameter is a string already
             encoded_string = base64.b64encode(file.encode())
