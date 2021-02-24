@@ -4,6 +4,7 @@
 #key=field_output_files_or_text;  type=constant;  value=True
 #key=xml_template; type=constant;  value=candidate_actonomy | candidate_daxtra_native | vacancy_actonomy | vacancy_daxtra_native
 #key=replace_bbtags;  type=constant;  value=False
+#key=check_valid_pdf;  type=constant;  value=True
 #key=col_max_length;   type=constant;  value=200
 #key=new_field_prefix; type=constant;  value=parsed_Actonomy_
 #key=field_prefix_use_source_names;  type=constant;  value=True
@@ -60,6 +61,7 @@ class cls_agent_{id}:
     col_max_length     = {col_max_length}
     agent_name         = 'agent_' + str(result_id)
     dicts_agent        = {}
+    check_valid_pdf    = {check_valid_pdf}
 
     field_prefix_use_source_names = {field_prefix_use_source_names}
     fields_source_file_or_text    = {fields_source_file_or_text}     # if True then source fields contain path to file to load content from
@@ -206,7 +208,7 @@ class cls_agent_{id}:
             # file parameter is file to be loaded
             with open(file, "rb") as image_file:
                 fr = image_file.read()
-                if not check_valid_pdf or fr[0:4] == b'%PDF':                      # if check_valid_pdf is True then check that file starts with correct characters
+                if not self.check_valid_pdf or fr[0:4] == b'%PDF':                      # if check_valid_pdf is True then check that file starts with correct characters
                     encoded_string = base64.b64encode(fr)
                 else:
                     return False
@@ -230,7 +232,7 @@ class cls_agent_{id}:
             try:
                 r = requests.post(self.actonomy_url, proxies=self.PROXIES, data=body_subm, headers=headers, verify=False)
             
-                if r.status_code != 200 and r.status_code != 404 and r.status_code != 415:
+                if r.status_code != 200 and r.status_code != 404 and r.status_code != 415 and r.status_code != 413:
                     r.raise_for_status()
 
                 not_successful = False
@@ -259,6 +261,7 @@ class cls_agent_{id}:
         except Exception as e:
             print (str(datetime.now()), e)
             print (str(datetime.now()), 'Error in Actonomy returned XML at row: ', row_index)
+            print (str(datetime.now()), 'Actonomy request status: ', r.status_code)
             try:
                 error_msg = root.find(
                     '{http://schemas.xmlsoap.org/soap/envelope/}Body'
