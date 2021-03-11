@@ -253,13 +253,16 @@ class cls_ev_agent_{id}:
             
         return predictor
     
-    def model_feature_importance(self, predictor, n_top_features=25, col_idx=0, importance_type='gain', feat_names=[], print_table=True, to_html=True):
+    def model_feature_importance(self, predictor, n_top_features=25, col_idx=0, importance_type='gain', feat_names=[], print_table=True, to_html=True, feat_map=None):
         importance = predictor.feature_importance(importance_type=importance_type).round(2)
         features   = predictor.feature_name()
         # join field names and their importance values
         col_name = 'Importance_' + str(col_idx)
         fi = pd.DataFrame({'Feature': features, col_name: importance})
         fi[col_name] = round(fi[col_name],4)
+
+        if feat_map != None:
+            fi['Feature'] = fi['Feature'].map(feat_map)
 
         if col_idx == 1:
             self.fi_total = fi
@@ -295,7 +298,8 @@ class cls_ev_agent_{id}:
         x_test_tfidf  = tfidf.transform(x_test_tfidf)
         
         print (str(datetime.now()), " ML model Training")
-        tfidf_feature_names = self.rename_list_duplicates_and_symbols(tfidf.get_feature_names())
+        tfidf_feat_clean = self.rename_list_duplicates_and_symbols(tfidf.get_feature_names())
+        tfidf_feature_names = tfidf_feat_clean['clean_features_list']
        
         x_train    =  lgb.Dataset(x_train_tfidf, label=y_train, feature_name=tfidf_feature_names)    # convert DF to lgb.Dataset as required by LGBM            
         watchlist  = [lgb.Dataset(x_test_tfidf,  label=y_test,  feature_name=tfidf_feature_names)]
@@ -305,7 +309,7 @@ class cls_ev_agent_{id}:
         else:
             ml_model = lgb.train( self.params['algo'], x_train, self.params['algo']['num_round'], watchlist, verbose_eval = 100, early_stopping_rounds=100)          
     
-        self.model_feature_importance(ml_model, n_top_features=25, col_idx=current_fold, importance_type='gain', print_table=self.print_tables, to_html=self.print_to_html)
+        self.model_feature_importance(ml_model, n_top_features=25, col_idx=current_fold, importance_type='gain', print_table=self.print_tables, to_html=self.print_to_html, feat_map=tfidf_feat_clean['clean_features_map'])
 
         return {'ml_model':ml_model, 'text_model':tfidf}
 
@@ -448,20 +452,24 @@ class cls_ev_agent_{id}:
         return s
              
     def rename_list_duplicates_and_symbols(self, dlist):       
-        nl = ["".join (c if c.isalnum() else "_" for c in str(x)) for x in dlist]
         items  = []
         nl_new = []
+        feat_dict = {}
         
-        for item in nl:
-            items.append(item)
-            items_count = items.count(item)
-            
+        for feat in dlist:
+            cl_item = "".join(c if c.isalnum() else "_" for c in str(feat))
+            items.append(cl_item)
+            items_count = items.count(cl_item)
+        
             if items_count==1:
-                nl_new.append(item)
+                new_feat = cl_item
             else:
-                nl_new.append(item+"_dpl"+str(items_count))
-        
-        return nl_new            
+                new_feat = cl_item+"_dpl"+str(items_count)
+                
+            nl_new.append(new_feat)
+            feat_dict[new_feat] = str(feat)
+                
+        return {'clean_features_list':nl_new, 'clean_features_map':feat_dict}             
     
     def set_seed(self, seed_init):
         rn.seed(seed_init)
@@ -488,6 +496,9 @@ class cls_ev_agent_{id}:
         if self.print_to_html:
             print (df.to_html(max_rows=max_rows,max_cols=max_cols))
         elif jup_notebook:
+            pd.set_option("display.min_rows", max_rows)
+            pd.set_option("display.max_rows", max_rows)
+            pd.set_option("display.max_columns", max_cols)
             display (df)
         else:
             print (df)
