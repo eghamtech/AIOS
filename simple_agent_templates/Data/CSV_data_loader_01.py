@@ -1,7 +1,7 @@
 #start_of_parameters
 #key=source_filename;  type=constant;  value=enter_source_filename
 #key=target;  type=constant;  value=enter_target
-#key=out_file_extension;  type=constant;  value=.csv.bz2
+#key=out_file_extension;  type=constant;  value=enter_out_file_extension
 #end_of_parameters
 
 # This script will scan your CSV file for string columns, convert them to dictionaries
@@ -190,6 +190,7 @@ class cls_agent_{id}:
                 
             if (cshort in self.char_cols): 
                 df_add[cshort].fillna('', inplace=True)
+                
         self.printlog ("CSV Loader: columns renamed")
 
         for cname in df_add.columns:                                                      # iterate over each column in df_add looking for recorded text fields
