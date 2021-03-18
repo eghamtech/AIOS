@@ -229,7 +229,7 @@ class cls_agent_{id}:
                         dict_lookup[int(key)] = json_data["static_data"]["lookups"][lookup_type][lookup_id]["lookup_values"][key]["value"]
                     
                     dicts[cname] = self.reverse_dict_any_key(dict_lookup)              # lookup columns supplied with reversed dictionary, reverse it before saving
-                    self.df['dict_'+cname] = self.df[cname].map(dict_lookup)
+                    #self.df['dict_'+cname] = self.df[cname].map(dict_lookup)
 
                     out_file = workdir + 'dict_' + cname + self.out_file_extension
                     pd.DataFrame(list(dict_lookup.items()), columns=['key', 'value']).to_csv(out_file, encoding='utf-8')    #save new column dict
