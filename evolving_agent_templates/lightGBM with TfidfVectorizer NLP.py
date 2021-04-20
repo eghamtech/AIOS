@@ -2,6 +2,7 @@
 #key=data;  type=random_array_of_fields;  length=2
 #key=fields_to_use;  type=random_int;  from=2;  to=2;  step=1
 #key=map_dict;  type=random_from_set;  set=True
+#key=data_json_keys;  type=random_from_set;  set='[]'
 #key=field_ev_prefix;  type=random_from_set;  set=ev_field_lgbm_tfidf_
 #key=field_ev_prefix_use_target_name;  type=random_from_set;  set=True
 #key=field_ev_prefix_use_source_names;  type=random_from_set;  set=True
@@ -135,6 +136,7 @@ class cls_ev_agent_{id}:
     
     map_dict       = {map_dict}
     clean_text_v   = {clean_text_v}
+    data_json_keys = json.loads({data_json_keys})                                # if list not empty, assume data_defs contains one column with json dictionary serialised as string
     
     field_ev_prefix                  = "{field_ev_prefix}"
     field_ev_prefix_use_source_names = {field_ev_prefix_use_source_names}
@@ -228,9 +230,31 @@ class cls_ev_agent_{id}:
 
     
     def convert_df_to_str_list(self, df_data):
-        # concatenate all fields in df_data into one string for each row
-        df_data_l = df_data.applymap(str)                      # convert all columns to strings
-        df_data_l = df_data_l.agg(' '.join, axis=1).to_list()  # concatenate all columns in each row and convert to list
+        df_data_l = []
+        
+        if self.data_json_keys == []:
+            # concatenate all fields in df_data into one string for each row
+            df_data_l = df_data.applymap(str)                      # convert all columns to strings
+            df_data_l = df_data_l.agg(' '.join, axis=1).to_list()  # concatenate all columns in each row and convert to list
+        else:
+            # if json_keys list provided, assume df_data contains one column with json dictionary serialised as string
+            # in such case retrieve specified keys and join them
+            df_iter = zip(df_data[df_data.columns[0]])
+            
+            for row in df_iter:
+                try:
+                    row_json = json.loads(row[0])                # load serialised json from string
+                    
+                    values = []
+                    for k in self.data_json_keys:
+                        str_list = row_json.get(k,[])            # json key value assumed to be a list
+                        str_list = [str(e) for e in str_list]    # convert items in the list to strings
+                        values.extend(str_list)
+                    
+                    values = ' '.join(values)                    # concatenate all strings into one
+                    df_data_l.append(values)
+                except:
+                    df_data_l.append('')
         
         return df_data_l
     
