@@ -1,22 +1,24 @@
 #start_of_parameters
-#key=fields_source;  type=constant;  value=['dict_field|dict_field.csv','dict_field1|dict_field1.csv','dict_field2|dict_field2.csv']
-#key=fields_source_file_or_text;  type=constant;  value=True
-#key=field_output_files_or_text;  type=constant;  value=True
-#key=xml_template; type=constant;  value=candidate_actonomy | candidate_daxtra_native | vacancy_actonomy | vacancy_daxtra_native
-#key=replace_bbtags;  type=constant;  value=False
-#key=check_valid_pdf;  type=constant;  value=True
-#key=col_max_length;   type=constant;  value=200
-#key=new_field_prefix; type=constant;  value=parsed_Actonomy_
-#key=field_prefix_use_source_names;  type=constant;  value=True
-#key=proxy_http;  type=constant;  value=http://127.0.0.1
-#key=proxy_https; type=constant;  value=http://127.0.0.1
-#key=actonomy_url;   type=constant;  value=https://127.0.0.1
-#key=actonomy_user;  type=constant;  value=username
-#key=actonomy_pass;  type=constant;  value=password;  is_password=1
-#key=include_columns_type;  type=constant;  value=is_dict_only
-#key=include_columns_containing; type=constant;  value=
-#key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
-#key=out_file_extension;  type=constant;  value=.csv.bz2
+#key=fields_source;  type=constant;  value=enter_fields_source
+#key=fields_source_file_or_text;  type=constant;  value=enter_fields_source_file_or_text
+#key=field_output_files_or_text;  type=constant;  value=enter_field_output_files_or_text
+#key=xml_template;  type=constant;  value=enter_xml_template
+#key=replace_bbtags;  type=constant;  value=enter_replace_bbtags
+#key=check_valid_pdf;  type=constant;  value=enter_check_valid_pdf
+#key=check_out_file_exists;  type=constant;  value=True
+#key=continue_on_fatal_calls;  type=constant;  value=False
+#key=col_max_length;  type=constant;  value=enter_col_max_length
+#key=new_field_prefix;  type=constant;  value=enter_new_field_prefix
+#key=field_prefix_use_source_names;  type=constant;  value=enter_field_prefix_use_source_names
+#key=proxy_http;  type=constant;  value=enter_proxy_http
+#key=proxy_https;  type=constant;  value=enter_proxy_https
+#key=actonomy_url;  type=constant;  value=enter_actonomy_url
+#key=actonomy_user;  type=constant;  value=enter_actonomy_user
+#key=actonomy_pass;  type=constant;  value=enter_actonomy_pass;  is_password=1
+#key=include_columns_type;  type=constant;  value=enter_include_columns_type
+#key=include_columns_containing;  type=constant;  value=enter_include_columns_containing
+#key=ignore_columns_containing;  type=constant;  value=enter_ignore_columns_containing
+#key=out_file_extension;  type=constant;  value=enter_out_file_extension
 #end_of_parameters
 
 # AICHOO OS Simple Agent
@@ -28,6 +30,8 @@
 # sending the text to Actonomy server for parsing as CV or Vacancy
 #
 # output_files_or_text defines whether to save parsed XML as files or as text in output field rows
+#
+# _check_out_file_exists if set to True the agent would not parse/create files already in AIOS storage
 #
 # all source fields must be dictionary fields
 # parameter xml_template specifies whether to use Daxtra parser only or Actonomy on top of Daxtra
@@ -66,6 +70,8 @@ class cls_agent_{id}:
     field_prefix_use_source_names = {field_prefix_use_source_names}
     fields_source_file_or_text    = {fields_source_file_or_text}     # if True then source fields contain path to file to load content from
     field_output_files_or_text    = {field_output_files_or_text}     # if True then parsed XML will be saved to file and output field contains file path
+    check_out_file_exists         = {check_out_file_exists}
+    continue_on_fatal_calls       = {continue_on_fatal_calls}
 
     PROXIES = {
         "https" : "{proxy_https}",
@@ -76,7 +82,7 @@ class cls_agent_{id}:
     actonomy_url   = "{actonomy_url}"
     
     body_candidate_daxtra_native = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xmp="http://xmp.actonomy.com">
-            <soapenv:Header/>
+            <soapenv:Header></soapenv:Header>
             <soapenv:Body>
                 <xmp:parse>
                     <action>
@@ -94,7 +100,7 @@ class cls_agent_{id}:
             </soapenv:Envelope>"""
 
     body_vacancy_daxtra_native = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xmp="http://xmp.actonomy.com">
-            <soapenv:Header/>
+            <soapenv:Header></soapenv:Header>
             <soapenv:Body>
                 <xmp:parse>
                     <action>
@@ -112,7 +118,7 @@ class cls_agent_{id}:
             </soapenv:Envelope>"""
 
     body_candidate_actonomy = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xmp="http://xmp.actonomy.com">
-            <soapenv:Header/>
+            <soapenv:Header></soapenv:Header>
             <soapenv:Body>
                 <xmp:parse>
                     <action>
@@ -130,7 +136,7 @@ class cls_agent_{id}:
             </soapenv:Envelope>"""
 
     body_vacancy_actonomy = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xmp="http://xmp.actonomy.com">
-            <soapenv:Header/>
+            <soapenv:Header></soapenv:Header>
             <soapenv:Body>
                 <xmp:parse>
                     <action>
@@ -155,6 +161,12 @@ class cls_agent_{id}:
     }
     xml_template = xml_body_templates["{xml_template}"]
 
+
+    def printlog(self, mesg, verbosity=1):
+        global DEBUG
+        if DEBUG == 1 or verbosity > 0:
+            print (str(datetime.now()), mesg)
+
     def is_set(self, s):
         try:
             not_empty = (len(s)>0 and s!="0")
@@ -167,6 +179,27 @@ class cls_agent_{id}:
         a1 = [x for x in a1 if str(x) != 'nan']
         keys1 = range(1, len(a1)+1)
         return dict(zip(a1, keys1))
+
+    def _map_column_value(self, value, cname):
+        cname_dict  = self.dicts_agent['colmap'][cname]    
+        cname_value = str(value) if value != None else ''
+
+        if not (cname_value in cname_dict):                           # if value in current row and column not in dictionary
+            #self.printlog (self.agent_name + ": text column: " + cname + "; value: " + cname_value + "; Not in dictionary", verbosity=0)
+            new_key = 1 + max(cname_dict.values())                    # create new key with max+1 value
+            self.dicts_agent['colmap'][cname][cname_value] = new_key  # add text:key to original dictionary
+
+        #self.printlog (self.agent_name + ": text column: " + cname + "; value: " + cname_value + "; Mapped to value: " + str(self.dicts_agent['colmap'][cname][cname_value]), verbosity=0)
+        return self.dicts_agent['colmap'][cname][cname_value]
+
+    def _out_file_name(self, fname, index):
+        if self.fields_source_file_or_text:
+            outfile_name = workdir + self.new_col_name + '/' + os.path.basename(fname) + '.xml.b64.bz2'
+        else:
+            outfile_name = workdir + self.new_col_name + '/row_' + str(index) + '.xml.b64.bz2'
+
+        return outfile_name
+
 
     def __init__(self):
         #if not self.is_set(self.data_defs):
@@ -184,6 +217,7 @@ class cls_agent_{id}:
         
         self.dicts_agent['new_columns'] = [self.new_col_name]
         self.dicts_agent['parsed_rows'] = []
+        self.dicts_agent['colmap']      = {}
 
         # if saved dictionaries for the target field already exist then load them from filesystem
         sfile = workdir + self.agent_name + '.model'
@@ -283,7 +317,7 @@ class cls_agent_{id}:
 
     def run_on(self, df_run, apply_fun=False):
         if apply_fun:
-            self.index_start_from = 0
+            self.index_start_from           = 0
             self.dicts_agent['parsed_rows'] = []
 
         self.dicts_agent['dict_cols'] = []
@@ -304,39 +338,59 @@ class cls_agent_{id}:
             if self.replace_bbtags:
                 row_str = row_str.replace('[','<').replace(']','>').replace(u'\xa0', u' ')
             
-            if row_str == '' or row_str == 'nan' or row_str == 'NaN' or row_str == 'None' or row_str.replace("\n",' ').replace("\r",' ').strip() == '':
-                xml_parsed = ''
-            else:
-                xml_parsed = self.send_to_actonomy(row_str, self.xml_template, index, file_or_text=self.fields_source_file_or_text)
-
-                if xml_parsed == False:
-                    xml_parsed = ''
-
-            if self.field_output_files_or_text and xml_parsed != '':
-                if self.fields_source_file_or_text:
-                    outfile_name = workdir + self.new_col_name + '/' + os.path.basename(row_str) + '.xml.b64.bz2'
-                else:
-                    outfile_name = workdir + self.new_col_name + '/row_' + str(index) + '.xml.b64.bz2'
-
-                with bz2.open(outfile_name, "wb") as f:
-                    f.write(xml_parsed.encode('utf-8'))
+            # check whether output file to be produced is already in AIOS
+            # and then add its details to output field without actually calling Actonomy
+            out_file_does_not_exist = True
+            if self.field_output_files_or_text and self.check_out_file_exists:
+                outfile_name = self._out_file_name(row_str, index)
                 
+                if os.path.isfile(outfile_name):
+                    out_file_does_not_exist = False
+
+            if out_file_does_not_exist:
+                # attempt to parse input file or text
+                if row_str == '' or row_str == 'nan' or row_str == 'NaN' or row_str == 'None' or row_str.strip() == '':
+                    xml_parsed = ''
+                else:
+                    xml_parsed = self.send_to_actonomy(row_str, self.xml_template, index, file_or_text=self.fields_source_file_or_text)
+
+                    if xml_parsed == False:
+                        xml_parsed = ''
+
+                if self.field_output_files_or_text and xml_parsed != '':
+                    outfile_name = self._out_file_name(row_str, index)
+
+                    with bz2.open(outfile_name, "wb") as f:
+                        f.write(xml_parsed.encode('utf-8'))
+                    
+                    xml_parsed = outfile_name
+            else:
+                # no need to parse anything as output file already exists
                 xml_parsed = outfile_name
 
             self.dicts_agent['parsed_rows'].append(xml_parsed)
 
             block_progress += 1
-            if (block_progress >= block) and apply_fun == False:
+            if (block_progress >= block):
                 block_progress = 0
-                # save current state of dictionary of all auxiliary data into file
-                # in case agent crashes and needs to be restarted from last saved state
-                sfile = bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
-                pickle.dump(self.dicts_agent, sfile)
-                sfile.close()
-                print (str(datetime.now()), " rows processed: ", round((index+1)/total*100,0), "%")
 
-         
-        df_run[self.new_col_name] = self.dicts_agent['parsed_rows']
+                if not apply_fun:
+                    # save current state of dictionary of all auxiliary data into file
+                    # in case agent crashes and needs to be restarted from last saved state
+                    sfile = bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
+                    pickle.dump(self.dicts_agent, sfile)
+                    sfile.close()
+                    
+                    self.printlog (" rows processed: " + str(round((int(index)+1)/total*100,0)) + "%", verbosity=1)
+                else:
+                    self.printlog (" rows processed: " + str(round((int(index)+1)/total*100,0)) + "%", verbosity=0)
+
+        if not apply_fun:
+            df_run[self.new_col_name] = self.dicts_agent['parsed_rows']
+        else:
+            # if called during Apply save parsed strings into "dict_" fields and map the normal field using original dictionary
+            df_run['dict_' + self.new_col_name] = self.dicts_agent['parsed_rows']
+            df_run[self.new_col_name]           = df_run['dict_' + self.new_col_name].apply(self._map_column_value, cname=self.new_col_name)
 
         # clear current state as all rows have been processed and no longer needs to be saved
         self.dicts_agent['parsed_rows']  = []
@@ -372,11 +426,6 @@ class cls_agent_{id}:
         if ret_status == 0:
             nrow = len(self.df)
 
-            # save dictionary of all auxiliary data into file
-            sfile = bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
-            pickle.dump(self.dicts_agent, sfile)
-            sfile.close()
-
             # save and register each new column
             # all columns are dictionary fields
             for i in range(0,len(self.dicts_agent['new_columns'])):
@@ -386,6 +435,8 @@ class cls_agent_{id}:
                 fld_dict     = self.make_dict(self.df[fld].fillna(''))         # create dictionary of given text column  
                 self.df[fld] = self.df[fld].fillna('').map(fld_dict)           # replace column values with corresponding values from dictionary
 
+                self.dicts_agent['colmap'][fld] = fld_dict                     # save dictionaty in the model as will be needed for apply method
+
                 # save dictionary for each text column into separate file
                 out_file = workdir + 'dict_' + fname
                 pd.DataFrame(list(fld_dict.items()), columns=['value', 'key'])[['key','value']].to_csv(out_file, encoding='utf-8')
@@ -393,6 +444,11 @@ class cls_agent_{id}:
                 # save column of indexes
                 self.df[[fld]].to_csv(workdir+fname)
                 print ("#add_field:"+fld+",Y,"+fname+","+str(nrow))
+
+            # save dictionary of all auxiliary data into file
+            sfile = bz2.BZ2File(workdir + self.agent_name + '.model', 'w')
+            pickle.dump(self.dicts_agent, sfile)
+            sfile.close()
 
 
     def apply(self, df_add):
