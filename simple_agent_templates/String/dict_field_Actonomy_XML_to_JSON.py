@@ -1,16 +1,16 @@
 #start_of_parameters
-#key=fields_source;  type=constant;  value=['dict_field|dict_field.csv.bz2']
-#key=tag_prefix;  type=constant;  value='CV'
-#key=replace_bbtags;  type=constant;  value=False
-#key=col_max_length;   type=constant;  value=200
-#key=new_field_prefix; type=constant;  value=parsed_Actonomy_JSON_
-#key=field_prefix_use_source_names;  type=constant;  value=True
-#key=fields_source_file_or_text;  type=constant;  value=False
-#key=field_output_files_or_text;  type=constant;  value=True
-#key=include_columns_type;  type=constant;  value=is_dict_only
-#key=include_columns_containing; type=constant;  value=
-#key=ignore_columns_containing;  type=constant;  value='%ev_field%' and '%onehe_%'
-#key=out_file_extension;  type=constant;  value=.csv.bz2
+#key=fields_source;  type=constant;  value=enter_fields_source
+#key=tag_prefix;  type=constant;  value=enter_tag_prefix
+#key=replace_bbtags;  type=constant;  value=enter_replace_bbtags
+#key=col_max_length;  type=constant;  value=enter_col_max_length
+#key=new_field_prefix;  type=constant;  value=enter_new_field_prefix
+#key=field_prefix_use_source_names;  type=constant;  value=enter_field_prefix_use_source_names
+#key=fields_source_file_or_text;  type=constant;  value=enter_fields_source_file_or_text
+#key=field_output_files_or_text;  type=constant;  value=enter_field_output_files_or_text
+#key=include_columns_type;  type=constant;  value=enter_include_columns_type
+#key=include_columns_containing;  type=constant;  value=enter_include_columns_containing
+#key=ignore_columns_containing;  type=constant;  value=enter_ignore_columns_containing
+#key=out_file_extension;  type=constant;  value=enter_out_file_extension
 #end_of_parameters
 
 # AICHOO OS Simple Agent
@@ -57,6 +57,11 @@ class cls_agent_{id}:
     
     new_columns = []
     dict_cols   = []
+    
+    def printlog(self, mesg, verbosity=1):
+        global DEBUG
+        if DEBUG == 1 or verbosity > 0:
+            print (str(datetime.now()), mesg)
 
     def is_set(self, s):
         try:
@@ -253,8 +258,8 @@ class cls_agent_{id}:
         col_dict_new = {}
 
         if apply_fun:
-            fld_dict = self.make_dict(df_run['dict'+col_name].fillna(''))             # create dictionary of given text column  
-            df_run[self.new_col_name] = df_run['dict'+col_name].fillna('').map(fld_dict)   # replace column values with corresponding values from dictionary
+            fld_dict = self.make_dict(df_run['dict_'+col_name].fillna(''))             # create dictionary of given text column  
+            df_run[self.new_col_name] = df_run['dict_'+col_name].fillna('').map(fld_dict)   # replace column values with corresponding values from dictionary
             col_dict = {v:k for k,v in fld_dict.items()}                              # reverse new dictionary so it can be iterated over keys
         else:
             df_run[self.new_col_name] = df_run[col_name]    # keys are the same as original column
@@ -300,7 +305,10 @@ class cls_agent_{id}:
             index += 1
             if (block_progress >= block):
                 block_progress = 0
-                print (str(datetime.now()), " keys processed: ", round((index)/total*100,0), "%")
+                if apply_fun:
+                    self.printlog (" keys processed: " + str(round((int(index))/total*100,0)) + "%", verbosity=0)
+                else:
+                       self.printlog (" keys processed: " + str(round((int(index))/total*100,0)) + "%", verbosity=1)
 
         df_run['dict_' + self.new_col_name] = df_run[self.new_col_name].map(col_dict_new)
 
