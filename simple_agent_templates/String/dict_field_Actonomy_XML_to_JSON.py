@@ -308,7 +308,7 @@ class cls_agent_{id}:
                 if apply_fun:
                     self.printlog (" keys processed: " + str(round((int(index))/total*100,0)) + "%", verbosity=0)
                 else:
-                       self.printlog (" keys processed: " + str(round((int(index))/total*100,0)) + "%", verbosity=1)
+                    self.printlog (" keys processed: " + str(round((int(index))/total*100,0)) + "%", verbosity=1)
 
         df_run['dict_' + self.new_col_name] = df_run[self.new_col_name].map(col_dict_new)
 
