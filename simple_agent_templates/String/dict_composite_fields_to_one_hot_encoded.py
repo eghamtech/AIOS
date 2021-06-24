@@ -152,7 +152,7 @@ class cls_agent_{id}:
             return
 
         # count unique values, sort in descending order and take only top max_unique_values
-        df_top_values = self.df_all.groupby('all_dict_columns')['all_dict_columns'].agg({"count": len}).sort_values("count", ascending=False).head(self.max_unique_values).reset_index()
+        df_top_values = self.df_all.groupby('all_dict_columns')['all_dict_columns'].agg(count="count").sort_values("count", ascending=False).head(self.max_unique_values).reset_index()
         # create new dictionary of top unique values
         dict_temp     = self.make_dict(df_top_values['all_dict_columns'].fillna(''))
 
