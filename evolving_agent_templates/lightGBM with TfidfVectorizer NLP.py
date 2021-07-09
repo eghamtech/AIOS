@@ -13,6 +13,7 @@
 #key=random_valid;  type=random_from_set;  set=True
 #key=random_valid_size;  type=random_float;  from=0.3;  to=0.3;  step=0.1
 #key=random_valid_folds;  type=random_int;  from=3;  to=3;  step=1
+#key=stratify_folds;  type=random_from_set;  set=True
 #key=models_to_save;  type=random_int;  from=-1;  to=-1;  step=1
 #key=models_apply_on_all_data;  type=random_from_set;  set=True
 #key=random_seed_init;  type=random_int;  from=1;  to=10000000;  step=1
@@ -127,6 +128,7 @@ class cls_ev_agent_{id}:
     fields_to_use  = {fields_to_use}
     start_fold     = {start_fold}
     nfolds         = {nfolds}
+    stratify_folds = {stratify_folds}
     
     models_to_save           = {models_to_save}
     models_apply_on_all_data = {models_apply_on_all_data}
@@ -789,7 +791,7 @@ class cls_ev_agent_{id}:
                     iy  = y.reset_index(level=0)                                                    # create copy, save existing index in 'index' column and reset index 
                     y.reset_index(drop=True, inplace=True)                                          # reset index because StratifiedShuffleSplit will reset index anyway
                      
-                    if self.is_binary or self.is_set(self.objective_multiclass):
+                    if (self.is_binary or self.is_set(self.objective_multiclass)) and self.stratify_folds:
                         sss = StratifiedShuffleSplit(n_splits=1, test_size=self.params['random_valid_size'])
 
                         for train_ix, valid_ix in sss.split(np.zeros(len(y)), y):
@@ -964,7 +966,7 @@ class cls_ev_agent_{id}:
                     print ()
                     print (str(datetime.now())," Train/Test FOLD: ", fold_all)
 
-                    if self.is_binary or self.is_set(self.objective_multiclass):
+                    if (self.is_binary or self.is_set(self.objective_multiclass)) and self.stratify_folds:
                         sss = StratifiedShuffleSplit(n_splits=1, test_size=self.params['random_folds_size'])
                         for train_ix, test_ix in sss.split(np.zeros(len(y)), y):
                             train_ix_orig = iy[iy.index.isin(train_ix)]['index'].tolist()       # obtain original indexes from saved copy of labels with original indexes
