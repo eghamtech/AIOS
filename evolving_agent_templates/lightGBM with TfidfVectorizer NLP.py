@@ -71,6 +71,7 @@
 #key=num_threads;  type=random_int;  from=4;  to=4;  step=1
 #key=use_float32_dtype;  type=random_from_set;  set=True
 #key=clean_text_v;  type=random_int;  from=0;  to=3;  step=1
+#key=clean_text_cut;  type=random_float;  from=0.1;  to=1.0;  step=0.5
 #key=min_perf_criteria;  type=random_float;  from=0.55;  to=0.55;  step=0.1
 #key=use_thresholds_train;  type=random_from_set;  set=True
 #key=shap_data_limit;  type=random_int;  from=25000;  to=25000;  step=1
@@ -138,6 +139,7 @@ class cls_ev_agent_{id}:
     
     map_dict       = {map_dict}
     clean_text_v   = {clean_text_v}
+    clean_text_cut = {clean_text_cut}
     data_json_keys = json.loads({data_json_keys})                                # if list not empty, assume data_defs contains one column with json dictionary serialised as string
     
     field_ev_prefix                  = "{field_ev_prefix}"
@@ -475,7 +477,7 @@ class cls_ev_agent_{id}:
         elif self.clean_text_v == 3:
             s = self.clean_text_v2(s)
 
-        return s
+        return s[-int(len(s)*self.clean_text_cut):]                        # only take % of last characters in the string
              
     def rename_list_duplicates_and_symbols(self, dlist):       
         items  = []
@@ -1175,7 +1177,8 @@ class cls_ev_agent_{id}:
             # if multiclass convert list of lists into list of predicted labels
             if self.params['algo']['objective'] == self.objective_multiclass:             
                 predicted_valid_set = np.argmax(predicted_valid_set, axis=1)
-                predicted_test_set  = np.argmax(predicted_test_set, axis=1)
+                if len(predicted_test_set) > 0:
+                    predicted_test_set  = np.argmax(predicted_test_set, axis=1)
 
             if self.use_validation_set:
                 print()
