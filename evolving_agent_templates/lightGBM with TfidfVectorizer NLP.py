@@ -299,7 +299,7 @@ class cls_ev_agent_{id}:
 
         if print_table:
             print ()
-            self.print_html(fi.sort_values(by=[col_name], ascending=False), max_rows=n_top_features * 2, max_cols=2)
+            self.print_html(fi[fi[col_name]>0].sort_values(by=[col_name], ascending=False), max_rows=n_top_features * 2, max_cols=2)
             
         
     def model_train(self, ml_model, x_train, y_train, x_test, y_test, current_fold):
