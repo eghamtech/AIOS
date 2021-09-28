@@ -1261,7 +1261,7 @@ class cls_ev_agent_{id}:
             self.fi_total['Importance_AVG_perc'] = 0
 
         print ('\nFEATURE Importance Overall:')
-        self.print_html( self.fi_total[['Feature','Importance_AVG','Importance_AVG_perc']].sort_values(by=['Importance_AVG'], ascending=False), max_rows=200, max_cols=4 )
+        self.print_html( self.fi_total[self.fi_total['Importance_AVG_perc']>0][['Feature','Importance_AVG','Importance_AVG_perc']].sort_values(by=['Importance_AVG'], ascending=False), max_rows=200, max_cols=4 )
            
         #print ('\nFEATURE Importance SHAP last validation:')
         #shap.initjs()
