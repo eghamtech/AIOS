@@ -139,7 +139,7 @@ class cls_agent_{id}:
             row_str = row_str * self.duplicate_text_times   # repeat text number of times - may be needed if data is typically less than 100 words
             row_str = row_str[1:]                           # remove space added during columns concatenation
             
-            if clean_text:
+            if self.clean_text:
                 row_str = BeautifulSoup(row_str, "lxml").text
                 row_str = re.sub(r'([a-z])\.([A-Z])', r'\1. \2', row_str)        # add space at the end of sentences if author didn't do it
                 row_str = re.sub(r'([A-Za-z])\,([A-Za-z])', r'\1, \2', row_str)  # add space after commas if author didn't do it
