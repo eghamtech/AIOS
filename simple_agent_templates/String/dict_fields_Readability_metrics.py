@@ -1,6 +1,7 @@
 #start_of_parameters
 #key=fields_source;  type=constant;  value=['dict_field|dict_field.csv','dict_field1|dict_field1.csv','dict_field2|dict_field2.csv']
 #key=duplicate_text_times;  type=constant;  value=1
+#key=clean_text;  type=constant;  value=True
 #key=col_max_length;  type=constant;  value=200
 #key=new_field_prefix;  type=constant;  value=read_metrics_
 #key=field_prefix_use_source_names;  type=constant;  value=True
@@ -32,6 +33,7 @@ gc.collect()
 
 import pandas as pd
 import os.path, bz2, pickle, re
+from bs4 import BeautifulSoup
 
 from datetime import datetime
 from readability import Readability
@@ -50,6 +52,7 @@ class cls_agent_{id}:
     field_prefix_use_source_names = {field_prefix_use_source_names}
     duplicate_text_times          = {duplicate_text_times}
     out_file_extension            = "{out_file_extension}"
+    clean_text                    = {clean_text}
 
     #dicts_agent = {}
     new_columns = []
@@ -136,6 +139,11 @@ class cls_agent_{id}:
             row_str = row_str * self.duplicate_text_times   # repeat text number of times - may be needed if data is typically less than 100 words
             row_str = row_str[1:]                           # remove space added during columns concatenation
             
+            if clean_text:
+                row_str = BeautifulSoup(row_str, "lxml").text
+                row_str = re.sub(r'([a-z])\.([A-Z])', r'\1. \2', row_str)        # add space at the end of sentences if author didn't do it
+                row_str = re.sub(r'([A-Za-z])\,([A-Za-z])', r'\1, \2', row_str)  # add space after commas if author didn't do it
+                
             r = Readability(row_str)
 
             row_metrics = []
