@@ -108,7 +108,7 @@ class cls_agent_{id}:
         print ("enter run mode " + str(mode))
         
         print (str(datetime.now()), " creating dataframe...")
-        self.df = pd.read_csv(workdir+self.source_filename, encoding='utf8', engine='python', error_bad_lines=False)
+        self.df = pd.read_csv(workdir+self.source_filename, encoding='utf8', engine='python',  on_bad_lines='skip')
         
         new_cols        = []                                     # list of new columns (with possible duplicates)
         new_cols_unique = []                                     # list of new columns (fully unique names)
