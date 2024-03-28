@@ -1017,8 +1017,8 @@ class cls_ev_agent_{id}:
         #############################################################
         #                   OUTPUT
         #############################################################
-        #fi_total_dict = dict(zip(self.fi_total['Feature'],self.fi_total['Importance_AVG_perc']))
-        #print ("#feature_importance="+json.dumps(fi_total_dict))
+        fi_total_dict = dict(zip(self.fi_total['Feature'],self.fi_total['Importance_AVG_perc']))
+        print ("#feature_importance="+json.dumps(fi_total_dict))
         
         if mode == 1:  
             if self.models_to_save == 3:
