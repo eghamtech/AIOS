@@ -449,7 +449,8 @@ class cls_ev_agent_{id}:
         columns_orig = []
 
         # assemble columns from a list saved during training
-        for i, col_name in enumerate(self.dicts_agent['columns_needed']):  
+        first_col = True
+        for col_name in self.dicts_agent['columns_needed']:  
             if col_name != self.target_col:          
                 # assemble dataframe column by column             
                 df_col = df_add[[col_name]]
@@ -460,8 +461,9 @@ class cls_ev_agent_{id}:
                     if df_col[col_name].dtype == np.float64 and self.use_float32_dtype:
                         df_col[col_name] = df_col[col_name].astype(np.float32)
                             
-                if i == 0:
+                if first_col:
                     df = df_col[[col_name]]
+                    first_col = False
                 else:
                     df = df.merge(df_col[[col_name]], left_index=True, right_index=True)
                     
