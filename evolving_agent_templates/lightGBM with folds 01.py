@@ -544,7 +544,7 @@ class cls_ev_agent_{id}:
         df_filter_column[self.output_column+'_folds_pred_count'] = 0   # number of predictions for each record as different folds will predict different records, so each record may have unique number of predictions
   
         # load specified in data_defs colums of data up-to fields_to_use quantity
-        df_all = self.load_columns(map_dict=True)       
+        df_all = self.load_columns(map_dict=False)       
         original_row_count = len(df_all)
 
         # analyse target column whether it is binary which may result in different loss function used
