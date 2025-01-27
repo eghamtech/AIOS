@@ -1058,7 +1058,7 @@ class cls_ev_agent_{id}:
                     pred = [np.zeros(self.params['algo']['num_class']) for i in range(len(df_all))]
                                         
                     pred_prob_cols = []   # list of columns for each class probability output
-                    for i in range(params['algo']['num_class']):
+                    for i in range(self.params['algo']['num_class']):
                         df_filter_column_mc[self.output_column+'_proba_'+str(i)] = 0
                         pred_prob_cols.append(self.output_column+'_proba_'+str(i))
 
